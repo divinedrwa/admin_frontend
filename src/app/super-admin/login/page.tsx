@@ -13,7 +13,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/a
 const DEFAULT_PREFILL_USERNAME =
   process.env.NEXT_PUBLIC_SUPER_ADMIN_PREFILL_USERNAME ?? "super_admin";
 const DEFAULT_PREFILL_PASSWORD =
-  process.env.NEXT_PUBLIC_SUPER_ADMIN_PREFILL_PASSWORD ?? "PlatformSuper@2026";
+  process.env.NEXT_PUBLIC_SUPER_ADMIN_PREFILL_PASSWORD ?? "";
 
 function getFriendlySuperAdminLoginError(error: unknown): string {
   const status = (error as { response?: { status?: number } })?.response?.status;
@@ -57,7 +57,9 @@ function SuperAdminLoginInner() {
   useEffect(() => {
     if (searchParams.get("prefill") !== "1") return;
     setUsername(DEFAULT_PREFILL_USERNAME);
-    setPassword(DEFAULT_PREFILL_PASSWORD);
+    if (DEFAULT_PREFILL_PASSWORD) {
+      setPassword(DEFAULT_PREFILL_PASSWORD);
+    }
   }, [searchParams]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
