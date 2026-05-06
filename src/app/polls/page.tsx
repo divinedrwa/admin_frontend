@@ -1,0 +1,457 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
+import { api } from "@/lib/api";
+import { showToast } from "@/components/Toast";
+
+type Poll = {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  options: PollOption[];
+  _count?: { votes: number };
+};
+
+type PollOption = {
+  id: string;
+  optionText: string;
+  _count?: { votes: number };
+};
+
+export default function PollsPage() {
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
+  const [deletingPollId, setDeletingPollId] = useState<string | null>(null);
+  
+  // Search and filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "closed">("all");
+  
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+    options: ["", ""]
+  });
+
+  useEffect(() => {
+    loadPolls();
+  }, []);
+
+  const loadPolls = () => {
+    setLoading(true);
+    api
+      .get("/polls")
+      .then((response) => setPolls(response.data.polls ?? []))
+      .catch(() => showToast("Failed to load polls", "error"))
+      .finally(() => setLoading(false));
+  };
+
+  const handleOpenForm = () => {
+    const today = new Date();
+    const nextMonth = new Date(today);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    setEditingPoll(null);
+    setFormData({
+      title: "",
+      description: "",
+      startDate: today.toISOString().split("T")[0],
+      endDate: nextMonth.toISOString().split("T")[0],
+      options: ["", ""]
+    });
+    setShowForm(true);
+  };
+
+  const handleEdit = (poll: Poll) => {
+    setEditingPoll(poll);
+    setFormData({
+      title: poll.title,
+      description: poll.description || "",
+      startDate: poll.startDate.split("T")[0],
+      endDate: poll.endDate.split("T")[0],
+      options: poll.options.map(opt => opt.optionText)
+    });
+    setShowForm(true);
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingPoll(null);
+    setFormData({
+      title: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      options: ["", ""]
+    });
+  };
+
+  const handleDelete = async (pollId: string) => {
+    if (!window.confirm("Are you sure you want to delete this poll? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeletingPollId(pollId);
+    try {
+      await api.delete(`/polls/${pollId}`);
+      showToast("Poll deleted successfully", "success");
+      loadPolls();
+    } catch (error: any) {
+      const message = error.response?.data?.message ?? "Failed to delete poll";
+      showToast(message, "error");
+    } finally {
+      setDeletingPollId(null);
+    }
+  };
+
+  const handleAddOption = () => {
+    setFormData({ ...formData, options: [...formData.options, ""] });
+  };
+
+  const handleRemoveOption = (index: number) => {
+    if (formData.options.length > 2) {
+      const newOptions = formData.options.filter((_, i) => i !== index);
+      setFormData({ ...formData, options: newOptions });
+    }
+  };
+
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...formData.options];
+    newOptions[index] = value;
+    setFormData({ ...formData, options: newOptions });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.title.trim()) {
+      showToast("Please enter a poll title", "error");
+      return;
+    }
+
+    const validOptions = formData.options.filter(opt => opt.trim());
+    if (validOptions.length < 2) {
+      showToast("Please provide at least 2 options", "error");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description || undefined,
+        startDate: `${formData.startDate}T00:00:00.000Z`,
+        endDate: `${formData.endDate}T23:59:59.999Z`,
+        options: validOptions
+      };
+
+      if (editingPoll) {
+        await api.put(`/polls/${editingPoll.id}`, payload);
+        showToast("Poll updated successfully", "success");
+      } else {
+        await api.post("/polls", payload);
+        showToast("Poll created successfully", "success");
+      }
+      
+      handleCloseForm();
+      loadPolls();
+    } catch (error: any) {
+      const message = error.response?.data?.message ?? (editingPoll ? "Failed to update poll" : "Failed to create poll");
+      showToast(message, "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+  };
+
+  const getVotePercentage = (optionVotes: number, totalVotes: number) => {
+    if (totalVotes === 0) return 0;
+    return Math.round((optionVotes / totalVotes) * 100);
+  };
+
+  // Filter and search logic
+  const filteredPolls = polls.filter((poll) => {
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesTitle = poll.title.toLowerCase().includes(query);
+      const matchesDesc = poll.description?.toLowerCase().includes(query);
+      if (!matchesTitle && !matchesDesc) return false;
+    }
+
+    // Status filter
+    if (statusFilter === "active" && !poll.isActive) return false;
+    if (statusFilter === "closed" && poll.isActive) return false;
+
+    return true;
+  });
+
+  const activeCount = polls.filter(p => p.isActive).length;
+  const closedCount = polls.filter(p => !p.isActive).length;
+
+  return (
+    <AppShell title="Polls & Voting">
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <p className="text-gray-600">Create and manage community polls</p>
+          <button
+            onClick={handleOpenForm}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            + Create Poll
+          </button>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-white border border-gray-200 rounded p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="md:col-span-2">
+              <input
+                type="text"
+                placeholder="Search polls by title or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              >
+                <option value="all">All Polls ({polls.length})</option>
+                <option value="active">Active Only ({activeCount})</option>
+                <option value="closed">Closed Only ({closedCount})</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="mt-3 text-sm text-gray-600">
+            Showing {filteredPolls.length} of {polls.length} polls
+          </div>
+        </div>
+
+        {showForm && (
+          <div className="bg-white border border-gray-200 rounded p-6">
+            <h2 className="text-xl font-semibold mb-4">{editingPoll ? "Edit Poll" : "Create New Poll"}</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Poll Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  placeholder="e.g., Should we organize a summer fest?"
+                  maxLength={200}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  placeholder="Add more details about this poll..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Poll Options * (minimum 2)
+                </label>
+                {formData.options.map((option, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      required
+                      value={option}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      className="flex-1 border border-gray-300 rounded px-3 py-2"
+                      placeholder={`Option ${index + 1}`}
+                      maxLength={200}
+                    />
+                    {formData.options.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveOption(index)}
+                        className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddOption}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  + Add Another Option
+                </button>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                >
+                  {submitting ? (editingPoll ? "Updating..." : "Creating...") : (editingPoll ? "Update Poll" : "Create Poll")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseForm}
+                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {loading ? (
+            <p className="text-gray-500">Loading polls...</p>
+          ) : filteredPolls.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded p-8 text-center">
+              <p className="text-gray-500">
+                {searchQuery || statusFilter !== "all" 
+                  ? "No polls match your search criteria." 
+                  : "No polls created yet. Click \"Create Poll\" to get started."}
+              </p>
+            </div>
+          ) : (
+            filteredPolls.map((poll) => (
+              <div key={poll.id} className="bg-white border border-gray-200 rounded p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">{poll.title}</h3>
+                    {poll.description && (
+                      <p className="text-gray-600 mt-1">{poll.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-3 py-1 text-sm rounded ${
+                        poll.isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {poll.isActive ? "Active" : "Closed"}
+                    </span>
+                    <button
+                      onClick={() => handleEdit(poll)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                      title="Edit poll"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(poll.id)}
+                      disabled={deletingPollId === poll.id}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                      title="Delete poll"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mb-4">
+                  {poll.options?.map((option) => {
+                    const votes = option._count?.votes ?? 0;
+                    const totalVotes = poll._count?.votes ?? 0;
+                    const percentage = getVotePercentage(votes, totalVotes);
+
+                    return (
+                      <div key={option.id} className="border rounded p-3">
+                        <div className="flex justify-between mb-2">
+                          <span className="font-medium">{option.optionText}</span>
+                          <span className="text-gray-600">
+                            {votes} votes ({percentage}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex justify-between text-sm text-gray-500 border-t pt-3">
+                  <span>
+                    {formatDate(poll.startDate)} - {formatDate(poll.endDate)}
+                  </span>
+                  <span>Total Votes: {poll._count?.votes ?? 0}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </AppShell>
+  );
+}
