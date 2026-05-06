@@ -61,6 +61,11 @@ export default function UsersPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [importingResidents, setImportingResidents] = useState(false);
+  const [importingGuards, setImportingGuards] = useState(false);
+  const [exportingResidents, setExportingResidents] = useState(false);
+  const [selectedResidentIds, setSelectedResidentIds] = useState<Set<string>>(new Set());
+  const [bulkDeletingResidents, setBulkDeletingResidents] = useState(false);
 
   const loadUsers = () => {
     setLoading(true);
@@ -226,18 +231,178 @@ export default function UsersPage() {
     }
   };
 
+  const handleExportResidentsCsv = async () => {
+    setExportingResidents(true);
+    try {
+      const { data } = await api.get<Blob>("/export/residents-csv", { responseType: "blob" });
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `residents-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      showToast("Residents exported", "success");
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Export failed";
+      showToast(message, "error");
+    } finally {
+      setExportingResidents(false);
+    }
+  };
+
+  const handleResidentsCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      showToast("Please choose a .csv file", "error");
+      return;
+    }
+    setImportingResidents(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post<{
+        created: number;
+        skipped: number;
+        errors: { line: number; message: string }[];
+      }>("/import/residents-csv", fd);
+      showToast(
+        `Imported ${data.created} resident(s). Skipped ${data.skipped}.`,
+        data.errors?.length ? "error" : "success",
+      );
+      if (data.errors?.length) {
+        alert(
+          data.errors
+            .slice(0, 8)
+            .map((x) => `Line ${x.line}: ${x.message}`)
+            .join("\n") + (data.errors.length > 8 ? `\n… and ${data.errors.length - 8} more` : ""),
+        );
+      }
+      loadUsers();
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Import failed";
+      showToast(message, "error");
+    } finally {
+      setImportingResidents(false);
+    }
+  };
+
+  const handleGuardsCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      showToast("Please choose a .csv file", "error");
+      return;
+    }
+    setImportingGuards(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post<{
+        created: number;
+        skipped: number;
+        errors: { line: number; message: string }[];
+      }>("/import/guards-csv", fd);
+      showToast(
+        `Imported ${data.created} guard(s). Skipped ${data.skipped}.`,
+        data.errors?.length ? "error" : "success",
+      );
+      if (data.errors?.length) {
+        alert(
+          data.errors
+            .slice(0, 8)
+            .map((x) => `Line ${x.line}: ${x.message}`)
+            .join("\n") + (data.errors.length > 8 ? `\n… and ${data.errors.length - 8} more` : ""),
+        );
+      }
+      loadUsers();
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Import failed";
+      showToast(message, "error");
+    } finally {
+      setImportingGuards(false);
+    }
+  };
+
+  const residentsList = users.filter((u) => u.role === "RESIDENT");
+
+  const toggleResidentSelected = (id: string) => {
+    setSelectedResidentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllResidents = () => {
+    const ids = residentsList.map((r) => r.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selectedResidentIds.has(id));
+    if (allSelected) {
+      setSelectedResidentIds(new Set());
+    } else {
+      setSelectedResidentIds(new Set(ids));
+    }
+  };
+
   const handleDelete = async (userId: string) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
 
     try {
       await api.delete(`/users/${userId}`);
       showToast("User deleted successfully", "success");
+      setSelectedResidentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
       loadUsers();
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         "Failed to delete user";
       showToast(message, "error");
+    }
+  };
+
+  const handleBulkDeleteResidents = async () => {
+    const ids = Array.from(selectedResidentIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Permanently delete ${ids.length} resident account(s)? This cannot be undone.`)) {
+      return;
+    }
+    setBulkDeletingResidents(true);
+    let deleted = 0;
+    const failures: string[] = [];
+    for (const id of ids) {
+      try {
+        await api.delete(`/users/${id}`);
+        deleted++;
+      } catch (error: unknown) {
+        const user = users.find((u) => u.id === id);
+        const label = user?.username ?? id;
+        const message =
+          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Delete failed";
+        failures.push(`${label}: ${message}`);
+      }
+    }
+    setSelectedResidentIds(new Set());
+    loadUsers();
+    setBulkDeletingResidents(false);
+    if (failures.length === 0) {
+      showToast(`Deleted ${deleted} resident(s)`, "success");
+    } else {
+      showToast(`Deleted ${deleted}. ${failures.length} failed.`, "error");
+      alert(failures.slice(0, 12).join("\n") + (failures.length > 12 ? `\n… and ${failures.length - 12} more` : ""));
     }
   };
 
@@ -266,6 +431,118 @@ export default function UsersPage() {
             + Add User
           </button>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 p-4 space-y-2">
+            <div className="flex flex-wrap justify-between gap-2">
+              <div>
+                <h3 className="font-semibold text-gray-900">Import / export residents (CSV)</h3>
+                <p className="text-xs text-gray-600 mt-1">
+                  Import villas first. Columns:{" "}
+                  <code className="bg-white px-1 rounded text-[11px]">
+                    username,name,email,password,phone,residentType,villaNumber,moveInDate
+                  </code>
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  residentType: OWNER, TENANT, or FAMILY_MEMBER · villaNumber must match an existing villa ·
+                  moveInDate: YYYY-MM-DD
+                </p>
+                <p className="text-xs text-amber-800/90 mt-1">
+                  Exports leave the password column empty for security. Add passwords before re-importing to a new
+                  system.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleExportResidentsCsv}
+                  disabled={exportingResidents || !users.some((u) => u.role === "RESIDENT")}
+                  className="text-sm font-medium bg-white border border-emerald-400 text-emerald-900 px-3 py-2 rounded hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed text-center"
+                >
+                  {exportingResidents ? "Exporting…" : "Export residents"}
+                </button>
+                <a
+                  href="/samples/residents-import-sample.csv"
+                  download="residents-import-sample.csv"
+                  className="text-sm font-medium text-emerald-800 hover:underline text-center"
+                >
+                  Sample CSV
+                </a>
+              </div>
+            </div>
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <span className="bg-white border border-emerald-300 text-emerald-900 px-3 py-2 rounded text-sm font-medium hover:bg-emerald-100">
+                {importingResidents ? "Importing…" : "Choose residents CSV"}
+              </span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                disabled={importingResidents}
+                onChange={handleResidentsCsvImport}
+              />
+            </label>
+          </div>
+
+          <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4 space-y-2">
+            <div className="flex flex-wrap justify-between gap-2">
+              <div>
+                <h3 className="font-semibold text-gray-900">Import guards (CSV)</h3>
+                <p className="text-xs text-gray-600 mt-1">
+                  Columns:{" "}
+                  <code className="bg-white px-1 rounded text-[11px]">
+                    username,name,email,password,phone
+                  </code>
+                </p>
+              </div>
+              <a
+                href="/samples/guards-import-sample.csv"
+                download="guards-import-sample.csv"
+                className="text-sm font-medium text-amber-900 hover:underline shrink-0"
+              >
+                Sample CSV
+              </a>
+            </div>
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <span className="bg-white border border-amber-300 text-amber-900 px-3 py-2 rounded text-sm font-medium hover:bg-amber-100">
+                {importingGuards ? "Importing…" : "Choose guards CSV"}
+              </span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                disabled={importingGuards}
+                onChange={handleGuardsCsvImport}
+              />
+            </label>
+          </div>
+        </div>
+
+        {selectedResidentIds.size > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/90 px-4 py-3">
+            <span className="text-sm text-gray-800">
+              {selectedResidentIds.size} resident{selectedResidentIds.size === 1 ? "" : "s"} selected
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedResidentIds(new Set())}
+                disabled={bulkDeletingResidents}
+                className="text-sm px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkDeleteResidents}
+                disabled={bulkDeletingResidents}
+                className="text-sm px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {bulkDeletingResidents ? "Deleting…" : "Delete selected residents"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {showForm && (
           <div className="bg-white border border-gray-200 rounded p-6">
@@ -483,6 +760,20 @@ export default function UsersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left border-b">
+                  <th className="py-2 w-10">
+                    {residentsList.length > 0 ? (
+                      <input
+                        type="checkbox"
+                        checked={
+                          residentsList.length > 0 &&
+                          residentsList.every((r) => selectedResidentIds.has(r.id))
+                        }
+                        onChange={toggleSelectAllResidents}
+                        className="rounded border-gray-300"
+                        title="Select all residents"
+                      />
+                    ) : null}
+                  </th>
                   <th className="py-2">Username</th>
                   <th>Name</th>
                   <th>Email</th>
@@ -496,13 +787,26 @@ export default function UsersPage() {
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-gray-500">
+                    <td colSpan={9} className="py-8 text-center text-gray-500">
                       No users found. Click "Add User" to create your first user.
                     </td>
                   </tr>
                 ) : (
                   users.map((user) => (
                     <tr key={user.id} className="border-b hover:bg-gray-50">
+                      <td className="py-3 align-middle">
+                        {user.role === "RESIDENT" ? (
+                          <input
+                            type="checkbox"
+                            checked={selectedResidentIds.has(user.id)}
+                            onChange={() => toggleResidentSelected(user.id)}
+                            className="rounded border-gray-300"
+                            aria-label={`Select resident ${user.username}`}
+                          />
+                        ) : (
+                          <span className="inline-block w-4" aria-hidden />
+                        )}
+                      </td>
                       <td className="py-3">
                         <span className="font-mono text-sm text-gray-900">
                           {user.username || "-"}
