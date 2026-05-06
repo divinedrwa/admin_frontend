@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
+import { getResolvedApiBaseUrl } from "@/lib/apiBaseUrl";
 import { showToast } from "@/components/Toast";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+const API_BASE_URL = getResolvedApiBaseUrl();
 
 /** When opened from society login with ?prefill=1 — override via NEXT_PUBLIC_* in .env.local. */
 const DEFAULT_PREFILL_USERNAME =
@@ -30,6 +31,9 @@ function getFriendlySuperAdminLoginError(error: unknown): string {
   }
   if (status === 403) {
     return "You do not have platform admin access.";
+  }
+  if (status === 404) {
+    return "API route not found. Set NEXT_PUBLIC_API_URL to your backend base including /api (e.g. https://your-api.com/api).";
   }
   if (status === 0 || status === undefined) {
     return "Could not reach the server. Check API URL and network, then try again.";

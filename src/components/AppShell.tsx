@@ -38,7 +38,14 @@ export function AppShell({ title, children }: { title: string; children: React.R
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect via useAuth hook
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-gray-600">Redirecting to login…</p>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -3,10 +3,11 @@
 import axios from "axios";
 import { isSocietyPublicAuthPath } from "./authRedirect";
 import { clearPlatformViewSession } from "./platformViewSession";
+import { getResolvedApiBaseUrl } from "./apiBaseUrl";
 
 const TENANT_SOCIETY_STORAGE_KEY = "tenant_society_id";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+const API_BASE_URL = getResolvedApiBaseUrl();
 
 /** Persisted after society-admin login so [api] can send X-Society-Id on tenant requests. */
 export function setTenantSocietyIdFromLogin(user: { societyId?: string | null } | undefined): void {

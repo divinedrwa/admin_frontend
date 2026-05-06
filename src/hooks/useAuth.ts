@@ -20,17 +20,18 @@ export function useAuth(requireAuth: boolean = true) {
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem("token");
-      
+
       if (requireAuth && !token && !isTenantPublicPath(pathname ?? "")) {
-        router.push("/login");
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        router.replace("/login");
         return;
       }
-      
+
       setIsAuthenticated(!!token);
       setIsLoading(false);
     };
 
-    // Only run on client side
     if (typeof window !== "undefined") {
       checkAuth();
     }
