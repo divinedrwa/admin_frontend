@@ -445,7 +445,8 @@ export default function UsersPage() {
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   residentType: OWNER, TENANT, or FAMILY_MEMBER · villaNumber must match an existing villa ·
-                  moveInDate: YYYY-MM-DD
+                  moveInDate: YYYY-MM-DD · each non-empty phone must be unique in this society (duplicates in CSV or
+                  existing users will skip that row)
                 </p>
                 <p className="text-xs text-amber-800/90 mt-1">
                   Exports leave the password column empty for security. Add passwords before re-importing to a new

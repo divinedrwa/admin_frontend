@@ -100,6 +100,15 @@ export default function DashboardPage() {
     setLoadError(null);
     setLoading(true);
     try {
+      const safeGet = async <T,>(request: Promise<T>) => {
+        try {
+          const data = await request;
+          return { ok: true as const, data };
+        } catch (error) {
+          return { ok: false as const, error };
+        }
+      };
+
       const [
         maintRes,
         financialRes,
@@ -116,9 +125,9 @@ export default function DashboardPage() {
       ] = await Promise.all([
         api.get("/maintenance/dashboard").catch(() => null),
         api.get("/maintenance-management/financial-dashboard").catch(() => null),
-        api.get("/villas").catch(() => null),
-        api.get("/users", { params: { role: "RESIDENT", isActive: "true" } }).catch(() => null),
-        api.get("/users", { params: { role: "GUARD", isActive: "true" } }).catch(() => null),
+        safeGet(api.get("/villas")),
+        safeGet(api.get("/users", { params: { role: "RESIDENT", isActive: "true" } })),
+        safeGet(api.get("/users", { params: { role: "GUARD", isActive: "true" } })),
         api.get("/visitors").catch(() => null),
         api.get("/parcels").catch(() => null),
         api.get("/complaints").catch(() => null),
@@ -162,9 +171,30 @@ export default function DashboardPage() {
       });
       setFundTrend(trendPoints);
 
-      setVillaCount(Array.isArray(villasRes?.data?.villas) ? villasRes!.data!.villas.length : 0);
-      setResidentCount(Array.isArray(residentsRes?.data?.users) ? residentsRes!.data!.users.length : 0);
-      setGuardCount(Array.isArray(guardsRes?.data?.users) ? guardsRes!.data!.users.length : 0);
+      const countErrors: string[] = [];
+
+      if (villasRes.ok && Array.isArray((villasRes.data as any)?.data?.villas)) {
+        setVillaCount((villasRes.data as any).data.villas.length);
+      } else {
+        countErrors.push("villas");
+      }
+      if (residentsRes.ok && Array.isArray((residentsRes.data as any)?.data?.users)) {
+        setResidentCount((residentsRes.data as any).data.users.length);
+      } else {
+        countErrors.push("residents");
+      }
+      if (guardsRes.ok && Array.isArray((guardsRes.data as any)?.data?.users)) {
+        setGuardCount((guardsRes.data as any).data.users.length);
+      } else {
+        countErrors.push("guards");
+      }
+      if (countErrors.length > 0) {
+        setLoadError(
+          `Some live counts could not be refreshed (${countErrors.join(
+            ", ",
+          )}). Please re-login and verify society selection.`,
+        );
+      }
 
       const visitors = (visitorsRes?.data?.visitors ?? []) as Array<{
         id: string;
