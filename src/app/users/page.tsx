@@ -268,9 +268,14 @@ export default function UsersPage() {
         created: number;
         skipped: number;
         errors: { line: number; message: string }[];
+        villasAutoCreated?: number;
       }>("/import/residents-csv", fd);
+      const villaPart =
+        data.villasAutoCreated != null && data.villasAutoCreated > 0
+          ? ` (${data.villasAutoCreated} villa(s) auto-created)`
+          : "";
       showToast(
-        `Imported ${data.created} resident(s). Skipped ${data.skipped}.`,
+        `Imported ${data.created} resident(s)${villaPart}. Skipped ${data.skipped}.`,
         data.errors?.length ? "error" : "success",
       );
       if (data.errors?.length) {
@@ -438,15 +443,16 @@ export default function UsersPage() {
               <div>
                 <h3 className="font-semibold text-gray-900">Import / export residents (CSV)</h3>
                 <p className="text-xs text-gray-600 mt-1">
-                  Import villas first. Columns:{" "}
+                  Columns:{" "}
                   <code className="bg-white px-1 rounded text-[11px]">
                     username,name,email,password,phone,residentType,villaNumber,moveInDate
                   </code>
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  residentType: OWNER, TENANT, or FAMILY_MEMBER · villaNumber must match an existing villa ·
-                  moveInDate: YYYY-MM-DD · same phone can appear on multiple rows (one login per row — use unique
-                  username/email each time; mobile sign-in with phone may require username/email if numbers repeat)
+                  residentType: OWNER, TENANT, or FAMILY_MEMBER · if villaNumber is new for this society, a villa is
+                  created automatically (owner name = resident name; maintenance 0 until you edit it) · moveInDate:
+                  YYYY-MM-DD · same phone can appear on multiple rows (one login per row — use unique username/email
+                  each time; mobile sign-in with phone may require username/email if numbers repeat)
                 </p>
                 <p className="text-xs text-amber-800/90 mt-1">
                   Exports leave the password column empty for security. Add passwords before re-importing to a new

@@ -190,11 +190,32 @@ export default function VillasPage() {
         created: number;
         skipped: number;
         errors: { line: number; message: string }[];
+        usersCreated?: number;
+        ownerCredentials?: Array<{
+          line: number;
+          username: string;
+          email: string;
+          temporaryPassword?: string;
+        }>;
       }>("/import/villas-csv", fd);
+      const ownerPart =
+        data.usersCreated != null && data.usersCreated > 0
+          ? ` ${data.usersCreated} owner login(s) created.`
+          : "";
       showToast(
-        `Imported ${data.created} villa(s). Skipped ${data.skipped}.`,
+        `Imported ${data.created} villa(s).${ownerPart} Skipped ${data.skipped}.`,
         data.errors?.length ? "error" : "success",
       );
+      if (data.ownerCredentials?.length) {
+        const credLines = data.ownerCredentials
+          .map(
+            (c) =>
+              `Line ${c.line}: ${c.username} / ${c.email}` +
+              (c.temporaryPassword != null ? ` — temp password: ${c.temporaryPassword}` : ""),
+          )
+          .join("\n");
+        alert(`Save these generated owner passwords:\n\n${credLines}`);
+      }
       if (data.errors?.length) {
         const preview = data.errors
           .slice(0, 8)
@@ -316,6 +337,11 @@ export default function VillasPage() {
                 <code className="text-xs bg-white px-1 rounded">
                   villaNumber,floors,area,block,ownerName,ownerEmail,ownerPhone,monthlyMaintenance
                 </code>
+                . Optional:{" "}
+                <code className="text-xs bg-white px-1 rounded">ownerUsername,ownerPassword</code> — when{" "}
+                <code className="text-xs bg-white px-1 rounded">ownerEmail</code> is set, an owner resident account is
+                created for this society (username from email if omitted; password generated unless{" "}
+                <code className="text-xs bg-white px-1 rounded">ownerPassword</code> is at least 6 characters).
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 justify-end">
