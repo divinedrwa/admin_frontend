@@ -90,7 +90,12 @@ const linkSections = [
   }
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
@@ -103,8 +108,12 @@ export function Sidebar() {
     router.push("/login");
   }
 
-  return (
-    <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-gradient-to-b from-gray-900 to-gray-800 text-white border-r border-gray-700 flex flex-col transition-all duration-300 shadow-2xl`}>
+  function handleNavClick() {
+    onClose?.();
+  }
+
+  const sidebarContent = (
+    <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-gradient-to-b from-gray-900 to-gray-800 text-white border-r border-gray-700 flex flex-col transition-all duration-300 shadow-2xl h-full`}>
       {/* Header */}
       <div className="p-6 border-b border-gray-700">
         <div className="flex items-center justify-between">
@@ -135,6 +144,7 @@ export function Sidebar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={handleNavClick}
                   className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     pathname === link.href
                       ? "bg-blue-600 text-white shadow-lg shadow-blue-500/50"
@@ -155,7 +165,7 @@ export function Sidebar() {
       <div className="p-4 border-t border-gray-700 space-y-2">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full btn bg-gray-700 hover:bg-gray-600 text-white text-sm py-2"
+          className="w-full btn bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 hidden md:block"
           title={collapsed ? "Expand" : "Collapse"}
         >
           {collapsed ? "→" : "←"}
@@ -169,5 +179,31 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Desktop: static sidebar */}
+      <div className="hidden md:flex">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile: drawer overlay */}
+      <div
+        className={`fixed inset-y-0 left-0 z-40 md:hidden transition-transform duration-300 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {sidebarContent}
+      </div>
+    </>
   );
 }

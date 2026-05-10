@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type VisitorVilla = {
   villa: {
@@ -123,8 +124,8 @@ export default function VisitorsPage() {
       await api.delete(`/visitors/${visitorId}`);
       showToast("Visitor record deleted successfully", "success");
       loadVisitors();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to delete visitor";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to delete visitor").message;
       showToast(message, "error");
     } finally {
       setDeletingVisitorId(null);
@@ -168,8 +169,8 @@ export default function VisitorsPage() {
       showToast("Visitor checked in successfully", "success");
       handleCloseForm();
       loadVisitors();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to check in visitor";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to check in visitor").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

@@ -1,6 +1,7 @@
 "use client";
 
 import axios from "axios";
+import { parseApiError } from "@/utils/errorHandler";
 import { isSocietyPublicAuthPath } from "./authRedirect";
 import { clearPlatformViewSession } from "./platformViewSession";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
@@ -84,11 +85,25 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Enrich every rejected error with a Zod-aware parsed message. Pages
+    // that read `error.response.data.message` get a message that now folds
+    // in `issues[]` when present (~30 pages historically dropped them).
+    // Pages that prefer field-level errors can read `error.parsedApiError`.
+    try {
+      const parsed = parseApiError(error);
+      (error as { parsedApiError?: typeof parsed }).parsedApiError = parsed;
+      if (error.response?.data && typeof error.response.data === "object") {
+        (error.response.data as { message?: string }).message = parsed.message;
+      }
+    } catch {
+      // Parsing must never itself reject the original error.
+    }
+
     if (typeof window !== "undefined") {
       const status = error.response?.status;
       const message = extractApiMessage(error.response?.data) ?? error.message ?? "Unknown error";
       const url = error.config?.url;
-      
+
       // Handle authentication errors
       if (status === 401) {
         console.warn(`Authentication failed (${status}) on ${url ?? "unknown endpoint"}: ${message}`);

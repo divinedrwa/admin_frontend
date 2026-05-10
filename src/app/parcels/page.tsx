@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type Parcel = {
   id: string;
@@ -121,8 +122,8 @@ export default function ParcelsPage() {
       await api.delete(`/parcels/${parcelId}`);
       showToast("Parcel deleted successfully", "success");
       loadParcels();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to delete parcel";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to delete parcel").message;
       showToast(message, "error");
     } finally {
       setDeletingParcelId(null);
@@ -154,8 +155,8 @@ export default function ParcelsPage() {
       }
       handleCloseForm();
       loadParcels();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? (editingParcel ? "Failed to update parcel" : "Failed to log parcel");
+    } catch (error: unknown) {
+      const message = parseApiError(error, editingParcel ? "Failed to update parcel" : "Failed to log parcel").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

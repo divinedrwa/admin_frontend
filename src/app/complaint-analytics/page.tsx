@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
+import { parseApiError } from "@/utils/errorHandler";
 
 type ComplaintStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 
@@ -59,8 +60,8 @@ export default function ComplaintAnalyticsPage() {
       setLoading(true);
       const response = await api.get(`/complaint-analytics/summary?days=${dateFilter}`);
       setSummary(response.data.summary);
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Failed to load summary", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to load summary").message, "error");
     } finally {
       setLoading(false);
     }
@@ -71,8 +72,8 @@ export default function ComplaintAnalyticsPage() {
     try {
       const response = await api.get(`/complaint-analytics/by-category?days=${dateFilter}`);
       setCategoryStats(response.data.categoryStats);
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Failed to load categories", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to load categories").message, "error");
     }
   };
 
@@ -81,8 +82,8 @@ export default function ComplaintAnalyticsPage() {
     try {
       const response = await api.get("/complaint-analytics/pending-list?limit=20");
       setPendingComplaints(response.data.pendingComplaints);
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Failed to load pending list", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to load pending list").message, "error");
     }
   };
 
@@ -108,8 +109,8 @@ export default function ComplaintAnalyticsPage() {
       fetchSummary();
       fetchCategories();
       fetchPending();
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Failed to update complaint", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to update complaint").message, "error");
     } finally {
       setLoading(false);
     }

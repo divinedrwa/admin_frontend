@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type Incident = {
   id: string;
@@ -110,8 +111,8 @@ export default function IncidentsPage() {
       await api.delete(`/incidents/${incidentId}`);
       showToast("Incident deleted successfully", "success");
       loadIncidents();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to delete incident";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to delete incident").message;
       showToast(message, "error");
     } finally {
       setDeletingIncidentId(null);
@@ -147,8 +148,8 @@ export default function IncidentsPage() {
 
       handleCloseForm();
       loadIncidents();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? (editingIncident ? "Failed to update incident" : "Failed to report incident");
+    } catch (error: unknown) {
+      const message = parseApiError(error, editingIncident ? "Failed to update incident" : "Failed to report incident").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

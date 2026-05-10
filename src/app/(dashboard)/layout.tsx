@@ -1,16 +1,25 @@
 "use client";
 
-import { Sidebar } from "./Sidebar";
-import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sidebar } from "@/components/Sidebar";
+import { useAuth } from "@/hooks/useAuth";
 import {
   exitPlatformView,
   getPlatformViewSession,
   type PlatformViewPayload,
 } from "@/lib/platformViewSession";
 
-export function AppShell({ title, children }: { title: string; children: React.ReactNode }) {
+/**
+ * Auth gate + chrome for pages under app/(dashboard)/. These pages render
+ * their own internal headers so we deliberately don't reuse [AppShell]
+ * (which prepends its own page-title bar and date subline). The contract
+ * here is parity with AppShell on the security-relevant surface only:
+ *   - useAuth(true) blocks unauthenticated render and redirects to /login
+ *   - the same Sidebar
+ *   - the same platform-view banner so super-admin "view as" mode is visible
+ */
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth(true);
   const router = useRouter();
   const [platformView, setPlatformView] = useState<PlatformViewPayload | null>(null);
@@ -21,7 +30,6 @@ export function AppShell({ title, children }: { title: string; children: React.R
   }, []);
 
   function exitToSuperAdmin() {
-    // Restores any tenant-admin session that pre-dated this platform view.
     exitPlatformView();
     setPlatformView(null);
     router.push("/super-admin");
@@ -69,40 +77,20 @@ export function AppShell({ title, children }: { title: string; children: React.R
             </button>
           </div>
         ) : null}
-        {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-                className="md:hidden p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100"
-                aria-label="Open menu"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-xl md:text-3xl font-bold text-gray-900 tracking-tight">{title}</h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                <span className="text-sm font-medium">System Online</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto scrollbar-thin">
-          {children}
-        </main>
+        {/* Mobile hamburger for dashboard pages */}
+        <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            aria-label="Open menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+        <main className="flex-1 overflow-y-auto scrollbar-thin">{children}</main>
       </section>
     </div>
   );

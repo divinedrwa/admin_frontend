@@ -5,6 +5,7 @@ import { Plus, Search, Filter, Download, Edit, Trash2, Eye, Calendar } from 'luc
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { parseApiError } from "@/utils/errorHandler";
 
 interface Expense {
   id: string;
@@ -63,9 +64,9 @@ export default function ExpensesPage() {
     try {
       const response = await api.get('/expenses/categories');
       setCategories(response.data ?? []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching categories:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to fetch categories', 'error');
+      showToast(parseApiError(error, "Failed to fetch categories").message, 'error');
     }
   };
 
@@ -100,9 +101,9 @@ export default function ExpensesPage() {
         thisMonth,
         thisYear
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching expenses:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to fetch expenses', 'error');
+      showToast(parseApiError(error, "Failed to fetch expenses").message, 'error');
     } finally {
       setLoading(false);
     }
@@ -115,9 +116,9 @@ export default function ExpensesPage() {
       await api.delete(`/expenses/${id}`);
       await fetchExpenses();
       showToast('Expense deleted', 'success');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting expense:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to delete expense', 'error');
+      showToast(parseApiError(error, "Failed to delete expense").message, 'error');
     }
   };
 

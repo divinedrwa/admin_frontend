@@ -5,8 +5,17 @@ import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
+type VillaUnit = {
+  id: string;
+  unitCode: string;
+  label: string;
+  isDefault: boolean;
+  sortOrder?: number;
+};
+
 type Villa = {
   id: string;
+  propertyId?: string;
   villaNumber: string;
   floors: number;
   area: number;
@@ -15,6 +24,8 @@ type Villa = {
   ownerEmail: string;
   ownerPhone: string;
   monthlyMaintenance: number;
+  units?: VillaUnit[];
+  billingAccount?: { id: string; scope: string };
   users: Array<{
     id: string;
     name: string;
@@ -56,6 +67,8 @@ export default function VillasPage() {
   const [exportingCsv, setExportingCsv] = useState(false);
   const [selectedVillaIds, setSelectedVillaIds] = useState<Set<string>>(new Set());
   const [bulkDeletingVillas, setBulkDeletingVillas] = useState(false);
+  /** Extra occupant units (GF, F1, …) sent as `units` on create/patch; default unit is always created server-side. */
+  const [extraUnits, setExtraUnits] = useState<Array<{ unitCode: string; label: string }>>([]);
 
   const loadVillas = () => {
     setLoading(true);
@@ -96,6 +109,12 @@ export default function VillasPage() {
         ownerPhone: villa.ownerPhone || "",
         monthlyMaintenance: villa.monthlyMaintenance.toString()
       });
+      const nonDefault =
+        villa.units?.filter((u) => u.unitCode !== "_DEFAULT").map((u) => ({
+          unitCode: u.unitCode,
+          label: u.label,
+        })) ?? [];
+      setExtraUnits(nonDefault);
     } else {
       setEditingVilla(null);
       setFormData({
@@ -108,6 +127,7 @@ export default function VillasPage() {
         ownerPhone: "",
         monthlyMaintenance: "5000"
       });
+      setExtraUnits([]);
     }
     setShowForm(true);
   };
@@ -115,6 +135,7 @@ export default function VillasPage() {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingVilla(null);
+    setExtraUnits([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,6 +143,13 @@ export default function VillasPage() {
     setSubmitting(true);
 
     try {
+      const unitsPayload = extraUnits
+        .map((u) => ({
+          unitCode: u.unitCode.trim(),
+          label: u.label.trim(),
+        }))
+        .filter((u) => u.unitCode.length > 0 && u.label.length > 0);
+
       const payload = {
         villaNumber: formData.villaNumber,
         floors: parseInt(formData.floors),
@@ -130,15 +158,16 @@ export default function VillasPage() {
         ownerName: formData.ownerName,
         ownerEmail: formData.ownerEmail,
         ownerPhone: formData.ownerPhone,
-        monthlyMaintenance: parseFloat(formData.monthlyMaintenance)
+        monthlyMaintenance: parseFloat(formData.monthlyMaintenance),
+        ...(unitsPayload.length > 0 ? { units: unitsPayload } : {}),
       };
 
       if (editingVilla) {
         await api.patch(`/villas/${editingVilla.id}`, payload);
-        showToast("Villa updated successfully", "success");
+        showToast("Property updated successfully", "success");
       } else {
         await api.post("/villas", payload);
-        showToast("Villa created successfully", "success");
+        showToast("Property created successfully", "success");
       }
 
       handleCloseForm();
@@ -505,13 +534,71 @@ export default function VillasPage() {
                 </div>
               </div>
 
+              <div className="border-t pt-4 space-y-3">
+                <h3 className="text-lg font-medium">Occupant units / floors</h3>
+                <p className="text-xs text-gray-600">
+                  A default unit is created automatically for billing and legacy data. Add rows for each floor or flat
+                  (e.g. code <code className="bg-gray-100 px-1 rounded">V12_GF</code>, label{" "}
+                  <code className="bg-gray-100 px-1 rounded">Ground Floor</code>). Residents are assigned to a unit in
+                  Users.
+                </p>
+                <div className="space-y-2">
+                  {extraUnits.map((row, idx) => (
+                    <div key={idx} className="flex flex-wrap gap-2 items-end">
+                      <div className="flex-1 min-w-[120px]">
+                        <label className="block text-xs text-gray-600 mb-0.5">Unit code</label>
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                          value={row.unitCode}
+                          onChange={(e) => {
+                            const next = [...extraUnits];
+                            next[idx] = { ...next[idx], unitCode: e.target.value };
+                            setExtraUnits(next);
+                          }}
+                          placeholder="e.g. V12_F1"
+                        />
+                      </div>
+                      <div className="flex-[2] min-w-[160px]">
+                        <label className="block text-xs text-gray-600 mb-0.5">Label</label>
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                          value={row.label}
+                          onChange={(e) => {
+                            const next = [...extraUnits];
+                            next[idx] = { ...next[idx], label: e.target.value };
+                            setExtraUnits(next);
+                          }}
+                          placeholder="e.g. First Floor"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="text-sm text-red-600 hover:underline px-2"
+                        onClick={() => setExtraUnits(extraUnits.filter((_, i) => i !== idx))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="text-sm text-blue-600 hover:underline"
+                  onClick={() => setExtraUnits([...extraUnits, { unitCode: "", label: "" }])}
+                >
+                  + Add unit
+                </button>
+              </div>
+
               <div className="flex gap-3">
                 <button
                   type="submit"
                   disabled={submitting}
                   className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
                 >
-                  {submitting ? "Saving..." : editingVilla ? "Update Villa" : "Create Villa"}
+                  {submitting ? "Saving..." : editingVilla ? "Update property" : "Create property"}
                 </button>
                 <button
                   type="button"
@@ -578,6 +665,7 @@ export default function VillasPage() {
                   <th>Area (sq.ft.)</th>
                   <th>Owner</th>
                   <th>Maintenance</th>
+                  <th>Units</th>
                   <th>Residents</th>
                   <th>Actions</th>
                 </tr>
@@ -585,7 +673,7 @@ export default function VillasPage() {
               <tbody>
                 {villas.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-gray-500">
+                    <td colSpan={10} className="py-8 text-center text-gray-500">
                       No villas found. Click "Add Villa" to create your first villa.
                     </td>
                   </tr>
@@ -614,6 +702,7 @@ export default function VillasPage() {
                         </div>
                       </td>
                       <td className="font-medium text-green-600">₹{villa.monthlyMaintenance}</td>
+                      <td>{villa.units?.length ?? "—"}</td>
                       <td>
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
                           {villa._count.users} active

@@ -28,13 +28,31 @@ type CurrentMonthMaintenance = {
   collectionRate: number;
 };
 
+type BillingResidentsTotals = {
+  totalExpected: number;
+  totalCollected: number;
+  totalShortfall: number;
+  totalAdvanceCredit: number;
+};
+
 type SocietyFundSnapshot = {
+  /** Cash on hand: maintenance cash + additional inflows − expenses. */
   currentFundBalance: number;
+  /** Total inflow ever (maintenance + additional, both lifetime). */
   allTimeCollected: number;
+  /** Total expense outflow ever. */
   allTimeSpent: number;
   additionalMergedInflowAllTime?: number;
   additionalMergedInflowMonth?: number;
+  /** Cash flow this month (cash received + additional − expenses). */
   monthNet: number;
+  /**
+   * Surplus residents have parked as advance credit toward future cycles.
+   * Already counted inside `currentFundBalance` (it really is cash in the
+   * bank); shown separately so admins can see "₹X is mine to spend, ₹Y
+   * already belongs to a future cycle".
+   */
+  totalAdvanceCredit?: number;
 };
 
 type FundTrendPoint = {
@@ -42,6 +60,14 @@ type FundTrendPoint = {
   label: string;
   net: number;
 };
+
+// Narrow API response shapes for the count-card endpoints. Only the
+// length-bearing arrays are typed; the rest of each row is irrelevant for
+// this page so it stays as a record. Backend list endpoints return
+// `{ <domainKey>: [...], total?, limit?, ... }` after the pagination
+// rollout — see [src/lib/pagination.ts] in the backend.
+type VillasListResponse = { villas: Array<{ id: string }> };
+type UsersListResponse = { users: Array<{ id: string }> };
 
 function buildFundSparklinePath(points: FundTrendPoint[]) {
   if (points.length === 0) return "";
@@ -59,8 +85,26 @@ function buildFundSparklinePath(points: FundTrendPoint[]) {
     .join(" ");
 }
 
-export default function DashboardPage() {
+function ClockDisplay() {
   const [clock, setClock] = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="text-right shrink-0">
+      <div className="text-3xl md:text-4xl font-mono tabular-nums">{clock.toLocaleTimeString()}</div>
+      <div className="text-blue-100 mt-2 text-sm">
+        {clock.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -68,6 +112,7 @@ export default function DashboardPage() {
   const [residentCount, setResidentCount] = useState(0);
   const [guardCount, setGuardCount] = useState(0);
   const [maint, setMaint] = useState<CurrentMonthMaintenance | null>(null);
+  const [billingMaint, setBillingMaint] = useState<CurrentMonthMaintenance | null>(null);
   const [fund, setFund] = useState<SocietyFundSnapshot | null>(null);
   const [fundTrend, setFundTrend] = useState<FundTrendPoint[]>([]);
 
@@ -125,9 +170,9 @@ export default function DashboardPage() {
       ] = await Promise.all([
         api.get("/maintenance/dashboard").catch(() => null),
         api.get("/maintenance-management/financial-dashboard").catch(() => null),
-        safeGet(api.get("/villas")),
-        safeGet(api.get("/users", { params: { role: "RESIDENT", isActive: "true" } })),
-        safeGet(api.get("/users", { params: { role: "GUARD", isActive: "true" } })),
+        safeGet(api.get<VillasListResponse>("/villas")),
+        safeGet(api.get<UsersListResponse>("/users", { params: { role: "RESIDENT", isActive: "true" } })),
+        safeGet(api.get<UsersListResponse>("/users", { params: { role: "GUARD", isActive: "true" } })),
         api.get("/visitors").catch(() => null),
         api.get("/parcels").catch(() => null),
         api.get("/complaints").catch(() => null),
@@ -173,18 +218,20 @@ export default function DashboardPage() {
 
       const countErrors: string[] = [];
 
-      if (villasRes.ok && Array.isArray((villasRes.data as any)?.data?.villas)) {
-        setVillaCount((villasRes.data as any).data.villas.length);
+      // `safeGet(api.get<T>(...))` returns `{ ok, data: AxiosResponse<T> }`,
+      // so the typed body lives at `.data.data.<key>`.
+      if (villasRes.ok && Array.isArray(villasRes.data.data?.villas)) {
+        setVillaCount(villasRes.data.data.villas.length);
       } else {
         countErrors.push("villas");
       }
-      if (residentsRes.ok && Array.isArray((residentsRes.data as any)?.data?.users)) {
-        setResidentCount((residentsRes.data as any).data.users.length);
+      if (residentsRes.ok && Array.isArray(residentsRes.data.data?.users)) {
+        setResidentCount(residentsRes.data.data.users.length);
       } else {
         countErrors.push("residents");
       }
-      if (guardsRes.ok && Array.isArray((guardsRes.data as any)?.data?.users)) {
-        setGuardCount((guardsRes.data as any).data.users.length);
+      if (guardsRes.ok && Array.isArray(guardsRes.data.data?.users)) {
+        setGuardCount(guardsRes.data.data.users.length);
       } else {
         countErrors.push("guards");
       }
@@ -235,13 +282,36 @@ export default function DashboardPage() {
         pendingUsersCount: number;
       }> | undefined;
       if (Array.isArray(cycles) && cycles[0]) {
+        const cycleKey = cycles[0].cycleKey;
+        const residentPayRes = await api
+          .get("/v1/admin/residents/payments", { params: { cycleMonth: cycleKey } })
+          .catch(() => null);
+        const t = residentPayRes?.data?.totals as BillingResidentsTotals | undefined;
+        if (t) {
+          const totalExpected = Number(t.totalExpected ?? 0);
+          const totalCollected = Number(t.totalCollected ?? 0);
+          const totalPending = Math.max(0, totalExpected - totalCollected);
+          const collectionRate =
+            totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0;
+          setBillingMaint({
+            totalExpected,
+            totalCollected,
+            totalPending,
+            collectionRate,
+          });
+        } else {
+          setBillingMaint(null);
+        }
         setBillingSnippet({
-          cycleKey: cycles[0].cycleKey,
+          cycleKey,
           status: cycles[0].status,
           paidUsersCount: cycles[0].paidUsersCount,
           pendingUsersCount: cycles[0].pendingUsersCount,
         });
-      } else setBillingSnippet(null);
+      } else {
+        setBillingSnippet(null);
+        setBillingMaint(null);
+      }
 
       const activities: typeof timeline = [];
       const vin = visitors.slice(0, 40);
@@ -294,6 +364,7 @@ export default function DashboardPage() {
 
       activities.sort((a, b) => b.at - a.at);
       setTimeline(activities.slice(0, 10));
+      setLastSyncedAt(new Date());
     } catch {
       setLoadError("Some dashboard figures could not be loaded.");
     } finally {
@@ -305,20 +376,23 @@ export default function DashboardPage() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    const t = setInterval(() => setClock(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
   const stats = useMemo(() => {
-    const pendingRupee = maint?.totalPending ?? 0;
+    const maintenanceView = billingMaint ?? maint;
+    const pendingRupee = maintenanceView?.totalPending ?? 0;
     const fundBalance = fund?.currentFundBalance ?? 0;
-    const fundSub =
-      fund == null
-        ? "Fund snapshot unavailable"
-        : `In ${fmtInr(fund.allTimeCollected)} · Out ${fmtInr(fund.allTimeSpent)} · Added ${fmtInr(
-            fund.additionalMergedInflowAllTime ?? 0
-          )}`;
+    const fundSub = (() => {
+      if (fund == null) return "Fund snapshot unavailable";
+      const parts: string[] = [
+        `In ${fmtInr(fund.allTimeCollected)}`,
+        `Out ${fmtInr(fund.allTimeSpent)}`,
+      ];
+      // Surface the advance-credit pool when residents have prepaid; it's
+      // already inside the balance number above, but it's useful to know
+      // the slice that's already earmarked for future cycles.
+      const credit = fund.totalAdvanceCredit ?? 0;
+      if (credit > 0.5) parts.push(`Credit pool ${fmtInr(credit)}`);
+      return parts.join(" · ");
+    })();
     return [
       {
         icon: "🏘️",
@@ -331,7 +405,7 @@ export default function DashboardPage() {
         icon: "💰",
         label: "Maint. pending (month)",
         value: fmtInr(pendingRupee),
-        sub: `${maint?.collectionRate ?? 0}% collected`,
+        sub: `${maintenanceView?.collectionRate ?? 0}% collected`,
         accent: STAT_ACCENTS.yellow,
       },
       {
@@ -389,6 +463,7 @@ export default function DashboardPage() {
     villaCount,
     residentCount,
     maint,
+    billingMaint,
     fund,
     guardCount,
     gates,
@@ -443,13 +518,11 @@ export default function DashboardPage() {
               >
                 {loading ? "Loading…" : "Reload dashboard"}
               </button>
+              <p className="mt-2 text-xs text-blue-100/90">
+                Last synced: {lastSyncedAt ? lastSyncedAt.toLocaleString("en-IN") : "Not synced yet"}
+              </p>
             </div>
-            <div className="text-right shrink-0">
-              <div className="text-3xl md:text-4xl font-mono tabular-nums">{clock.toLocaleTimeString()}</div>
-              <div className="text-blue-100 mt-2 text-sm">
-                {clock.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-              </div>
-            </div>
+            <ClockDisplay />
           </div>
         </div>
 
@@ -578,34 +651,51 @@ export default function DashboardPage() {
               <div className="card-body space-y-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Expected</span>
-                  <span className="font-semibold text-gray-900">{fmtInr(maint?.totalExpected ?? 0)}</span>
+                  <span className="font-semibold text-gray-900">
+                    {fmtInr((billingMaint ?? maint)?.totalExpected ?? 0)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Collected</span>
-                  <span className="font-semibold text-emerald-700">{fmtInr(maint?.totalCollected ?? 0)}</span>
+                  <span className="font-semibold text-emerald-700">
+                    {fmtInr((billingMaint ?? maint)?.totalCollected ?? 0)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Pending</span>
-                  <span className="font-semibold text-amber-700">{fmtInr(maint?.totalPending ?? 0)}</span>
+                  <span className="font-semibold text-amber-700">
+                    {fmtInr((billingMaint ?? maint)?.totalPending ?? 0)}
+                  </span>
                 </div>
                 <div>
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Collection rate</span>
-                    <span>{maint?.collectionRate ?? 0}%</span>
+                    <span>{(billingMaint ?? maint)?.collectionRate ?? 0}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-600 transition-[width]"
-                      style={{ width: `${Math.min(100, Math.max(0, maint?.collectionRate ?? 0))}%` }}
+                      style={{
+                        width: `${Math.min(100, Math.max(0, (billingMaint ?? maint)?.collectionRate ?? 0))}%`,
+                      }}
                     />
                   </div>
                 </div>
 
                 {billingSnippet ? (
                   <div className="pt-2 border-t border-gray-100">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-semibold text-gray-800">Billing cycle {billingSnippet.cycleKey}</span>
-                      <span className="text-xs uppercase font-medium text-blue-700">{billingSnippet.status ?? ""}</span>
+                    <div className="flex justify-between items-center mb-2 gap-2">
+                      <div className="min-w-0">
+                        <span className="text-sm font-semibold text-gray-800 block truncate">
+                          Billing cycle {billingSnippet.cycleKey}
+                        </span>
+                        <span className="text-[11px] text-gray-500">
+                          Source: Billing v1 cycle ledger
+                        </span>
+                      </div>
+                      <span className="text-xs uppercase font-medium text-blue-700 whitespace-nowrap">
+                        {billingSnippet.status ?? ""}
+                      </span>
                     </div>
                     <p className="text-xs text-gray-600">
                       Paid {billingSnippet.paidUsersCount ?? 0} · Pending {billingSnippet.pendingUsersCount ?? 0}{" "}

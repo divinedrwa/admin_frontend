@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
+import { parseApiError } from "@/utils/errorHandler";
 
 type Resident = {
   id: string;
@@ -60,8 +61,8 @@ export default function ResidentManagementPage() {
       setResidents(response.data.residents);
       setFilteredResidents(response.data.residents);
       setStatistics(response.data.statistics);
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Failed to load residents", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to load residents").message, "error");
     } finally {
       setLoading(false);
     }
@@ -124,8 +125,8 @@ export default function ResidentManagementPage() {
       setShowMoveOutModal(false);
       setMoveOutReason("");
       fetchResidents();
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Failed to process move-out", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to process move-out").message, "error");
     } finally {
       setLoading(false);
     }
@@ -139,8 +140,8 @@ export default function ResidentManagementPage() {
       await api.patch(`/resident-management/${residentId}/reactivate`);
       showToast("Resident reactivated successfully", "success");
       fetchResidents();
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Failed to reactivate resident", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to reactivate resident").message, "error");
     } finally {
       setLoading(false);
     }

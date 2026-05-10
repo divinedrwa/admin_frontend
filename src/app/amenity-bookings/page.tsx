@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type AmenityBooking = {
   id: string;
@@ -172,8 +173,8 @@ export default function AmenityBookingsPage() {
       await api.delete(`/amenity-bookings/${bookingId}`);
       showToast("Booking deleted successfully", "success");
       loadBookings();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to delete booking";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to delete booking").message;
       showToast(message, "error");
     } finally {
       setDeletingBookingId(null);
@@ -218,8 +219,8 @@ export default function AmenityBookingsPage() {
 
       handleCloseForm();
       loadBookings();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? (editingBooking ? "Failed to update booking" : "Failed to book amenity");
+    } catch (error: unknown) {
+      const message = parseApiError(error, editingBooking ? "Failed to update booking" : "Failed to book amenity").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

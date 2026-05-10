@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type Document = {
   id: string;
@@ -104,8 +105,8 @@ export default function DocumentsPage() {
       await api.delete(`/documents/${documentId}`);
       showToast("Document deleted successfully", "success");
       loadDocuments();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to delete document";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to delete document").message;
       showToast(message, "error");
     } finally {
       setDeletingDocumentId(null);
@@ -142,8 +143,8 @@ export default function DocumentsPage() {
 
       handleCloseForm();
       loadDocuments();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? (editingDocument ? "Failed to update document" : "Failed to upload document");
+    } catch (error: unknown) {
+      const message = parseApiError(error, editingDocument ? "Failed to update document" : "Failed to upload document").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

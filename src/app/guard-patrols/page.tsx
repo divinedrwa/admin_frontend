@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type GuardPatrol = {
   id: string;
@@ -121,8 +122,8 @@ export default function GuardPatrolsPage() {
       await api.delete(`/guard-patrols/${patrolId}`);
       showToast("Patrol deleted successfully", "success");
       loadPatrols();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to delete patrol";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to delete patrol").message;
       showToast(message, "error");
     } finally {
       setDeletingPatrolId(null);
@@ -164,8 +165,8 @@ export default function GuardPatrolsPage() {
 
       handleCloseForm();
       loadPatrols();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? (editingPatrol ? "Failed to update patrol" : "Failed to schedule patrol");
+    } catch (error: unknown) {
+      const message = parseApiError(error, editingPatrol ? "Failed to update patrol" : "Failed to schedule patrol").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

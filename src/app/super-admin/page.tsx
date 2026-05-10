@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { apiSuper, SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
 import { showToast } from "@/components/Toast";
-import { setPlatformViewSession } from "@/lib/platformViewSession";
+import { enterPlatformView } from "@/lib/platformViewSession";
 import {
   getStoredPasswordForAdmin,
   rememberSocietyAdminPassword,
@@ -23,6 +23,9 @@ type SocietyRow = {
   name: string;
   address: string | null;
   status: string;
+  /** ISO timestamp when soft-archived; null when active. */
+  archivedAt: string | null;
+  archivedBy: string | null;
   createdAt: string;
   admins?: SocietyAdminSummary[];
 };
@@ -69,6 +72,9 @@ export default function SuperAdminConsolePage() {
 
   const [deleteRow, setDeleteRow] = useState<SocietyRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  /** Typed-name confirmation field for hard-delete; matches case-insensitively. */
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [archivingId, setArchivingId] = useState<string | null>(null);
   /** Bumps when sessionStorage credentials change so admin password cells re-render. */
   const [credentialRenderTick, setCredentialRenderTick] = useState(0);
 
@@ -194,8 +200,7 @@ export default function SuperAdminConsolePage() {
         showToast("No tenant token returned", "error");
         return;
       }
-      localStorage.setItem("token", data.token);
-      setPlatformViewSession(s.id, s.name);
+      enterPlatformView(data.token, s.id, s.name);
       setDetailSociety(null);
       setDetailLoading(false);
       router.push("/dashboard");
@@ -239,13 +244,23 @@ export default function SuperAdminConsolePage() {
     }
   }
 
+  /**
+   * Hard delete with typed-name confirmation. The backend re-validates the
+   * match — frontend disabling is just UX, the server is the source of
+   * truth.
+   */
   async function onConfirmDelete() {
     if (!deleteRow) return;
+    if (deleteConfirmText.trim().toLowerCase() !== deleteRow.name.toLowerCase()) return;
     setDeleting(true);
     try {
-      await apiSuper.delete(`/super/societies/${encodeURIComponent(deleteRow.id)}`);
-      showToast("Society deleted", "success");
+      await apiSuper.delete(
+        `/super/societies/${encodeURIComponent(deleteRow.id)}` +
+          `?confirmHardDelete=${encodeURIComponent(deleteConfirmText.trim())}`,
+      );
+      showToast("Society permanently deleted", "success");
       setDeleteRow(null);
+      setDeleteConfirmText("");
       await loadSocieties();
     } catch (error: unknown) {
       const message =
@@ -254,6 +269,44 @@ export default function SuperAdminConsolePage() {
       showToast(message, "error");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  /**
+   * Soft archive: reversible default action. Forces status=INACTIVE on the
+   * server so existing tenant logins are blocked immediately.
+   */
+  async function onArchive(s: SocietyRow) {
+    setArchivingId(s.id);
+    try {
+      await apiSuper.delete(`/super/societies/${encodeURIComponent(s.id)}`);
+      showToast(`Archived "${s.name}"`, "success");
+      await loadSocieties();
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not archive society";
+      showToast(message, "error");
+    } finally {
+      setArchivingId(null);
+    }
+  }
+
+  /** Reverse a soft-archive. Status stays INACTIVE — operator must flip
+   *  it to ACTIVE explicitly via Edit before tenants can log in. */
+  async function onRestore(s: SocietyRow) {
+    setArchivingId(s.id);
+    try {
+      await apiSuper.post(`/super/societies/${encodeURIComponent(s.id)}/restore`);
+      showToast(`Restored "${s.name}" — set to ACTIVE in Edit to re-enable logins`, "success");
+      await loadSocieties();
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not restore society";
+      showToast(message, "error");
+    } finally {
+      setArchivingId(null);
     }
   }
 
@@ -330,15 +383,25 @@ export default function SuperAdminConsolePage() {
                         ) : null}
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={
-                            s.status === "ACTIVE"
-                              ? "text-emerald-400 text-xs font-semibold"
-                              : "text-amber-400 text-xs font-semibold"
-                          }
-                        >
-                          {s.status}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className={
+                              s.status === "ACTIVE"
+                                ? "text-emerald-400 text-xs font-semibold"
+                                : "text-amber-400 text-xs font-semibold"
+                            }
+                          >
+                            {s.status}
+                          </span>
+                          {s.archivedAt ? (
+                            <span
+                              className="text-rose-300 text-[10px] uppercase tracking-wider font-semibold"
+                              title={`Archived ${new Date(s.archivedAt).toLocaleString()}`}
+                            >
+                              Archived
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-slate-400 break-all max-w-[200px]">
                         {s.id}
@@ -397,12 +460,35 @@ export default function SuperAdminConsolePage() {
                         >
                           Edit
                         </button>
+                        {s.archivedAt ? (
+                          <button
+                            type="button"
+                            disabled={archivingId === s.id}
+                            className="text-xs px-2 py-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 disabled:opacity-50"
+                            onClick={() => void onRestore(s)}
+                          >
+                            {archivingId === s.id ? "Restoring…" : "Restore"}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={archivingId === s.id}
+                            className="text-xs px-2 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/40 text-amber-200 disabled:opacity-50"
+                            onClick={() => void onArchive(s)}
+                          >
+                            {archivingId === s.id ? "Archiving…" : "Archive"}
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="text-xs px-2 py-1 rounded-md bg-red-500/20 hover:bg-red-500/40 text-red-200"
-                          onClick={() => setDeleteRow(s)}
+                          onClick={() => {
+                            setDeleteRow(s);
+                            setDeleteConfirmText("");
+                          }}
+                          title="Permanently delete (requires typed name)"
                         >
-                          Delete
+                          Delete…
                         </button>
                       </td>
                     </tr>
@@ -669,28 +755,53 @@ export default function SuperAdminConsolePage() {
         </div>
       )}
 
-      {/* Delete society */}
+      {/* Delete society — typed-name confirmation. The "safe" action is
+          Archive (per-row button, reversible). This modal is only the
+          permanent-delete path. */}
       {deleteRow && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-900 border border-red-500/30 rounded-2xl max-w-md w-full p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-white mb-2">Delete society?</h3>
-            <p className="text-sm text-slate-300 mb-4">
-              This removes <strong className="text-white">{deleteRow.name}</strong> and{" "}
-              <strong className="text-amber-200">all related data</strong> (users, villas, billing, visitors,
-              etc.). This cannot be undone.
+            <h3 className="text-lg font-semibold text-white mb-2">Delete permanently?</h3>
+            <p className="text-sm text-slate-300 mb-3">
+              This drops <strong className="text-white">{deleteRow.name}</strong> and{" "}
+              <strong className="text-amber-200">cascades</strong> across users, villas, billing, visitors,
+              parcels, and every other tenant-scoped table. This is irreversible — there is no undo, no
+              backup restore from this UI.
             </p>
-            <div className="flex gap-3 justify-end">
+            <p className="text-sm text-slate-300 mb-2">
+              {deleteRow.archivedAt
+                ? "The society is currently archived. If this is the wrong row, click Cancel and Restore from the list."
+                : "If you only need to take this society offline, Cancel and click Archive instead — that's reversible."}
+            </p>
+            <label className="block text-xs text-slate-400 mt-4 mb-1">
+              Type <span className="font-mono text-white">{deleteRow.name}</span> to confirm:
+            </label>
+            <input
+              type="text"
+              autoFocus
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-sm font-mono"
+              placeholder={deleteRow.name}
+            />
+            <div className="flex gap-3 justify-end mt-5">
               <button
                 type="button"
                 className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm"
-                onClick={() => setDeleteRow(null)}
+                onClick={() => {
+                  setDeleteRow(null);
+                  setDeleteConfirmText("");
+                }}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                disabled={deleting}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm disabled:opacity-50"
+                disabled={
+                  deleting ||
+                  deleteConfirmText.trim().toLowerCase() !== deleteRow.name.toLowerCase()
+                }
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 onClick={() => void onConfirmDelete()}
               >
                 {deleting ? "Deleting…" : "Delete permanently"}

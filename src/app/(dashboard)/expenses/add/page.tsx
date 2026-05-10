@@ -6,6 +6,7 @@ import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { parseApiError } from "@/utils/errorHandler";
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -73,9 +74,9 @@ export default function AddExpensePage() {
       if (data.length > 0) {
         setFormData(prev => ({ ...prev, categoryId: data[0].id }));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching categories:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to fetch categories', 'error');
+      showToast(parseApiError(error, "Failed to fetch categories").message, 'error');
     }
   };
 
@@ -120,9 +121,9 @@ export default function AddExpensePage() {
       });
       showToast('Expense created successfully', 'success');
       router.push('/expenses');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating expense:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to create expense', 'error');
+      showToast(parseApiError(error, "Failed to create expense").message, 'error');
     } finally {
       setLoading(false);
     }

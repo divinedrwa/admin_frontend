@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type SOSAlert = {
   id: string;
@@ -108,8 +109,8 @@ export default function SOSAlertsPage() {
       showToast("SOS Alert created successfully", "success");
       handleCloseForm();
       loadAlerts();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to create SOS alert";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to create SOS alert").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

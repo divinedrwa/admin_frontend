@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, DollarSign } from 'lucide-react';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { parseApiError } from "@/utils/errorHandler";
 
 interface ExpenseCategory {
   id: string;
@@ -60,9 +61,9 @@ export default function ExpenseCategoriesPage() {
     try {
       const response = await api.get('/expenses/categories');
       setCategories(response.data ?? []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching categories:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to fetch expense categories', 'error');
+      showToast(parseApiError(error, "Failed to fetch expense categories").message, 'error');
     } finally {
       setLoading(false);
     }
@@ -80,9 +81,9 @@ export default function ExpenseCategoriesPage() {
       await fetchCategories();
       closeModal();
       showToast(editingCategory ? 'Category updated' : 'Category created', 'success');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving category:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to save category', 'error');
+      showToast(parseApiError(error, "Failed to save category").message, 'error');
     }
   };
 
@@ -93,10 +94,15 @@ export default function ExpenseCategoriesPage() {
       await api.delete(`/expenses/categories/${id}`);
       await fetchCategories();
       showToast('Category deleted', 'success');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting category:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to delete category', 'error');
+      showToast(parseApiError(error, "Failed to delete category").message, 'error');
     }
+  };
+
+  const normalizeDefaultAmount = (v: unknown): number => {
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : 0;
   };
 
   const openModal = (category?: ExpenseCategory) => {
@@ -109,7 +115,7 @@ export default function ExpenseCategoriesPage() {
         icon: category.icon || '',
         color: category.color || '#3B82F6',
         isRecurring: category.isRecurring,
-        defaultAmount: category.defaultAmount || 0
+        defaultAmount: normalizeDefaultAmount(category.defaultAmount),
       });
     } else {
       setEditingCategory(null);
@@ -321,8 +327,23 @@ export default function ExpenseCategoriesPage() {
                     <span className="absolute left-3 top-2 text-gray-500">₹</span>
                     <input
                       type="number"
-                      value={formData.defaultAmount}
-                      onChange={(e) => setFormData({ ...formData, defaultAmount: parseFloat(e.target.value) })}
+                      value={
+                        Number.isFinite(formData.defaultAmount)
+                          ? String(formData.defaultAmount)
+                          : ''
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          setFormData({ ...formData, defaultAmount: 0 });
+                          return;
+                        }
+                        const n = parseFloat(raw);
+                        setFormData({
+                          ...formData,
+                          defaultAmount: Number.isFinite(n) ? n : 0,
+                        });
+                      }}
                       className="w-full p-2 pl-8 border rounded-lg"
                       min="0"
                       step="0.01"

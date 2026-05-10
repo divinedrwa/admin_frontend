@@ -36,12 +36,17 @@ export function showToast(message: string, type: ToastType = "info") {
 export function Toast() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  const dismiss = (id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
   useEffect(() => {
     const listener = (toast: ToastMessage) => {
       setToasts((prev) => [...prev, toast]);
+      const duration = toast.type === "error" ? 8000 : 4000;
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-      }, 4000);
+      }, duration);
     };
     listeners.push(listener);
     return () => {
@@ -66,10 +71,20 @@ export function Toast() {
           }`}
         >
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">
+            <span className="text-2xl shrink-0">
               {toast.type === "success" ? "✅" : toast.type === "error" ? "⚠️" : "ℹ️"}
             </span>
-            <span className="font-medium">{toast.message}</span>
+            <span className="font-medium flex-1">{toast.message}</span>
+            <button
+              type="button"
+              onClick={() => dismiss(toast.id)}
+              className="shrink-0 ml-2 p-1 rounded-lg hover:bg-white/20 transition-colors text-white/80 hover:text-white"
+              aria-label="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       ))}

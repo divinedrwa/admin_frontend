@@ -5,6 +5,7 @@ import { TrendingUp, Download, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { parseApiError } from "@/utils/errorHandler";
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -48,9 +49,9 @@ export default function MonthlySummaryPage() {
       const trendsRes = await api.get('/expenses/analytics/trends');
       const trendsData = trendsRes.data ?? [];
       setTrends(trendsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching data:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to fetch expense summary', 'error');
+      showToast(parseApiError(error, "Failed to fetch expense summary").message, 'error');
     } finally {
       setLoading(false);
     }

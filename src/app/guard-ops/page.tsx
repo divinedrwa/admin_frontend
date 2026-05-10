@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type WaterStatus = {
   gateId: string;
@@ -67,8 +68,8 @@ export default function GuardOperationsPage() {
       });
       showToast(`Water supply turned ${turnOn ? "ON" : "OFF"}`, "success");
       loadData();
-    } catch (error: any) {
-      showToast(error.response?.data?.message ?? "Failed to toggle water supply", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to toggle water supply").message, "error");
     } finally {
       setActionLoading(false);
     }
@@ -94,8 +95,8 @@ export default function GuardOperationsPage() {
         showToast("Garbage collector entry logged", "success");
       }
       loadData();
-    } catch (error: any) {
-      showToast(error.response?.data?.message ?? "Failed to update garbage event", "error");
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to update garbage event").message, "error");
     } finally {
       setActionLoading(false);
     }

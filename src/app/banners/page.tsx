@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type Banner = {
   id: string;
@@ -102,8 +103,8 @@ export default function BannersPage() {
       await api.delete(`/banners/${bannerId}`);
       showToast("Banner deleted successfully", "success");
       loadBanners();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to delete banner";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to delete banner").message;
       showToast(message, "error");
     } finally {
       setDeletingBannerId(null);
@@ -155,8 +156,8 @@ export default function BannersPage() {
 
       handleCloseForm();
       loadBanners();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? (editingBanner ? "Failed to update banner" : "Failed to create banner");
+    } catch (error: unknown) {
+      const message = parseApiError(error, editingBanner ? "Failed to update banner" : "Failed to create banner").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

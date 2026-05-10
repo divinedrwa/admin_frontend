@@ -5,6 +5,8 @@ import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
+type MaintenanceBillingRole = "PRIMARY" | "EXCLUDED";
+
 type User = {
   id: string;
   username: string;
@@ -13,10 +15,18 @@ type User = {
   phone: string | null;
   role: "ADMIN" | "RESIDENT" | "GUARD";
   residentType?: "OWNER" | "TENANT" | "FAMILY_MEMBER" | null;
+  maintenanceBillingRole?: MaintenanceBillingRole | null;
   villaId: string | null;
+  unitId?: string | null;
+  linkedUnitId?: string | null;
   villa?: {
     villaNumber: string;
     block: string;
+  };
+  unit?: {
+    id: string;
+    unitCode: string;
+    label: string;
   };
   moveInDate: string | null;
   isActive: boolean;
@@ -27,6 +37,7 @@ type Villa = {
   villaNumber: string;
   block: string;
   ownerName: string;
+  units?: Array<{ id: string; unitCode: string; label: string; isDefault: boolean }>;
 };
 
 type UserForm = {
@@ -37,10 +48,17 @@ type UserForm = {
   password: string;
   role: "ADMIN" | "RESIDENT" | "GUARD";
   residentType: "OWNER" | "TENANT" | "FAMILY_MEMBER";
+  maintenanceBillingRole: MaintenanceBillingRole;
   villaId: string;
+  unitId: string;
   moveInDate: string;
   isActive: boolean;
 };
+
+function firstUnitIdForVilla(villas: Villa[], villaId: string): string {
+  const list = villas.find((v) => v.id === villaId)?.units ?? [];
+  return list[0]?.id ?? "";
+}
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -55,7 +73,9 @@ export default function UsersPage() {
     password: "",
     role: "RESIDENT",
     residentType: "OWNER",
+    maintenanceBillingRole: "PRIMARY",
     villaId: "",
+    unitId: "",
     moveInDate: new Date().toISOString().split('T')[0],
     isActive: true,
   });
@@ -108,7 +128,9 @@ export default function UsersPage() {
       password: "",
       role: "RESIDENT",
       residentType: "OWNER",
+      maintenanceBillingRole: "PRIMARY",
       villaId: "",
+      unitId: "",
       moveInDate: new Date().toISOString().split('T')[0],
       isActive: true,
     });
@@ -125,7 +147,12 @@ export default function UsersPage() {
       password: "",
       role: user.role,
       residentType: user.residentType ?? "OWNER",
+      maintenanceBillingRole: user.maintenanceBillingRole ?? "PRIMARY",
       villaId: user.villaId || "",
+      unitId:
+        user.unitId ??
+        user.linkedUnitId ??
+        (user.villaId ? firstUnitIdForVilla(villas, user.villaId) : ""),
       moveInDate: user.moveInDate
         ? user.moveInDate.split("T")[0]
         : new Date().toISOString().split("T")[0],
@@ -145,7 +172,9 @@ export default function UsersPage() {
       password: "",
       role: "RESIDENT",
       residentType: "OWNER",
+      maintenanceBillingRole: "PRIMARY",
       villaId: "",
+      unitId: "",
       moveInDate: new Date().toISOString().split('T')[0],
       isActive: true,
     });
@@ -155,8 +184,13 @@ export default function UsersPage() {
     e.preventDefault();
 
     if (formData.role === "RESIDENT" && !formData.villaId) {
-      showToast("Please select a villa for resident", "error");
+      showToast("Please select a property (villa) for resident", "error");
       return;
+    }
+
+    let unitIdForPayload = formData.unitId.trim();
+    if (formData.role === "RESIDENT" && formData.villaId && !unitIdForPayload) {
+      unitIdForPayload = firstUnitIdForVilla(villas, formData.villaId);
     }
 
     if (!editingUser && !formData.password) {
@@ -179,7 +213,9 @@ export default function UsersPage() {
         if (formData.role === "RESIDENT") {
           payload.residentType = formData.residentType;
           payload.villaId = formData.villaId || null;
+          if (unitIdForPayload) payload.unitId = unitIdForPayload;
           payload.moveInDate = new Date(formData.moveInDate).toISOString();
+          payload.maintenanceBillingRole = formData.maintenanceBillingRole;
         }
         payload.isActive = formData.isActive;
         await api.patch(`/users/${editingUser.id}`, payload);
@@ -201,7 +237,9 @@ export default function UsersPage() {
         if (formData.role === "RESIDENT") {
           payload.residentType = formData.residentType;
           payload.villaId = formData.villaId;
+          if (unitIdForPayload) payload.unitId = unitIdForPayload;
           payload.moveInDate = new Date(formData.moveInDate).toISOString();
+          payload.maintenanceBillingRole = formData.maintenanceBillingRole;
         }
 
         await api.post("/users", payload);
@@ -708,7 +746,11 @@ export default function UsersPage() {
                       <select
                         required={formData.role === "RESIDENT"}
                         value={formData.villaId}
-                        onChange={(e) => setFormData({ ...formData, villaId: e.target.value })}
+                        onChange={(e) => {
+                          const vid = e.target.value;
+                          const uid = firstUnitIdForVilla(villas, vid);
+                          setFormData({ ...formData, villaId: vid, unitId: uid });
+                        }}
                         className="w-full border border-gray-300 rounded px-3 py-2"
                       >
                         <option value="">Select a villa</option>
@@ -724,6 +766,29 @@ export default function UsersPage() {
                         </p>
                       )}
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Unit / floor *
+                      </label>
+                      <select
+                        required={formData.role === "RESIDENT" && Boolean(formData.villaId)}
+                        disabled={!formData.villaId}
+                        value={formData.unitId}
+                        onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
+                        className="w-full border border-gray-300 rounded px-3 py-2 disabled:bg-gray-100"
+                      >
+                        <option value="">
+                          {formData.villaId ? "Select unit" : "Select a property first"}
+                        </option>
+                        {(villas.find((v) => v.id === formData.villaId)?.units ?? []).map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.label} ({u.unitCode})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Move-in Date *
@@ -735,6 +800,31 @@ export default function UsersPage() {
                         onChange={(e) => setFormData({ ...formData, moveInDate: e.target.value })}
                         className="w-full border border-gray-300 rounded px-3 py-2"
                       />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Maintenance billing
+                      </label>
+                      <select
+                        value={formData.maintenanceBillingRole}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            maintenanceBillingRole: e.target.value as MaintenanceBillingRole,
+                          })
+                        }
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                      >
+                        <option value="PRIMARY">Primary — this account pays villa maintenance / billing</option>
+                        <option value="EXCLUDED">
+                          Excluded — another resident on this villa is the billing contact (tenant / family, etc.)
+                        </option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Only one primary payer per villa. Choose &quot;Excluded&quot; only when someone else on the same
+                        villa is already active and should receive dues.
+                      </p>
                     </div>
                   </>
                 )}
@@ -786,7 +876,9 @@ export default function UsersPage() {
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Role</th>
-                  <th>Villa</th>
+                  <th>Property</th>
+                  <th>Unit</th>
+                  <th>Maint. billing</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -794,7 +886,7 @@ export default function UsersPage() {
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-gray-500">
+                    <td colSpan={11} className="py-8 text-center text-gray-500">
                       No users found. Click "Add User" to create your first user.
                     </td>
                   </tr>
@@ -831,6 +923,18 @@ export default function UsersPage() {
                       </td>
                       <td>
                         {user.villa ? `${user.villa.villaNumber}` : "-"}
+                      </td>
+                      <td className="text-gray-700 text-xs">
+                        {user.role === "RESIDENT"
+                          ? user.unit?.label ?? (user.unitId || user.linkedUnitId ? "—" : "—")
+                          : "—"}
+                      </td>
+                      <td className="text-gray-700">
+                        {user.role === "RESIDENT"
+                          ? user.maintenanceBillingRole === "EXCLUDED"
+                            ? "Excluded"
+                            : "Primary"
+                          : "—"}
                       </td>
                       <td>
                         <span

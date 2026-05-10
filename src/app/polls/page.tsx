@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type Poll = {
   id: string;
@@ -105,8 +106,8 @@ export default function PollsPage() {
       await api.delete(`/polls/${pollId}`);
       showToast("Poll deleted successfully", "success");
       loadPolls();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? "Failed to delete poll";
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Failed to delete poll").message;
       showToast(message, "error");
     } finally {
       setDeletingPollId(null);
@@ -165,8 +166,8 @@ export default function PollsPage() {
       
       handleCloseForm();
       loadPolls();
-    } catch (error: any) {
-      const message = error.response?.data?.message ?? (editingPoll ? "Failed to update poll" : "Failed to create poll");
+    } catch (error: unknown) {
+      const message = parseApiError(error, editingPoll ? "Failed to update poll" : "Failed to create poll").message;
       showToast(message, "error");
     } finally {
       setSubmitting(false);

@@ -5,6 +5,7 @@ import { Download, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { parseApiError } from "@/utils/errorHandler";
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -34,9 +35,9 @@ export default function YearlySummaryPage() {
       const topCatRes = await api.get(`/expenses/analytics/top-categories?year=${year}&limit=10`);
       const topCatData = topCatRes.data ?? [];
       setTopCategories(topCatData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching data:', error);
-      showToast(error?.response?.data?.message ?? 'Failed to fetch yearly expense summary', 'error');
+      showToast(parseApiError(error, "Failed to fetch yearly expense summary").message, 'error');
     } finally {
       setLoading(false);
     }
