@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { showToast } from "./Toast";
 import { useState } from "react";
 import { clearPlatformViewSession } from "@/lib/platformViewSession";
 import { clearTenantSocietyId } from "@/lib/api";
+import { ThemeModeToggle } from "@/theme/components/ThemeModeToggle";
 
 const linkSections = [
   {
@@ -118,15 +120,31 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       <div className="p-6 border-b border-gray-700">
         <div className="flex items-center justify-between">
           {!collapsed && (
-            <div>
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-2xl">🏘️</span>
-                <h2 className="text-lg font-bold">Society Admin</h2>
+            <div className="flex items-center space-x-3">
+              <Image
+                src="/favicon-192.png"
+                alt="GatePass+"
+                width={36}
+                height={36}
+                className="rounded-lg"
+                priority
+              />
+              <div>
+                <h2 className="text-lg font-bold leading-tight">GatePass+</h2>
+                <p className="text-xs text-gray-400">Admin dashboard</p>
               </div>
-              <p className="text-xs text-gray-400">Villa Management System</p>
             </div>
           )}
-          {collapsed && <span className="text-2xl mx-auto">🏘️</span>}
+          {collapsed && (
+            <Image
+              src="/favicon-192.png"
+              alt="GatePass+"
+              width={32}
+              height={32}
+              className="mx-auto rounded-lg"
+              priority
+            />
+          )}
         </div>
       </div>
 
@@ -163,6 +181,14 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
 
       {/* Footer */}
       <div className="p-4 border-t border-gray-700 space-y-2">
+        <div className={collapsed ? "" : "px-1 pb-2"}>
+          {!collapsed && (
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2">
+              Appearance
+            </p>
+          )}
+          <ThemeModeToggle iconsOnly={collapsed} />
+        </div>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="w-full btn bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 hidden md:block"

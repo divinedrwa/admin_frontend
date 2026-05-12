@@ -1,7 +1,14 @@
 {
   "root": true,
   "extends": ["next/core-web-vitals", "next/typescript"],
-  "ignorePatterns": [".next", "node_modules", "out", "next-env.d.ts"],
+  "plugins": ["gatepass"],
+  "ignorePatterns": [
+    ".next",
+    "node_modules",
+    "out",
+    "next-env.d.ts",
+    "eslint-rules"
+  ],
   "rules": {
     "@typescript-eslint/no-unused-vars": [
       "warn",
@@ -9,6 +16,7 @@
     ],
     "@typescript-eslint/no-explicit-any": "warn",
     "react/no-unescaped-entities": "off",
-    "react-hooks/exhaustive-deps": "warn"
+    "react-hooks/exhaustive-deps": "warn",
+    "gatepass/no-color-literal": "warn"
   }
 }

@@ -1,0 +1,74 @@
+/*
+ * GENERATED — do not edit.
+ * Source: src/theme/tokens.ts
+ * Run `npm run theme:gen` to regenerate.
+ */
+
+
+:root {
+  --gp-brand-primary: #0F172A;
+  --gp-brand-accent: #10B981;
+  --gp-brand-danger: #EF4444;
+  --gp-surface-background: #FFFFFF;
+  --gp-surface-default: #F8FAFC;
+  --gp-surface-elevated: #F1F5F9;
+  --gp-surface-border: #E2E8F0;
+  --gp-text-primary: #0F172A;
+  --gp-text-secondary: #475569;
+  --gp-text-tertiary: #94A3B8;
+  --gp-text-inverse: #FFFFFF;
+  --gp-state-approved-bg: #D1FAE5;
+  --gp-state-approved-fg: #047857;
+  --gp-state-approved-solid: #10B981;
+  --gp-state-pending-bg: #FEF3C7;
+  --gp-state-pending-fg: #92400E;
+  --gp-state-pending-solid: #F59E0B;
+  --gp-state-denied-bg: #FEE2E2;
+  --gp-state-denied-fg: #991B1B;
+  --gp-state-denied-solid: #EF4444;
+  --gp-state-info-bg: #DBEAFE;
+  --gp-state-info-fg: #1E40AF;
+  --gp-state-info-solid: #3B82F6;
+}
+
+[data-theme="dark"] {
+  --gp-brand-primary: #F1F5F9;
+  --gp-brand-accent: #34D399;
+  --gp-brand-danger: #F87171;
+  --gp-surface-background: #020617;
+  --gp-surface-default: #0F172A;
+  --gp-surface-elevated: #1E293B;
+  --gp-surface-border: #334155;
+  --gp-text-primary: #F1F5F9;
+  --gp-text-secondary: #94A3B8;
+  --gp-text-tertiary: #64748B;
+  --gp-text-inverse: #0F172A;
+  --gp-state-approved-bg: #064E3B;
+  --gp-state-approved-fg: #6EE7B7;
+  --gp-state-approved-solid: #34D399;
+  --gp-state-pending-bg: #78350F;
+  --gp-state-pending-fg: #FCD34D;
+  --gp-state-pending-solid: #FBBF24;
+  --gp-state-denied-bg: #7F1D1D;
+  --gp-state-denied-fg: #FCA5A5;
+  --gp-state-denied-solid: #F87171;
+  --gp-state-info-bg: #1E3A8A;
+  --gp-state-info-fg: #93C5FD;
+  --gp-state-info-solid: #60A5FA;
+}
+
+:root {
+  --gp-space-4: 4px;
+  --gp-space-8: 8px;
+  --gp-space-12: 12px;
+  --gp-space-16: 16px;
+  --gp-space-24: 24px;
+  --gp-space-32: 32px;
+  --gp-space-48: 48px;
+  --gp-space-64: 64px;
+  --gp-radius-sm: 6px;
+  --gp-radius-md: 10px;
+  --gp-radius-lg: 16px;
+  --gp-radius-full: 9999px;
+}
+

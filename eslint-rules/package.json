@@ -1,0 +1,10 @@
+{
+  "name": "eslint-plugin-gatepass",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local ESLint plugin for the GatePass+ admin web. Enforces the design-token system in src/theme/.",
+  "main": "index.js",
+  "peerDependencies": {
+    "eslint": ">=8"
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, setTenantSocietyIdFromLogin } from "@/lib/api";
@@ -106,7 +107,7 @@ function LoginPageInner() {
       });
       localStorage.setItem("token", response.data.token);
       setTenantSocietyIdFromLogin(response.data?.user);
-      showToast("Login successful! Welcome to Society Admin", "success");
+      showToast("Login successful! Welcome to GatePass+", "success");
       router.push("/dashboard");
     } catch (error: unknown) {
       const message = getFriendlyLoginError(error);
@@ -137,11 +138,17 @@ function LoginPageInner() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo & Branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-4">
-            <span className="text-4xl">🏘️</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-4 p-2">
+            <Image
+              src="/favicon-192.png"
+              alt="GatePass+"
+              width={64}
+              height={64}
+              priority
+            />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Society Admin</h1>
-          <p className="text-blue-100 text-lg">Villa Management System</p>
+          <h1 className="text-4xl font-bold text-white mb-2">GatePass+</h1>
+          <p className="text-blue-100 text-lg">Reside. Approve. Manage.</p>
         </div>
 
         {/* Login Form Card */}
@@ -295,7 +302,7 @@ function LoginPageInner() {
 
         {/* Footer */}
         <p className="text-center text-blue-100 text-sm mt-6">
-          © 2026 Society Admin. All rights reserved.
+          © 2026 GatePass+. All rights reserved.
         </p>
       </div>
 
