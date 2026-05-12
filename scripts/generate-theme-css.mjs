@@ -23,22 +23,49 @@ const outPath = resolve(root, "src/theme/theme-vars.css");
 // Simpler: re-implement the constants here. The two-line duplication is
 // worth keeping the generator dependency-free.
 
+// Legacy palette — keep in sync with `src/theme/tokens.ts`.
 const lightTheme = {
-  brand: { primary: "#0F172A", accent: "#10B981", danger: "#EF4444" },
+  brand: {
+    primary: "#2563EB",
+    "primary-hover": "#1D4ED8",
+    "primary-light": "#EFF6FF",
+    accent: "#10B981",
+    danger: "#EF4444",
+  },
+  sidebar: {
+    from: "#2D3036",
+    via: "#2D3036",
+    to: "#2D3036",
+    "active-text": "#FFFFFF",
+    "active-bg": "#3B82F6",
+    "hover-bg": "rgba(255,255,255,0.06)",
+    "muted-text": "#6B7580",
+    border: "rgba(255,255,255,0.06)",
+  },
+  login: {
+    from: "#111827",
+    via: "#1E3A5F",
+    to: "#0F172A",
+  },
+  "super-login": {
+    from: "#111827",
+    via: "#1E3A5F",
+    to: "#0F172A",
+  },
   surface: {
     background: "#FFFFFF",
-    default: "#F8FAFC",
-    elevated: "#F1F5F9",
-    border: "#E2E8F0",
+    default: "#FAFAFA",
+    elevated: "#F3F4F6",
+    border: "#E5E7EB",
   },
   text: {
-    primary: "#0F172A",
-    secondary: "#475569",
-    tertiary: "#94A3B8",
+    primary: "#111827",
+    secondary: "#6B7280",
+    tertiary: "#9CA3AF",
     inverse: "#FFFFFF",
   },
   state: {
-    approved: { bg: "#D1FAE5", fg: "#047857", solid: "#10B981" },
+    approved: { bg: "#D1FAE5", fg: "#065F46", solid: "#10B981" },
     pending: { bg: "#FEF3C7", fg: "#92400E", solid: "#F59E0B" },
     denied: { bg: "#FEE2E2", fg: "#991B1B", solid: "#EF4444" },
     info: { bg: "#DBEAFE", fg: "#1E40AF", solid: "#3B82F6" },
@@ -46,18 +73,44 @@ const lightTheme = {
 };
 
 const darkTheme = {
-  brand: { primary: "#F1F5F9", accent: "#34D399", danger: "#F87171" },
+  brand: {
+    primary: "#F9FAFB",
+    "primary-hover": "#E5E7EB",
+    "primary-light": "#1E3A5F",
+    accent: "#3B82F6",
+    danger: "#F87171",
+  },
+  sidebar: {
+    from: "#1A1D22",
+    via: "#1A1D22",
+    to: "#1A1D22",
+    "active-text": "#FFFFFF",
+    "active-bg": "#3B82F6",
+    "hover-bg": "rgba(255,255,255,0.06)",
+    "muted-text": "#6B7580",
+    border: "rgba(255,255,255,0.06)",
+  },
+  login: {
+    from: "#1E40AF",
+    via: "#1E3A5F",
+    to: "#111827",
+  },
+  "super-login": {
+    from: "#0F172A",
+    via: "#1E1E1E",
+    to: "#000000",
+  },
   surface: {
-    background: "#020617",
-    default: "#0F172A",
-    elevated: "#1E293B",
-    border: "#334155",
+    background: "#121212",
+    default: "#1E1E1E",
+    elevated: "#2C2C2C",
+    border: "#374151",
   },
   text: {
-    primary: "#F1F5F9",
-    secondary: "#94A3B8",
-    tertiary: "#64748B",
-    inverse: "#0F172A",
+    primary: "#FFFFFF",
+    secondary: "#D1D5DB",
+    tertiary: "#9CA3AF",
+    inverse: "#111827",
   },
   state: {
     approved: { bg: "#064E3B", fg: "#6EE7B7", solid: "#34D399" },
@@ -88,6 +141,18 @@ function emit(name, palette) {
   const lines = [];
   for (const [k, v] of Object.entries(palette.brand))
     lines.push(`  --gp-brand-${k}: ${v};`);
+  if (palette.sidebar) {
+    for (const [k, v] of Object.entries(palette.sidebar))
+      lines.push(`  --gp-sidebar-${k}: ${v};`);
+  }
+  if (palette.login) {
+    for (const [k, v] of Object.entries(palette.login))
+      lines.push(`  --gp-login-${k}: ${v};`);
+  }
+  if (palette["super-login"]) {
+    for (const [k, v] of Object.entries(palette["super-login"]))
+      lines.push(`  --gp-super-login-${k}: ${v};`);
+  }
   for (const [k, v] of Object.entries(palette.surface))
     lines.push(`  --gp-surface-${k}: ${v};`);
   for (const [k, v] of Object.entries(palette.text))

@@ -151,26 +151,29 @@ export default function StaffPage() {
   return (
     <AppShell title="Domestic Staff Management">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="page-action-bar">
           <div>
-            <p className="text-gray-600">Manage domestic staff for villas</p>
-            <p className="text-sm text-gray-500">Staff can work in multiple villas</p>
+            <p className="text-fg-secondary">Manage domestic staff for villas</p>
+            <p className="text-sm text-fg-secondary">Staff can work in multiple villas</p>
           </div>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Register Staff
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">Register New Staff</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">Register New Staff</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Name *
                   </label>
                   <input
@@ -178,12 +181,12 @@ export default function StaffPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Staff Type *
                   </label>
                   <select
@@ -192,7 +195,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, type: e.target.value as StaffForm["type"] })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="MAID">Maid</option>
                     <option value="COOK">Cook</option>
@@ -203,7 +206,7 @@ export default function StaffPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Phone *
                   </label>
                   <input
@@ -211,43 +214,43 @@ export default function StaffPage() {
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="+91 9876543210"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Address
                   </label>
                   <input
                     type="text"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-fg-primary mb-2">
                   Assign to Villas * (Select multiple)
                 </label>
-                <div className="border border-gray-300 rounded p-3 max-h-60 overflow-y-auto bg-gray-50">
+                <div className="border border-surface-border rounded p-3 max-h-60 overflow-y-auto bg-surface-background">
                   {villas.length === 0 ? (
-                    <p className="text-sm text-gray-500">No villas available</p>
+                    <p className="text-sm text-fg-secondary">No villas available</p>
                   ) : (
                     <div className="space-y-2">
                       {villas.map((villa) => (
                         <label
                           key={villa.id}
-                          className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                          className="flex items-center space-x-3 p-2 hover:bg-surface-elevated rounded cursor-pointer"
                         >
                           <input
                             type="checkbox"
                             checked={formData.villaIds.includes(villa.id)}
                             onChange={() => toggleVilla(villa.id)}
-                            className="w-4 h-4 text-blue-600"
+                            className="w-4 h-4 text-brand-primary"
                           />
                           <span className="text-sm">
                             {villa.villaNumber}
@@ -258,7 +261,7 @@ export default function StaffPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-fg-secondary mt-1">
                   Selected: {formData.villaIds.length} villa(s)
                 </p>
               </div>
@@ -267,61 +270,66 @@ export default function StaffPage() {
                 <button
                   type="submit"
                   disabled={submitting || villas.length === 0}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Registering..." : "Register Staff"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="rounded bg-white border border-gray-200 p-4">
+        <div className="table-wrapper overflow-x-auto">
           {loading ? (
-            <p className="text-gray-500">Loading staff...</p>
+            <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading staff...</p></div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Name</th>
-                  <th>Type</th>
-                  <th>Phone</th>
-                  <th>Assigned Villas</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th">Name</th>
+                  <th className="table-th">Type</th>
+                  <th className="table-th">Phone</th>
+                  <th className="table-th">Assigned Villas</th>
+                  <th className="table-th">Status</th>
+                  <th className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {staff.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
-                      No staff registered. Click "Register Staff" to add one.
+                    <td colSpan={6}>
+                      <div className="empty-state">
+                        <span className="empty-state-icon">🧹</span>
+                        <p className="empty-state-title">No staff registered</p>
+                        <p className="empty-state-text">Click &quot;Register Staff&quot; to add one.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   staff.map((s) => (
-                    <tr key={s.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3">{s.name}</td>
-                      <td>{s.type}</td>
-                      <td>{s.phone}</td>
-                      <td>
+                    <tr key={s.id} className="table-row">
+                      <td className="table-td">{s.name}</td>
+                      <td className="table-td">{s.type}</td>
+                      <td className="table-td">{s.phone}</td>
+                      <td className="table-td">
                         <div className="flex flex-wrap gap-1">
                           {s.assignments.filter(a => a.isActive).length === 0 ? (
-                            <span className="text-gray-400 text-xs">No assignments</span>
+                            <span className="text-fg-tertiary text-xs">No assignments</span>
                           ) : (
                             s.assignments
                               .filter(a => a.isActive)
                               .map((assignment) => (
                                 <span
                                   key={assignment.id}
-                                  className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+                                  className="badge badge-info"
                                 >
                                   {assignment.villa.villaNumber}
                                 </span>
@@ -329,21 +337,15 @@ export default function StaffPage() {
                           )}
                         </div>
                       </td>
-                      <td>
-                        <span
-                          className={`px-2 py-1 text-xs rounded ${
-                            s.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
+                      <td className="table-td">
+                        <span className={`badge ${s.isActive ? "badge-success" : "badge-gray"}`}>
                           {s.isActive ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td>
+                      <td className="table-td">
                         <button
                           onClick={() => handleDelete(s.id)}
-                          className="text-red-600 hover:text-red-800 text-xs"
+                          className="text-brand-danger hover:text-denied-fg text-xs"
                         >
                           Delete
                         </button>

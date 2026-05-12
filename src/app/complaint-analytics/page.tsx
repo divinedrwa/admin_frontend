@@ -118,19 +118,19 @@ export default function ComplaintAnalyticsPage() {
 
   const getStatusBadge = (status: ComplaintStatus) => {
     const styles = {
-      OPEN: "bg-yellow-100 text-yellow-800",
-      IN_PROGRESS: "bg-blue-100 text-blue-800",
-      RESOLVED: "bg-green-100 text-green-800",
-      CLOSED: "bg-gray-100 text-gray-800",
+      OPEN: "bg-pending-bg text-pending-fg",
+      IN_PROGRESS: "bg-info-bg text-info-fg",
+      RESOLVED: "bg-approved-bg text-approved-fg",
+      CLOSED: "bg-surface-elevated text-fg-primary",
     };
-    return styles[status] || "bg-gray-100 text-gray-800";
+    return styles[status] || "bg-surface-elevated text-fg-primary";
   };
 
   const getUrgencyBadge = (level: string) => {
     const styles = {
-      critical: "bg-red-100 text-red-800 border-red-300",
+      critical: "bg-denied-bg text-denied-fg border-red-300",
       high: "bg-orange-100 text-orange-800 border-orange-300",
-      normal: "bg-blue-100 text-blue-800 border-blue-300",
+      normal: "bg-info-bg text-info-fg border-blue-300",
     };
     return styles[level as keyof typeof styles] || styles.normal;
   };
@@ -139,11 +139,11 @@ export default function ComplaintAnalyticsPage() {
     <AppShell title="Complaint Analytics Dashboard">
       {/* Date Filter */}
       <div className="mb-6 flex items-center space-x-4">
-        <label className="text-sm font-medium text-gray-700">Period:</label>
+        <label className="text-sm font-medium text-fg-primary">Period:</label>
         <select
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2"
+          className="input w-auto"
         >
           <option value="7">Last 7 Days</option>
           <option value="30">Last 30 Days</option>
@@ -155,27 +155,27 @@ export default function ComplaintAnalyticsPage() {
       {/* Summary Statistics */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-blue-50 border border-blue-200 rounded p-4">
-            <div className="text-sm text-blue-600">Total Complaints</div>
-            <div className="text-2xl font-bold text-blue-900">{summary.totalComplaints}</div>
+          <div className="stat-card">
+            <div className="stat-card-label">Total Complaints</div>
+            <div className="stat-card-value">{summary.totalComplaints}</div>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded p-4">
-            <div className="text-sm text-green-600">Resolved</div>
-            <div className="text-2xl font-bold text-green-900">{summary.resolvedCount}</div>
-            <div className="text-xs text-green-700">{summary.resolutionRate}% rate</div>
+          <div className="stat-card">
+            <div className="stat-card-label">Resolved</div>
+            <div className="stat-card-value text-approved-solid">{summary.resolvedCount}</div>
+            <div className="text-xs text-approved-fg mt-1">{summary.resolutionRate}% rate</div>
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded p-4">
-            <div className="text-sm text-blue-600">In Progress</div>
-            <div className="text-2xl font-bold text-blue-900">{summary.inProgressCount}</div>
+          <div className="stat-card">
+            <div className="stat-card-label">In Progress</div>
+            <div className="stat-card-value text-info-fg">{summary.inProgressCount}</div>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
-            <div className="text-sm text-yellow-600">Pending</div>
-            <div className="text-2xl font-bold text-yellow-900">{summary.pendingCount}</div>
+          <div className="stat-card">
+            <div className="stat-card-label">Pending</div>
+            <div className="stat-card-value text-pending-solid">{summary.pendingCount}</div>
           </div>
-          <div className="bg-purple-50 border border-purple-200 rounded p-4">
-            <div className="text-sm text-purple-600">Avg Resolution</div>
-            <div className="text-2xl font-bold text-purple-900">{summary.avgResolutionTime}</div>
-            <div className="text-xs text-purple-700">days</div>
+          <div className="stat-card">
+            <div className="stat-card-label">Avg Resolution</div>
+            <div className="stat-card-value">{summary.avgResolutionTime}</div>
+            <div className="text-xs text-fg-secondary mt-1">days</div>
           </div>
         </div>
       )}
@@ -183,60 +183,42 @@ export default function ComplaintAnalyticsPage() {
       {/* Category Breakdown */}
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-3">Complaints by Category</h2>
-        <div className="bg-white border border-gray-200 rounded overflow-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Resolved
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Pending
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Avg Resolution
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Performance
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {categoryStats.map((cat) => (
-                <tr key={cat.category} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {cat.category}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {cat.totalCount}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                    {cat.resolvedCount} ({cat.resolutionRate}%)
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600">
-                    {cat.pendingCount + cat.inProgressCount}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {cat.avgResolutionTime} days
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {cat.performanceStatus}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {categoryStats.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No complaints data available for this period
+        <div className="table-wrapper">
+          {categoryStats.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-state-icon">📊</span>
+              <p className="empty-state-title">No data available</p>
+              <p className="empty-state-text">No complaints data available for this period.</p>
             </div>
+          ) : (
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th">Category</th>
+                  <th className="table-th">Total</th>
+                  <th className="table-th">Resolved</th>
+                  <th className="table-th">Pending</th>
+                  <th className="table-th">Avg Resolution</th>
+                  <th className="table-th">Performance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryStats.map((cat) => (
+                  <tr key={cat.category} className="table-row">
+                    <td className="table-td font-medium">{cat.category}</td>
+                    <td className="table-td">{cat.totalCount}</td>
+                    <td className="table-td text-approved-solid">
+                      {cat.resolvedCount} ({cat.resolutionRate}%)
+                    </td>
+                    <td className="table-td text-pending-solid">
+                      {cat.pendingCount + cat.inProgressCount}
+                    </td>
+                    <td className="table-td">{cat.avgResolutionTime} days</td>
+                    <td className="table-td">{cat.performanceStatus}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
@@ -244,29 +226,29 @@ export default function ComplaintAnalyticsPage() {
       {/* Pending Complaints - Need Attention */}
       <div>
         <h2 className="text-lg font-semibold mb-3">
-          Pending Complaints <span className="text-sm text-gray-500">(Need Attention)</span>
+          Pending Complaints <span className="text-sm text-fg-secondary">(Need Attention)</span>
         </h2>
         <div className="space-y-3">
           {pendingComplaints.map((complaint) => (
             <div
               key={complaint.id}
-              className={`bg-white border-2 rounded p-4 ${getUrgencyBadge(complaint.urgencyLevel)}`}
+              className={`bg-surface border-2 rounded p-4 ${getUrgencyBadge(complaint.urgencyLevel)}`}
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="font-semibold text-gray-900">{complaint.title}</h3>
+                    <h3 className="font-semibold text-fg-primary">{complaint.title}</h3>
                     <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(complaint.status)}`}>
                       {complaint.status}
                     </span>
                     {complaint.urgencyLevel === "critical" && (
-                      <span className="px-2 py-1 text-xs rounded bg-red-600 text-white font-bold">
+                      <span className="px-2 py-1 text-xs rounded bg-brand-danger text-white font-bold">
                         🚨 CRITICAL
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{complaint.description}</p>
-                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                  <p className="text-sm text-fg-secondary mb-2">{complaint.description}</p>
+                  <div className="flex items-center space-x-4 text-xs text-fg-secondary">
                     <span>
                       📍 {complaint.villa.villaNumber}
                       {complaint.villa.block && ` (Block ${complaint.villa.block})`}
@@ -281,7 +263,7 @@ export default function ComplaintAnalyticsPage() {
                 <div className="ml-4">
                   <button
                     onClick={() => setSelectedComplaint(complaint.id)}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                    className="btn btn-primary text-sm"
                   >
                     Update Status
                   </button>
@@ -291,10 +273,10 @@ export default function ComplaintAnalyticsPage() {
           ))}
 
           {pendingComplaints.length === 0 && (
-            <div className="bg-green-50 border border-green-200 rounded p-8 text-center">
+            <div className="bg-approved-bg border border-approved-bg rounded p-8 text-center">
               <div className="text-4xl mb-2">🎉</div>
-              <p className="text-green-800 font-medium">All complaints are resolved!</p>
-              <p className="text-green-600 text-sm">No pending complaints at this time.</p>
+              <p className="text-approved-fg font-medium">All complaints are resolved!</p>
+              <p className="text-approved-solid text-sm">No pending complaints at this time.</p>
             </div>
           )}
         </div>
@@ -302,18 +284,20 @@ export default function ComplaintAnalyticsPage() {
 
       {/* Quick Update Modal */}
       {selectedComplaint && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Update Complaint Status</h2>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="card w-full max-w-md mx-4">
+            <div className="card-header">
+              <h2 className="text-xl font-bold text-fg-primary">Update Complaint Status</h2>
+            </div>
+            <div className="card-body space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-fg-primary mb-2">
                   New Status *
                 </label>
                 <select
                   value={updateStatus}
                   onChange={(e) => setUpdateStatus(e.target.value as ComplaintStatus)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                 >
                   <option value="OPEN">Open</option>
                   <option value="IN_PROGRESS">In Progress</option>
@@ -322,22 +306,22 @@ export default function ComplaintAnalyticsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-fg-primary mb-2">
                   Admin Notes (Optional)
                 </label>
                 <textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="Add any notes about the resolution..."
                   rows={3}
                 />
               </div>
-              <div className="flex space-x-3">
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => handleQuickUpdate(selectedComplaint)}
                   disabled={loading}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="btn btn-primary flex-1"
                 >
                   {loading ? "Updating..." : "Update"}
                 </button>
@@ -346,7 +330,7 @@ export default function ComplaintAnalyticsPage() {
                     setSelectedComplaint(null);
                     setAdminNotes("");
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                  className="btn btn-ghost flex-1"
                 >
                   Cancel
                 </button>
@@ -357,10 +341,12 @@ export default function ComplaintAnalyticsPage() {
       )}
 
       {loading && !selectedComplaint && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="text-gray-600 mt-2">Loading...</p>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-40">
+          <div className="card p-8">
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading...</p>
+            </div>
           </div>
         </div>
       )}

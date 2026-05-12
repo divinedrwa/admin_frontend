@@ -115,9 +115,15 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   }
 
   const sidebarContent = (
-    <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-gradient-to-b from-gray-900 to-gray-800 text-white border-r border-gray-700 flex flex-col transition-all duration-300 shadow-2xl h-full`}>
+    <aside
+      className={`${collapsed ? 'w-20' : 'w-72'} text-white flex flex-col transition-all duration-300 shadow-lg h-full`}
+      style={{
+        background: `linear-gradient(to bottom, var(--gp-sidebar-from), var(--gp-sidebar-via), var(--gp-sidebar-to))`,
+        borderRight: `1px solid var(--gp-sidebar-border)`,
+      }}
+    >
       {/* Header */}
-      <div className="p-6 border-b border-gray-700">
+      <div className="p-6" style={{ borderBottom: `1px solid var(--gp-sidebar-border)` }}>
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center space-x-3">
@@ -131,7 +137,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
               />
               <div>
                 <h2 className="text-lg font-bold leading-tight">GatePass+</h2>
-                <p className="text-xs text-gray-400">Admin dashboard</p>
+                <p className="text-xs" style={{ color: 'var(--gp-sidebar-muted-text)' }}>Admin dashboard</p>
               </div>
             </div>
           )}
@@ -153,37 +159,68 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         {linkSections.map((section, idx) => (
           <div key={idx}>
             {!collapsed && (
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
+              <h3
+                className="text-xs font-semibold uppercase tracking-wider mb-2 px-3"
+                style={{ color: 'var(--gp-sidebar-muted-text)' }}
+              >
                 {section.title}
               </h3>
             )}
             <div className="space-y-1">
-              {section.links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={handleNavClick}
-                  className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    pathname === link.href
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/50"
-                      : "text-gray-300 hover:bg-gray-700/50 hover:text-white"
-                  }`}
-                  title={collapsed ? link.label : undefined}
-                >
-                  <span className="text-lg">{link.icon}</span>
-                  {!collapsed && <span>{link.label}</span>}
-                </Link>
-              ))}
+              {section.links.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={handleNavClick}
+                    className={`relative flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group`}
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: 'var(--gp-sidebar-active-bg)',
+                            color: 'var(--gp-sidebar-active-text)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                          }
+                        : {
+                            color: 'var(--gp-sidebar-muted-text)',
+                          }
+                    }
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'var(--gp-sidebar-hover-bg)';
+                        e.currentTarget.style.color = 'var(--gp-sidebar-active-text)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = 'var(--gp-sidebar-muted-text)';
+                      }
+                    }}
+                    title={collapsed ? link.label : undefined}
+                  >
+                    {isActive && !collapsed && (
+                      <span
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                        style={{ backgroundColor: 'var(--gp-sidebar-active-text)' }}
+                      />
+                    )}
+                    <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}>{link.icon}</span>
+                    {!collapsed && <span>{link.label}</span>}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         ))}
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-700 space-y-2">
+      <div className="p-4 space-y-2" style={{ borderTop: `1px solid var(--gp-sidebar-border)` }}>
         <div className={collapsed ? "" : "px-1 pb-2"}>
           {!collapsed && (
-            <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2">
+            <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: 'var(--gp-sidebar-muted-text)' }}>
               Appearance
             </p>
           )}
@@ -191,16 +228,24 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         </div>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full btn bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 hidden md:block"
-          title={collapsed ? "Expand" : "Collapse"}
+          className="w-full text-white text-sm py-2.5 rounded-lg hidden md:flex items-center justify-center gap-2 transition-all duration-200"
+          style={{ backgroundColor: 'var(--gp-sidebar-hover-bg)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--gp-sidebar-active-bg)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--gp-sidebar-hover-bg)'; }}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? "→" : "←"}
+          <svg className={`w-4 h-4 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+          {!collapsed && <span className="text-xs font-medium">Collapse</span>}
         </button>
         <button
           onClick={handleLogout}
-          className="w-full btn bg-red-600 hover:bg-red-700 text-white text-sm py-2 flex items-center justify-center space-x-2"
+          className="w-full text-white text-sm py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 bg-brand-danger/80 hover:bg-brand-danger"
         >
-          <span>🚪</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
           {!collapsed && <span>Logout</span>}
         </button>
       </div>

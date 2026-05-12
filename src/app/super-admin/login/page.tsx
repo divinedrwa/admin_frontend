@@ -92,22 +92,28 @@ function SuperAdminLoginInner() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950">
+    <main
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{
+        background: `linear-gradient(to bottom right, var(--gp-super-login-from), var(--gp-super-login-via), var(--gp-super-login-to))`,
+      }}
+    >
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl border border-white/20 mb-4">
             <span className="text-3xl">⚙️</span>
           </div>
           <h1 className="text-3xl font-bold text-white">Platform Admin</h1>
-          <p className="text-slate-300 mt-2 text-sm">Super admin · societies & onboarding</p>
+          <p className="text-fg-tertiary mt-2 text-sm">Super admin · societies & onboarding</p>
         </div>
 
         <form
           onSubmit={onSubmit}
-          className="bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-8 space-y-5 border border-white/20"
+          className="rounded-2xl shadow-2xl p-8 space-y-5 border border-white/10"
+          style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)' }}
         >
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Username or email</label>
+            <label className="block text-sm font-semibold text-fg-primary mb-1">Username or email</label>
             <input
               type="text"
               value={username}
@@ -119,7 +125,7 @@ function SuperAdminLoginInner() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-semibold text-fg-primary mb-1">Password</label>
             <input
               type="password"
               value={password}
@@ -134,8 +140,8 @@ function SuperAdminLoginInner() {
             {loading ? "Signing in…" : "Sign in"}
           </button>
 
-          <p className="text-center text-sm text-gray-600">
-            <Link href="/login" className="text-indigo-700 font-semibold underline">
+          <p className="text-center text-sm text-fg-secondary">
+            <Link href="/login" className="text-brand-primary font-semibold underline">
               Society admin login
             </Link>
           </p>
@@ -149,7 +155,12 @@ export default function SuperAdminLoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-slate-300">
+        <main
+          className="min-h-screen flex items-center justify-center p-6 text-fg-tertiary"
+          style={{
+            background: `linear-gradient(to bottom right, var(--gp-super-login-from), var(--gp-super-login-via), var(--gp-super-login-to))`,
+          }}
+        >
           Loading…
         </main>
       }

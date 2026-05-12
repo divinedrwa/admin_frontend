@@ -239,23 +239,23 @@ export default function AmenityBookingsPage() {
   return (
     <AppShell title="Amenity Bookings">
       <div className="space-y-4">
-        <div className="flex justify-between items-center flex-wrap gap-2">
+        <div className="page-action-bar">
           <div>
-            <p className="text-gray-600">Manage amenity bookings and reservations</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-fg-secondary">Manage amenity bookings and reservations</p>
+            <p className="text-sm text-fg-secondary mt-1">
               Set <strong>Pending</strong> → <strong>CONFIRMED</strong> to approve, or <strong>COMPLETED</strong> / <strong>CANCELLED</strong> when done.
             </p>
           </div>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Book Amenity
           </button>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white border border-gray-200 rounded p-4">
+        <div className="filter-bar">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <input
@@ -263,14 +263,14 @@ export default function AmenityBookingsPage() {
                 placeholder="Search by amenity or resident name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input"
               />
             </div>
             <div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input"
               >
                 <option value="all">All Status ({bookings.length})</option>
                 <option value="PENDING">Pending ({statusCounts.PENDING})</option>
@@ -281,7 +281,7 @@ export default function AmenityBookingsPage() {
             </div>
           </div>
           <div className="mt-3 flex justify-between items-center text-sm">
-            <span className="text-gray-600">Showing {paginatedBookings.length} of {filteredBookings.length} bookings</span>
+            <span className="text-fg-secondary">Showing {paginatedBookings.length} of {filteredBookings.length} bookings</span>
             {totalPages > 1 && (
               <div className="flex gap-2">
                 <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="px-3 py-1 border rounded disabled:opacity-50">Previous</button>
@@ -293,20 +293,23 @@ export default function AmenityBookingsPage() {
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">{editingBooking ? "Edit Booking" : "Book Amenity"}</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">{editingBooking ? "Edit Booking" : "Book Amenity"}</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               {!editingBooking ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
                       Amenity *
                     </label>
                     <select
                       required
                       value={formData.amenityId}
                       onChange={(e) => setFormData({ ...formData, amenityId: e.target.value })}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input"
                     >
                       <option value="">Select amenity</option>
                       {amenities.map((amenity) => (
@@ -318,14 +321,14 @@ export default function AmenityBookingsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
                       Resident *
                     </label>
                     <select
                       required
                       value={formData.residentId}
                       onChange={(e) => setFormData({ ...formData, residentId: e.target.value })}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input"
                     >
                       <option value="">Select resident</option>
                       {residents.map((resident) => (
@@ -337,8 +340,8 @@ export default function AmenityBookingsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-50 p-3 rounded">
-                  <p className="text-sm text-gray-600">
+                <div className="bg-surface-background p-3 rounded">
+                  <p className="text-sm text-fg-secondary">
                     <span className="font-medium">Amenity:</span>{" "}
                     {editingBooking.amenity
                       ? `${editingBooking.amenity.name} (${editingBooking.amenity.type})`
@@ -352,7 +355,7 @@ export default function AmenityBookingsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Start Time *
                   </label>
                   <input
@@ -360,11 +363,11 @@ export default function AmenityBookingsPage() {
                     required
                     value={formData.startTime}
                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     End Time *
                   </label>
                   <input
@@ -372,7 +375,7 @@ export default function AmenityBookingsPage() {
                     required
                     value={formData.endTime}
                     onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   />
                 </div>
               </div>
@@ -381,65 +384,69 @@ export default function AmenityBookingsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? (editingBooking ? "Updating..." : "Booking...") : (editingBooking ? "Update Booking" : "Book Amenity")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="bg-white border border-gray-200 rounded overflow-hidden">
+        <div className="table-wrapper">
           {loading ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500">Loading bookings...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading bookings...</p>
             </div>
           ) : filteredBookings.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500">
-                {searchQuery || statusFilter !== "all" ? "No bookings match your search criteria." : "No bookings found. Click \"Book Amenity\" to add one."}
+            <div className="empty-state">
+              <span className="empty-state-icon">📅</span>
+              <p className="empty-state-title">No bookings found</p>
+              <p className="empty-state-text">
+                {searchQuery || statusFilter !== "all" ? "No bookings match your search criteria." : "Click \"Book Amenity\" to add one."}
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+              <table className="table">
+                <thead className="table-head">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amenity</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resident</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Start Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">End Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="table-th">Amenity</th>
+                    <th className="table-th">Resident</th>
+                    <th className="table-th">Start Time</th>
+                    <th className="table-th">End Time</th>
+                    <th className="table-th">Status</th>
+                    <th className="table-th">Price</th>
+                    <th className="table-th">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody>
                   {paginatedBookings.map((booking) => (
-                    <tr key={booking.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{booking.amenity?.name || "N/A"}</div>
-                        <div className="text-xs text-gray-500">{booking.amenity?.type || ""}</div>
+                    <tr key={booking.id} className="table-row">
+                      <td className="table-td">
+                        <div className="font-medium text-fg-primary">{booking.amenity?.name || "N/A"}</div>
+                        <div className="text-xs text-fg-secondary">{booking.amenity?.type || ""}</div>
                       </td>
-                      <td className="px-4 py-3">{booking.resident?.name || "N/A"}</td>
-                      <td className="px-4 py-3 text-xs">{formatDateTime(booking.startTime)}</td>
-                      <td className="px-4 py-3 text-xs">{formatDateTime(booking.endTime)}</td>
-                      <td className="px-4 py-3">
+                      <td className="table-td">{booking.resident?.name || "N/A"}</td>
+                      <td className="table-td text-xs">{formatDateTime(booking.startTime)}</td>
+                      <td className="table-td text-xs">{formatDateTime(booking.endTime)}</td>
+                      <td className="table-td">
                         <select
                           value={booking.status}
                           disabled={updatingStatusId === booking.id}
                           onChange={(e) =>
                             updateBookingStatus(booking.id, e.target.value, booking.status)
                           }
-                          className="text-xs rounded border border-gray-300 bg-white px-2 py-1 max-w-[10rem] disabled:opacity-60"
+                          className="text-xs rounded border border-surface-border bg-surface px-2 py-1 max-w-[10rem] disabled:opacity-60"
                           aria-label="Booking status"
                         >
                           <option value="PENDING">PENDING</option>
@@ -448,14 +455,14 @@ export default function AmenityBookingsPage() {
                           <option value="CANCELLED">CANCELLED</option>
                         </select>
                       </td>
-                      <td className="px-4 py-3 font-medium">
+                      <td className="table-td font-medium">
                         {booking.totalPrice ? `₹${booking.totalPrice}` : "-"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="table-td">
                         <div className="flex gap-1">
                           <button
                             onClick={() => handleEdit(booking)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            className="p-1 text-brand-primary hover:bg-brand-primary-light rounded"
                             title="Edit booking"
                           >
                             ✏️
@@ -463,7 +470,7 @@ export default function AmenityBookingsPage() {
                           <button
                             onClick={() => handleDelete(booking.id)}
                             disabled={deletingBookingId === booking.id}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                            className="p-1 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
                             title="Delete booking"
                           >
                             🗑️

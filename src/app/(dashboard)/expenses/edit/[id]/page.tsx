@@ -206,8 +206,8 @@ export default function EditExpensePage() {
   if (!id) {
     return (
       <div className="p-6">
-        <p className="text-gray-600">Invalid expense link.</p>
-        <Link href="/expenses" className="text-blue-600 mt-2 inline-block">
+        <p className="text-fg-secondary">Invalid expense link.</p>
+        <Link href="/expenses" className="text-brand-primary mt-2 inline-block">
           Back to expenses
         </Link>
       </div>
@@ -216,8 +216,9 @@ export default function EditExpensePage() {
 
   if (loadingExpense) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh] text-gray-600">
-        Loading expense…
+      <div className="loading-state">
+        <div className="loading-spinner w-10 h-10"></div>
+        <p className="loading-state-text">Loading expense...</p>
       </div>
     );
   }
@@ -225,11 +226,13 @@ export default function EditExpensePage() {
   if (loadError) {
     return (
       <div className="p-6 max-w-lg">
-        <Link href="/expenses" className="inline-flex items-center gap-2 text-blue-600 mb-4">
+        <Link href="/expenses" className="inline-flex items-center gap-2 text-brand-primary mb-4">
           <ArrowLeft size={18} /> Back to expenses
         </Link>
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
-          <p className="text-gray-900 font-medium">{loadError}</p>
+        <div className="card">
+          <div className="card-body">
+            <p className="text-fg-primary font-medium">{loadError}</p>
+          </div>
         </div>
       </div>
     );
@@ -238,313 +241,321 @@ export default function EditExpensePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <Link href={`/expenses/${id}`} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4">
+        <Link href={`/expenses/${id}`} className="flex items-center gap-2 text-fg-secondary hover:text-fg-primary mb-4">
           <ArrowLeft size={20} />
           Back to expense
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900">Edit expense</h1>
-        <p className="text-gray-600 mt-1">Update details and save changes</p>
+        <h1 className="text-3xl font-bold text-fg-primary">Edit expense</h1>
+        <p className="text-fg-secondary mt-1">Update details and save changes</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Basic information</h2>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-            <select
-              value={formData.categoryId}
-              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-              className="w-full p-2 border rounded-lg"
-              required
-            >
-              <option value="">Select category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
-                </option>
-              ))}
-            </select>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="text-lg font-semibold text-fg-primary">Basic information</h2>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full p-2 border rounded-lg"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              className="w-full p-2 border rounded-lg"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="card-body space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-gray-500">₹</span>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Category *</label>
+              <select
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                className="input"
+                required
+              >
+                <option value="">Select category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Title *</label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="input"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                className="input"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Amount *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-fg-secondary">₹</span>
+                  <input
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                    className="input pl-8"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Payment date *</label>
                 <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                  className="w-full p-2 pl-8 border rounded-lg"
-                  min="0"
-                  step="0.01"
+                  type="date"
+                  value={formData.paymentDate}
+                  onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
+                  className="input"
                   required
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment date *</label>
-              <input
-                type="date"
-                value={formData.paymentDate}
-                onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                required
-              />
-            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Payment details</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment mode *</label>
-              <select
-                value={formData.paymentMode}
-                onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                required
-              >
-                <option value="UPI">UPI</option>
-                <option value="CASH">Cash</option>
-                <option value="ONLINE">Online</option>
-                <option value="BANK_TRANSFER">Bank transfer</option>
-                <option value="CHEQUE">Cheque</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment reference</label>
-              <input
-                type="text"
-                value={formData.paymentRef}
-                onChange={(e) => setFormData({ ...formData, paymentRef: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-              />
-            </div>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="text-lg font-semibold text-fg-primary">Payment details</h2>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Paid to *</label>
-              <input
-                type="text"
-                value={formData.paidTo}
-                onChange={(e) => setFormData({ ...formData, paidTo: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-              <input
-                type="text"
-                value={formData.paidToContact}
-                onChange={(e) => setFormData({ ...formData, paidToContact: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Receipt number</label>
-              <input
-                type="text"
-                value={formData.receiptNumber}
-                onChange={(e) => setFormData({ ...formData, receiptNumber: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Invoice number</label>
-              <input
-                type="text"
-                value={formData.invoiceNumber}
-                onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Month / year</label>
-              <div className="flex gap-2">
+          <div className="card-body space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Payment mode *</label>
                 <select
-                  value={formData.month}
-                  onChange={(e) => setFormData({ ...formData, month: parseInt(e.target.value, 10) })}
-                  className="flex-1 p-2 border rounded-lg"
+                  value={formData.paymentMode}
+                  onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value })}
+                  className="input"
+                  required
                 >
-                  {MONTHS.map((month, index) => (
-                    <option key={month} value={index + 1}>
-                      {month.substring(0, 3)}
-                    </option>
-                  ))}
+                  <option value="UPI">UPI</option>
+                  <option value="CASH">Cash</option>
+                  <option value="ONLINE">Online</option>
+                  <option value="BANK_TRANSFER">Bank transfer</option>
+                  <option value="CHEQUE">Cheque</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Payment reference</label>
                 <input
-                  type="number"
-                  value={formData.year}
-                  onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value, 10) })}
-                  className="w-24 p-2 border rounded-lg"
-                  min={2020}
-                  max={2035}
+                  type="text"
+                  value={formData.paymentRef}
+                  onChange={(e) => setFormData({ ...formData, paymentRef: e.target.value })}
+                  className="input"
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Paid to *</label>
+                <input
+                  type="text"
+                  value={formData.paidTo}
+                  onChange={(e) => setFormData({ ...formData, paidTo: e.target.value })}
+                  className="input"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Contact</label>
+                <input
+                  type="text"
+                  value={formData.paidToContact}
+                  onChange={(e) => setFormData({ ...formData, paidToContact: e.target.value })}
+                  className="input"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Receipt number</label>
+                <input
+                  type="text"
+                  value={formData.receiptNumber}
+                  onChange={(e) => setFormData({ ...formData, receiptNumber: e.target.value })}
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Invoice number</label>
+                <input
+                  type="text"
+                  value={formData.invoiceNumber}
+                  onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Month / year</label>
+                <div className="flex gap-2">
+                  <select
+                    value={formData.month}
+                    onChange={(e) => setFormData({ ...formData, month: parseInt(e.target.value, 10) })}
+                    className="input flex-1"
+                  >
+                    {MONTHS.map((month, index) => (
+                      <option key={month} value={index + 1}>
+                        {month.substring(0, 3)}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    value={formData.year}
+                    onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value, 10) })}
+                    className="input w-24"
+                    min={2020}
+                    max={2035}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center justify-between w-full text-left"
-          >
-            <h2 className="text-lg font-semibold text-gray-900">GST, TDS, notes & tags</h2>
-            <span className="text-gray-500">{showAdvanced ? "▼" : "▶"}</span>
-          </button>
+        <div className="card">
+          <div className="card-body">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <h2 className="text-lg font-semibold text-fg-primary">GST, TDS, notes & tags</h2>
+              <span className="text-fg-secondary">{showAdvanced ? "▼" : "▶"}</span>
+            </button>
 
-          {showAdvanced && (
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">GST %</label>
-                  <input
-                    type="number"
-                    value={formData.gstPercentage}
-                    onChange={(e) => setFormData({ ...formData, gstPercentage: parseFloat(e.target.value) || 0 })}
-                    className="w-full p-2 border rounded-lg"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">GST amount</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500">₹</span>
+            {showAdvanced && (
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-fg-primary mb-1">GST %</label>
                     <input
                       type="number"
-                      value={formData.gstAmount}
-                      onChange={(e) => setFormData({ ...formData, gstAmount: parseFloat(e.target.value) || 0 })}
-                      className="w-full p-2 pl-8 border rounded-lg bg-gray-50"
-                      readOnly
+                      value={formData.gstPercentage}
+                      onChange={(e) => setFormData({ ...formData, gstPercentage: parseFloat(e.target.value) || 0 })}
+                      className="input"
+                      min="0"
+                      max="100"
+                      step="0.01"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-fg-primary mb-1">GST amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-fg-secondary">₹</span>
+                      <input
+                        type="number"
+                        value={formData.gstAmount}
+                        onChange={(e) => setFormData({ ...formData, gstAmount: parseFloat(e.target.value) || 0 })}
+                        className="input pl-8 bg-surface-background"
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-fg-primary mb-1">TDS %</label>
+                    <input
+                      type="number"
+                      value={formData.tdsPercentage}
+                      onChange={(e) => setFormData({ ...formData, tdsPercentage: parseFloat(e.target.value) || 0 })}
+                      className="input"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-fg-primary mb-1">TDS amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-fg-secondary">₹</span>
+                      <input
+                        type="number"
+                        value={formData.tdsAmount}
+                        onChange={(e) => setFormData({ ...formData, tdsAmount: parseFloat(e.target.value) || 0 })}
+                        className="input pl-8 bg-surface-background"
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-brand-primary-light p-4 rounded-lg flex justify-between items-center">
+                  <span className="text-sm font-medium text-info-fg">Net amount</span>
+                  <span className="text-xl font-bold text-info-fg">₹{netAmount.toLocaleString()}</span>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Notes</label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    rows={3}
+                    className="input"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Tags</label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
+                      className="input flex-1"
+                    />
+                    <button type="button" onClick={addTag} className="btn btn-ghost">
+                      <Plus size={20} />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="badge badge-info inline-flex items-center gap-1"
+                      >
+                        {tag}
+                        <button type="button" onClick={() => removeTag(tag)} className="hover:text-info-fg">
+                          <X size={14} />
+                        </button>
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">TDS %</label>
-                  <input
-                    type="number"
-                    value={formData.tdsPercentage}
-                    onChange={(e) => setFormData({ ...formData, tdsPercentage: parseFloat(e.target.value) || 0 })}
-                    className="w-full p-2 border rounded-lg"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">TDS amount</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500">₹</span>
-                    <input
-                      type="number"
-                      value={formData.tdsAmount}
-                      onChange={(e) => setFormData({ ...formData, tdsAmount: parseFloat(e.target.value) || 0 })}
-                      className="w-full p-2 pl-8 border rounded-lg bg-gray-50"
-                      readOnly
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 p-4 rounded-lg flex justify-between items-center">
-                <span className="text-sm font-medium text-blue-900">Net amount</span>
-                <span className="text-xl font-bold text-blue-900">₹{netAmount.toLocaleString()}</span>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addTag();
-                      }
-                    }}
-                    className="flex-1 p-2 border rounded-lg"
-                  />
-                  <button type="button" onClick={addTag} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                    <Plus size={20} />
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                    >
-                      {tag}
-                      <button type="button" onClick={() => removeTag(tag)} className="hover:text-blue-900">
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="flex gap-4">
-          <Link href={`/expenses/${id}`} className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-center hover:bg-gray-50">
+          <Link href={`/expenses/${id}`} className="btn btn-ghost flex-1 text-center">
             Cancel
           </Link>
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+            className="btn btn-primary flex-1 disabled:bg-fg-tertiary"
           >
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? "Saving..." : "Save changes"}
           </button>
         </div>
       </form>

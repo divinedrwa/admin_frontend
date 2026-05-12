@@ -210,18 +210,18 @@ export default function PollsPage() {
   return (
     <AppShell title="Polls & Voting">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Create and manage community polls</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Create and manage community polls</p>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Create Poll
           </button>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white border border-gray-200 rounded p-4">
+        <div className="filter-bar">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
@@ -230,7 +230,7 @@ export default function PollsPage() {
                 placeholder="Search polls by title or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               />
             </div>
 
@@ -239,7 +239,7 @@ export default function PollsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               >
                 <option value="all">All Polls ({polls.length})</option>
                 <option value="active">Active Only ({activeCount})</option>
@@ -249,17 +249,20 @@ export default function PollsPage() {
           </div>
 
           {/* Results Count */}
-          <div className="mt-3 text-sm text-gray-600">
+          <div className="mt-3 text-sm text-fg-secondary">
             Showing {filteredPolls.length} of {polls.length} polls
           </div>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">{editingPoll ? "Edit Poll" : "Create New Poll"}</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">{editingPoll ? "Edit Poll" : "Create New Poll"}</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Poll Title *
                 </label>
                 <input
@@ -267,20 +270,20 @@ export default function PollsPage() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="e.g., Should we organize a summer fest?"
                   maxLength={200}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Description (Optional)
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="Add more details about this poll..."
                   rows={3}
                 />
@@ -288,7 +291,7 @@ export default function PollsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Start Date *
                   </label>
                   <input
@@ -296,11 +299,11 @@ export default function PollsPage() {
                     required
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     End Date *
                   </label>
                   <input
@@ -308,13 +311,13 @@ export default function PollsPage() {
                     required
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-fg-primary mb-2">
                   Poll Options * (minimum 2)
                 </label>
                 {formData.options.map((option, index) => (
@@ -324,7 +327,7 @@ export default function PollsPage() {
                       required
                       value={option}
                       onChange={(e) => handleOptionChange(index, e.target.value)}
-                      className="flex-1 border border-gray-300 rounded px-3 py-2"
+                      className="input flex-1"
                       placeholder={`Option ${index + 1}`}
                       maxLength={200}
                     />
@@ -332,7 +335,7 @@ export default function PollsPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveOption(index)}
-                        className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                        className="px-3 py-2 bg-denied-bg text-brand-danger rounded hover:bg-denied-bg"
                       >
                         Remove
                       </button>
@@ -342,7 +345,7 @@ export default function PollsPage() {
                 <button
                   type="button"
                   onClick={handleAddOption}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  className="text-brand-primary hover:text-brand-primary text-sm font-medium"
                 >
                   + Add Another Option
                 </button>
@@ -352,56 +355,64 @@ export default function PollsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? (editingPoll ? "Updating..." : "Creating...") : (editingPoll ? "Update Poll" : "Create Poll")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
         <div className="space-y-4">
           {loading ? (
-            <p className="text-gray-500">Loading polls...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading polls...</p>
+            </div>
           ) : filteredPolls.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded p-8 text-center">
-              <p className="text-gray-500">
-                {searchQuery || statusFilter !== "all" 
-                  ? "No polls match your search criteria." 
-                  : "No polls created yet. Click \"Create Poll\" to get started."}
-              </p>
+            <div className="card">
+              <div className="empty-state">
+                <span className="empty-state-icon">📊</span>
+                <p className="empty-state-title">{searchQuery || statusFilter !== "all" ? "No Matching Polls" : "No Polls Created"}</p>
+                <p className="empty-state-text">
+                  {searchQuery || statusFilter !== "all"
+                    ? "No polls match your search criteria."
+                    : "Click \"Create Poll\" to get started."}
+                </p>
+              </div>
             </div>
           ) : (
             filteredPolls.map((poll) => (
-              <div key={poll.id} className="bg-white border border-gray-200 rounded p-6">
+              <div key={poll.id} className="card p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">{poll.title}</h3>
+                    <h3 className="text-xl font-bold text-fg-primary">{poll.title}</h3>
                     {poll.description && (
-                      <p className="text-gray-600 mt-1">{poll.description}</p>
+                      <p className="text-fg-secondary mt-1">{poll.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span
-                      className={`px-3 py-1 text-sm rounded ${
+                      className={`badge ${
                         poll.isActive
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
+                          ? "badge-success"
+                          : "badge-gray"
                       }`}
                     >
                       {poll.isActive ? "Active" : "Closed"}
                     </span>
                     <button
                       onClick={() => handleEdit(poll)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                      className="p-2 text-brand-primary hover:bg-brand-primary-light rounded"
                       title="Edit poll"
                     >
                       ✏️
@@ -409,7 +420,7 @@ export default function PollsPage() {
                     <button
                       onClick={() => handleDelete(poll.id)}
                       disabled={deletingPollId === poll.id}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                      className="p-2 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
                       title="Delete poll"
                     >
                       🗑️
@@ -427,13 +438,13 @@ export default function PollsPage() {
                       <div key={option.id} className="border rounded p-3">
                         <div className="flex justify-between mb-2">
                           <span className="font-medium">{option.optionText}</span>
-                          <span className="text-gray-600">
+                          <span className="text-fg-secondary">
                             {votes} votes ({percentage}%)
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded h-2">
+                        <div className="w-full bg-surface-elevated rounded h-2">
                           <div
-                            className="bg-blue-600 h-2 rounded"
+                            className="bg-brand-primary h-2 rounded"
                             style={{ width: `${percentage}%` }}
                           ></div>
                         </div>
@@ -442,7 +453,7 @@ export default function PollsPage() {
                   })}
                 </div>
 
-                <div className="flex justify-between text-sm text-gray-500 border-t pt-3">
+                <div className="flex justify-between text-sm text-fg-secondary border-t pt-3">
                   <span>
                     {formatDate(poll.startDate)} - {formatDate(poll.endDate)}
                   </span>

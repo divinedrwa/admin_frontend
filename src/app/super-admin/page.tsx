@@ -313,7 +313,10 @@ export default function SuperAdminConsolePage() {
   if (booting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        <p className="text-slate-300">Loading platform console…</p>
+        <div className="loading-state">
+          <div className="loading-spinner w-10 h-10"></div>
+          <p className="loading-state-text text-slate-300">Loading platform console…</p>
+        </div>
       </div>
     );
   }
@@ -328,7 +331,7 @@ export default function SuperAdminConsolePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-indigo-300 hover:text-white underline">
+          <Link href="/login" className="text-sm text-brand-primary hover:text-white underline">
             Open society admin app
           </Link>
           <button
@@ -419,7 +422,7 @@ export default function SuperAdminConsolePage() {
                               return (
                                 <li
                                   key={a.id}
-                                  className="border-l-2 border-indigo-500/50 pl-2 space-y-0.5"
+                                  className="border-l-2 border-brand-primary/50 pl-2 space-y-0.5"
                                 >
                                   <div>
                                     <span className="text-slate-500">Username</span>{" "}
@@ -455,7 +458,7 @@ export default function SuperAdminConsolePage() {
                         </button>
                         <button
                           type="button"
-                          className="text-xs px-2 py-1 rounded-md bg-indigo-500/30 hover:bg-indigo-500/50"
+                          className="text-xs px-2 py-1 rounded-md bg-brand-primary/30 hover:bg-brand-primary/50"
                           onClick={() => openEdit(s)}
                         >
                           Edit
@@ -464,7 +467,7 @@ export default function SuperAdminConsolePage() {
                           <button
                             type="button"
                             disabled={archivingId === s.id}
-                            className="text-xs px-2 py-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 disabled:opacity-50"
+                            className="text-xs px-2 py-1 rounded-md bg-approved-solid/20 hover:bg-approved-solid/40 text-emerald-200 disabled:opacity-50"
                             onClick={() => void onRestore(s)}
                           >
                             {archivingId === s.id ? "Restoring…" : "Restore"}
@@ -473,7 +476,7 @@ export default function SuperAdminConsolePage() {
                           <button
                             type="button"
                             disabled={archivingId === s.id}
-                            className="text-xs px-2 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/40 text-amber-200 disabled:opacity-50"
+                            className="text-xs px-2 py-1 rounded-md bg-pending-solid/20 hover:bg-pending-solid/40 text-amber-200 disabled:opacity-50"
                             onClick={() => void onArchive(s)}
                           >
                             {archivingId === s.id ? "Archiving…" : "Archive"}
@@ -481,7 +484,7 @@ export default function SuperAdminConsolePage() {
                         )}
                         <button
                           type="button"
-                          className="text-xs px-2 py-1 rounded-md bg-red-500/20 hover:bg-red-500/40 text-red-200"
+                          className="text-xs px-2 py-1 rounded-md bg-brand-danger/20 hover:bg-brand-danger/40 text-red-200"
                           onClick={() => {
                             setDeleteRow(s);
                             setDeleteConfirmText("");
@@ -506,7 +509,7 @@ export default function SuperAdminConsolePage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Name</label>
                 <input
-                  className="input w-full bg-white text-gray-900"
+                  className="input w-full bg-surface text-fg-primary"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   required
@@ -519,7 +522,7 @@ export default function SuperAdminConsolePage() {
                   Address (optional)
                 </label>
                 <input
-                  className="input w-full bg-white text-gray-900"
+                  className="input w-full bg-surface text-fg-primary"
                   value={newAddress}
                   onChange={(e) => setNewAddress(e.target.value)}
                   placeholder="City, region"
@@ -545,7 +548,7 @@ export default function SuperAdminConsolePage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Society</label>
                 <select
-                  className="input w-full bg-white text-gray-900"
+                  className="input w-full bg-surface text-fg-primary"
                   value={adminSocietyId}
                   onChange={(e) => setAdminSocietyId(e.target.value)}
                   required
@@ -564,7 +567,7 @@ export default function SuperAdminConsolePage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Username</label>
                 <input
-                  className="input w-full bg-white text-gray-900"
+                  className="input w-full bg-surface text-fg-primary"
                   value={adminUsername}
                   onChange={(e) => setAdminUsername(e.target.value)}
                   required
@@ -575,7 +578,7 @@ export default function SuperAdminConsolePage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Full name</label>
                 <input
-                  className="input w-full bg-white text-gray-900"
+                  className="input w-full bg-surface text-fg-primary"
                   value={adminName}
                   onChange={(e) => setAdminName(e.target.value)}
                   required
@@ -586,7 +589,7 @@ export default function SuperAdminConsolePage() {
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Email</label>
                 <input
                   type="email"
-                  className="input w-full bg-white text-gray-900"
+                  className="input w-full bg-surface text-fg-primary"
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
                   required
@@ -599,7 +602,7 @@ export default function SuperAdminConsolePage() {
                 </label>
                 <input
                   type="password"
-                  className="input w-full bg-white text-gray-900"
+                  className="input w-full bg-surface text-fg-primary"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   required
@@ -612,7 +615,7 @@ export default function SuperAdminConsolePage() {
                   Phone (optional)
                 </label>
                 <input
-                  className="input w-full bg-white text-gray-900"
+                  className="input w-full bg-surface text-fg-primary"
                   value={adminPhone}
                   onChange={(e) => setAdminPhone(e.target.value)}
                   autoComplete="off"
@@ -632,9 +635,9 @@ export default function SuperAdminConsolePage() {
 
       {/* View society */}
       {(detailSociety || detailLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-slate-900 border border-white/15 rounded-2xl max-w-lg w-full p-6 shadow-xl">
-            <div className="flex justify-between items-start gap-4 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-white/15 rounded-2xl max-w-lg w-full shadow-xl">
+            <div className="card-header flex justify-between items-start gap-4 border-b border-white/10 p-6">
               <h3 className="text-lg font-semibold text-white">Society details</h3>
               <button
                 type="button"
@@ -647,8 +650,12 @@ export default function SuperAdminConsolePage() {
                 Close
               </button>
             </div>
+            <div className="card-body p-6">
             {detailLoading ? (
-              <p className="text-slate-400">Loading…</p>
+              <div className="loading-state">
+                <div className="loading-spinner w-8 h-8"></div>
+                <p className="loading-state-text text-slate-400">Loading…</p>
+              </div>
             ) : detailSociety ? (
               <div className="space-y-3 text-sm">
                 <div>
@@ -689,7 +696,7 @@ export default function SuperAdminConsolePage() {
                   <button
                     type="button"
                     disabled={openingTenantSession}
-                    className="text-sm px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium disabled:opacity-50"
+                    className="btn btn-primary text-sm font-medium disabled:opacity-50"
                     onClick={() => void openSocietyAdminDashboard(detailSociety)}
                   >
                     {openingTenantSession ? "Opening…" : "Open society admin dashboard"}
@@ -701,27 +708,29 @@ export default function SuperAdminConsolePage() {
                 </div>
               </div>
             ) : null}
+            </div>
           </div>
         </div>
       )}
 
       {/* Edit society */}
       {editRow && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form
             onSubmit={onSaveEdit}
-            className="bg-slate-900 border border-white/15 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4"
+            className="bg-slate-900 border border-white/15 rounded-2xl max-w-md w-full shadow-xl"
           >
-            <div className="flex justify-between items-start gap-4">
+            <div className="card-header flex justify-between items-start gap-4 border-b border-white/10 p-6">
               <h3 className="text-lg font-semibold text-white">Edit society</h3>
               <button type="button" className="text-slate-400 hover:text-white text-sm" onClick={() => setEditRow(null)}>
                 Cancel
               </button>
             </div>
+            <div className="card-body p-6 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">Name</label>
               <input
-                className="input w-full bg-white text-gray-900"
+                className="input w-full bg-surface text-fg-primary"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 required
@@ -731,7 +740,7 @@ export default function SuperAdminConsolePage() {
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">Address</label>
               <textarea
-                className="input w-full bg-white text-gray-900 min-h-[80px]"
+                className="input w-full bg-surface text-fg-primary min-h-[80px]"
                 value={editAddress}
                 onChange={(e) => setEditAddress(e.target.value)}
                 placeholder="Optional"
@@ -740,7 +749,7 @@ export default function SuperAdminConsolePage() {
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">Status</label>
               <select
-                className="input w-full bg-white text-gray-900"
+                className="input w-full bg-surface text-fg-primary"
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value as "ACTIVE" | "INACTIVE")}
               >
@@ -751,6 +760,7 @@ export default function SuperAdminConsolePage() {
             <button type="submit" disabled={savingEdit} className="btn btn-primary w-full py-2.5">
               {savingEdit ? "Saving…" : "Save changes"}
             </button>
+            </div>
           </form>
         </div>
       )}
@@ -759,9 +769,12 @@ export default function SuperAdminConsolePage() {
           Archive (per-row button, reversible). This modal is only the
           permanent-delete path. */}
       {deleteRow && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-slate-900 border border-red-500/30 rounded-2xl max-w-md w-full p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-white mb-2">Delete permanently?</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-brand-danger/30 rounded-2xl max-w-md w-full shadow-xl">
+            <div className="card-header border-b border-white/10 p-6">
+              <h3 className="text-lg font-semibold text-white">Delete permanently?</h3>
+            </div>
+            <div className="card-body p-6">
             <p className="text-sm text-slate-300 mb-3">
               This drops <strong className="text-white">{deleteRow.name}</strong> and{" "}
               <strong className="text-amber-200">cascades</strong> across users, villas, billing, visitors,
@@ -787,7 +800,7 @@ export default function SuperAdminConsolePage() {
             <div className="flex gap-3 justify-end mt-5">
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm"
+                className="btn btn-ghost text-sm"
                 onClick={() => {
                   setDeleteRow(null);
                   setDeleteConfirmText("");
@@ -801,11 +814,12 @@ export default function SuperAdminConsolePage() {
                   deleting ||
                   deleteConfirmText.trim().toLowerCase() !== deleteRow.name.toLowerCase()
                 }
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn btn-danger text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 onClick={() => void onConfirmDelete()}
               >
                 {deleting ? "Deleting…" : "Delete permanently"}
               </button>
+            </div>
             </div>
           </div>
         </div>

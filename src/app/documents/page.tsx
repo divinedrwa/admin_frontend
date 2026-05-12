@@ -170,18 +170,18 @@ export default function DocumentsPage() {
   return (
     <AppShell title="Documents & Files">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Manage society documents and files</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Manage society documents and files</p>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Upload Document
           </button>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white border border-gray-200 rounded p-4">
+        <div className="filter-bar">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <input
@@ -189,14 +189,14 @@ export default function DocumentsPage() {
                 placeholder="Search by title or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               />
             </div>
             <div>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               >
                 <option value="all">All Categories</option>
                 <option value="GENERAL">General</option>
@@ -208,17 +208,20 @@ export default function DocumentsPage() {
               </select>
             </div>
           </div>
-          <div className="mt-3 text-sm text-gray-600">
+          <div className="mt-3 text-sm text-fg-secondary">
             Showing {filteredDocuments.length} of {documents.length} documents
           </div>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">{editingDocument ? "Edit Document" : "Upload New Document"}</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">{editingDocument ? "Edit Document" : "Upload New Document"}</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Document Title *
                 </label>
                 <input
@@ -226,27 +229,27 @@ export default function DocumentsPage() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="e.g., Society Bylaws 2024"
                   maxLength={200}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Description (Optional)
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="Brief description of the document..."
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   File URL *
                 </label>
                 <input
@@ -254,21 +257,21 @@ export default function DocumentsPage() {
                   required
                   value={formData.fileUrl}
                   onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="https://..."
                 />
-                <p className="text-xs text-gray-500 mt-1">Upload file to cloud storage and provide URL</p>
+                <p className="text-xs text-fg-secondary mt-1">Upload file to cloud storage and provide URL</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Category *
                   </label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="GENERAL">General</option>
                     <option value="FINANCIAL">Financial</option>
@@ -279,14 +282,14 @@ export default function DocumentsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     File Type (Optional)
                   </label>
                   <input
                     type="text"
                     value={formData.fileType}
                     onChange={(e) => setFormData({ ...formData, fileType: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., application/pdf"
                   />
                 </div>
@@ -300,7 +303,7 @@ export default function DocumentsPage() {
                   onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
                   className="w-4 h-4"
                 />
-                <label htmlFor="isPublic" className="text-sm text-gray-700">
+                <label htmlFor="isPublic" className="text-sm text-fg-primary">
                   Make this document publicly accessible to all residents
                 </label>
               </div>
@@ -309,54 +312,60 @@ export default function DocumentsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? (editingDocument ? "Updating..." : "Uploading...") : (editingDocument ? "Update Document" : "Upload Document")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
         {loading ? (
-          <div className="bg-white border border-gray-200 rounded p-8 text-center">
-            <p className="text-gray-500">Loading documents...</p>
+          <div className="loading-state">
+            <div className="loading-spinner w-10 h-10"></div>
+            <p className="loading-state-text">Loading documents...</p>
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded p-8 text-center">
-            <p className="text-gray-500">
-              {searchQuery || categoryFilter !== "all" ? "No documents match your search criteria." : "No documents uploaded yet. Click \"Upload Document\" to add one."}
-            </p>
+          <div className="card">
+            <div className="empty-state">
+              <span className="empty-state-icon">📁</span>
+              <p className="empty-state-title">{searchQuery || categoryFilter !== "all" ? "No Matching Documents" : "No Documents Uploaded"}</p>
+              <p className="empty-state-text">
+                {searchQuery || categoryFilter !== "all" ? "No documents match your search criteria." : "Click \"Upload Document\" to add one."}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="bg-white border border-gray-200 rounded p-6 hover:shadow-lg transition-shadow"
+                className="card p-6"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="text-4xl">{getFileIcon(doc.fileType)}</div>
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    doc.isPublic ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                  <span className={`badge ${
+                    doc.isPublic ? "badge-success" : "badge-gray"
                   }`}>
                     {doc.isPublic ? "Public" : "Private"}
                   </span>
                 </div>
 
-                <h3 className="font-bold text-gray-900 mb-2">{doc.title}</h3>
+                <h3 className="font-bold text-fg-primary mb-2">{doc.title}</h3>
                 {doc.description && (
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{doc.description}</p>
+                  <p className="text-sm text-fg-secondary mb-3 line-clamp-2">{doc.description}</p>
                 )}
 
-                <div className="space-y-1 text-xs text-gray-500 mb-4">
+                <div className="space-y-1 text-xs text-fg-secondary mb-4">
                   <p>Category: {doc.category || "General"}</p>
                   <p>Uploaded: {formatDate(doc.createdAt)}</p>
                   {doc.fileSize && <p>Size: {Math.round(doc.fileSize / 1024)} KB</p>}
@@ -365,14 +374,14 @@ export default function DocumentsPage() {
                 <div className="space-y-2">
                   <button
                     onClick={() => window.open(doc.fileUrl, "_blank")}
-                    className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    className="btn btn-primary w-full text-sm"
                   >
                     View Document
                   </button>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(doc)}
-                      className="flex-1 py-1.5 text-blue-600 border border-blue-600 rounded hover:bg-blue-50 text-sm"
+                      className="flex-1 py-1.5 text-brand-primary border border-brand-primary rounded hover:bg-brand-primary-light text-sm"
                       title="Edit document"
                     >
                       ✏️ Edit
@@ -380,7 +389,7 @@ export default function DocumentsPage() {
                     <button
                       onClick={() => handleDelete(doc.id)}
                       disabled={deletingDocumentId === doc.id}
-                      className="flex-1 py-1.5 text-red-600 border border-red-600 rounded hover:bg-red-50 text-sm disabled:opacity-50"
+                      className="flex-1 py-1.5 text-brand-danger border border-brand-danger rounded hover:bg-denied-bg text-sm disabled:opacity-50"
                       title="Delete document"
                     >
                       🗑️ Delete

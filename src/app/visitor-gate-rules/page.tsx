@@ -95,30 +95,33 @@ export default function VisitorGateRulesPage() {
   return (
     <AppShell title="Gate visitor rules">
       <div className="max-w-2xl">
-        <p className="text-gray-600 mb-6">
+        <p className="text-fg-secondary mb-6">
           When security adds a visitor for more than one flat and residents must approve, this
           setting defines how those approvals combine.
         </p>
 
         {loading ? (
-          <p className="text-gray-500">Loading…</p>
+          <div className="loading-state">
+            <div className="loading-spinner w-10 h-10"></div>
+            <p className="loading-state-text">Loading settings...</p>
+          </div>
         ) : !society ? (
-          <p className="text-red-600">Could not load society settings.</p>
+          <p className="text-brand-danger">Could not load society settings.</p>
         ) : (
-          <form onSubmit={handleSave} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
+          <form onSubmit={handleSave} className="card card-body space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">Society</label>
-              <p className="text-gray-700">{society.name}</p>
+              <label className="block text-sm font-semibold text-fg-primary mb-1">Society</label>
+              <p className="text-fg-primary">{society.name}</p>
               <div className="mt-4">
-                <label className="block text-sm font-semibold text-gray-800 mb-1">Operating status</label>
-                <p className="text-sm text-gray-600 mb-2">
+                <label className="block text-sm font-semibold text-fg-primary mb-1">Operating status</label>
+                <p className="text-sm text-fg-secondary mb-2">
                   When inactive, guards and residents cannot sign in or use the app. Society admins can still sign
                   in and change this back to active. Use with care.
                 </p>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as SocStatus)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white max-w-xs"
+                  className="input max-w-xs"
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
@@ -127,7 +130,7 @@ export default function VisitorGateRulesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">
+              <label className="block text-sm font-semibold text-fg-primary mb-3">
                 Multi-flat approval rule
               </label>
               <div className="space-y-3">
@@ -135,7 +138,7 @@ export default function VisitorGateRulesPage() {
                   <label
                     key={key}
                     className={`flex gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${
-                      mode === key ? "border-blue-500 bg-blue-50/60" : "border-gray-200 hover:border-gray-300"
+                      mode === key ? "border-brand-primary bg-brand-primary-light/60" : "border-surface-border hover:border-surface-border"
                     }`}
                   >
                     <input
@@ -146,15 +149,15 @@ export default function VisitorGateRulesPage() {
                       onChange={() => setMode(key)}
                     />
                     <div>
-                      <div className="font-medium text-gray-900">{modeLabels[key].title}</div>
-                      <div className="text-sm text-gray-600 mt-1">{modeLabels[key].description}</div>
+                      <div className="font-medium text-fg-primary">{modeLabels[key].title}</div>
+                      <div className="text-sm text-fg-secondary mt-1">{modeLabels[key].description}</div>
                     </div>
                   </label>
                 ))}
               </div>
 
               {(society.visitorMultiVillaApprovalMode !== mode || (society.status ?? "ACTIVE") !== status) && (
-                <p className="text-sm text-amber-700 mt-3">You have unsaved changes.</p>
+                <p className="text-sm text-pending-fg mt-3">You have unsaved changes.</p>
               )}
             </div>
 
@@ -164,7 +167,7 @@ export default function VisitorGateRulesPage() {
                 saving ||
                 (mode === society.visitorMultiVillaApprovalMode && (society.status ?? "ACTIVE") === status)
               }
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-primary"
             >
               {saving ? "Saving…" : "Save settings"}
             </button>

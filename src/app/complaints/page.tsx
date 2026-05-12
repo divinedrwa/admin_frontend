@@ -35,56 +35,88 @@ export default function ComplaintsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const openCount = complaints.filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED").length;
+
   return (
     <AppShell title="Complaints">
-      <div className="rounded bg-white border border-gray-200 p-4 overflow-x-auto">
-        {loading ? (
-          <p className="text-gray-500">Loading...</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left border-b">
-                <th className="py-2">Villa</th>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {complaints.length === 0 ? (
+      <div className="space-y-6">
+        {/* Stats row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="stat-card">
+            <div className="stat-card-value">{complaints.length}</div>
+            <div className="stat-card-label">Total complaints</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-value text-pending-fg">{openCount}</div>
+            <div className="stat-card-label">Open / In progress</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-value text-approved-fg">{complaints.length - openCount}</div>
+            <div className="stat-card-label">Resolved</div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="table-wrapper">
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading complaints...</p>
+            </div>
+          ) : complaints.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-state-icon">📋</span>
+              <p className="empty-state-title">No complaints yet</p>
+              <p className="empty-state-text">When residents submit complaints, they will appear here for review and resolution.</p>
+            </div>
+          ) : (
+            <table className="table">
+              <thead className="table-head">
                 <tr>
-                  <td colSpan={4} className="py-4 text-center text-gray-500">
-                    No complaints found
-                  </td>
+                  <th className="table-th">Villa</th>
+                  <th className="table-th">Title</th>
+                  <th className="table-th">Description</th>
+                  <th className="table-th">Status</th>
+                  <th className="table-th">Created</th>
                 </tr>
-              ) : (
-                complaints.map((complaint) => (
-                  <tr key={complaint.id} className="border-b">
-                    <td className="py-2">
-                      {complaint.villa.villaNumber}
-                      {complaint.villa.block ? ` (${complaint.villa.block})` : ""}
+              </thead>
+              <tbody>
+                {complaints.map((complaint) => (
+                  <tr key={complaint.id} className="table-row">
+                    <td className="table-td">
+                      <div className="font-medium">{complaint.villa.villaNumber}</div>
+                      {complaint.villa.block && (
+                        <div className="text-xs text-fg-secondary">Block {complaint.villa.block}</div>
+                      )}
                     </td>
-                    <td>{complaint.title}</td>
-                    <td>
+                    <td className="table-td font-medium">{complaint.title}</td>
+                    <td className="table-td text-fg-secondary max-w-xs truncate">{complaint.description}</td>
+                    <td className="table-td">
                       <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          complaint.status === "RESOLVED"
-                            ? "bg-green-100 text-green-700"
+                        className={`badge ${
+                          complaint.status === "RESOLVED" || complaint.status === "CLOSED"
+                            ? "badge-success"
                             : complaint.status === "IN_PROGRESS"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
+                            ? "badge-primary"
+                            : "badge-warning"
                         }`}
                       >
-                        {complaint.status}
+                        {complaint.status.replace("_", " ")}
                       </span>
                     </td>
-                    <td>{new Date(complaint.createdAt).toLocaleDateString()}</td>
+                    <td className="table-td text-fg-secondary">
+                      {new Date(complaint.createdAt).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        )}
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </AppShell>
   );

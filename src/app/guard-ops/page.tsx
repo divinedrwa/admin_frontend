@@ -114,38 +114,38 @@ export default function GuardOperationsPage() {
                 key={status.gate}
                 className={`p-6 rounded border-2 ${
                   status.status === "ON"
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-300 bg-gray-50"
+                    ? "border-approved-solid bg-approved-bg"
+                    : "border-surface-border bg-surface-background"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-bold">{status.gate}</h3>
                   <span
-                    className={`px-3 py-1 rounded font-bold ${
+                    className={`badge font-bold ${
                       status.status === "ON"
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-400 text-white"
+                        ? "badge-success"
+                        : "badge-gray"
                     }`}
                   >
                     {status.status}
                   </span>
                 </div>
                 {status.location && (
-                  <p className="text-sm text-gray-600 mb-2">{status.location}</p>
+                  <p className="text-sm text-fg-secondary mb-2">{status.location}</p>
                 )}
                 {status.lastChanged && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-fg-secondary">
                     Last changed: {new Date(status.lastChanged).toLocaleString("en-IN")}
                   </p>
                 )}
                 {status.reason && (
-                  <p className="text-xs text-gray-600 mt-1">Reason: {status.reason}</p>
+                  <p className="text-xs text-fg-secondary mt-1">Reason: {status.reason}</p>
                 )}
               </div>
             ))}
           </div>
-          <div className="mt-4 bg-blue-50 border border-blue-200 rounded p-4">
-            <p className="text-sm text-blue-800">
+          <div className="mt-4 bg-brand-primary-light border border-surface-border rounded p-4">
+            <p className="text-sm text-info-fg">
               <strong>Note:</strong> Guards can turn water supply ON/OFF from their respective gates.
               All residents are automatically notified of status changes.
             </p>
@@ -157,19 +157,19 @@ export default function GuardOperationsPage() {
           <h2 className="text-xl font-semibold mb-4">Garbage Collection</h2>
           
           {garbageEvent ? (
-            <div className="bg-yellow-50 border-2 border-yellow-500 rounded p-6">
+            <div className="bg-pending-bg border-2 border-pending-solid rounded p-6">
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-3xl">🚛</span>
                 <div>
-                  <h3 className="text-lg font-bold text-yellow-900">
+                  <h3 className="text-lg font-bold text-pending-fg">
                     Garbage Collector is Inside the Society
                   </h3>
-                  <p className="text-sm text-yellow-800">
+                  <p className="text-sm text-pending-fg">
                     All residents have been notified to prepare their garbage
                   </p>
                 </div>
               </div>
-              <div className="flex gap-6 text-sm text-yellow-900">
+              <div className="flex gap-6 text-sm text-pending-fg">
                 <div>
                   <span className="font-medium">Entry Gate:</span> {garbageEvent.gate.name}
                 </div>
@@ -187,14 +187,14 @@ export default function GuardOperationsPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded p-6">
+            <div className="bg-surface border border-surface-border rounded p-6">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">✅</span>
                 <div>
-                  <h3 className="text-lg font-medium text-gray-700">
+                  <h3 className="text-lg font-medium text-fg-primary">
                     No Garbage Collector Currently Inside
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-fg-secondary">
                     Guards can log entry when garbage collector arrives
                   </p>
                 </div>
@@ -202,8 +202,8 @@ export default function GuardOperationsPage() {
             </div>
           )}
 
-          <div className="mt-4 bg-blue-50 border border-blue-200 rounded p-4">
-            <p className="text-sm text-blue-800">
+          <div className="mt-4 bg-brand-primary-light border border-surface-border rounded p-4">
+            <p className="text-sm text-info-fg">
               <strong>How it works:</strong> When a guard logs garbage collector entry, all
               residents receive an instant notification (SMS/App) to prepare their garbage. The
               guard marks exit when the collector leaves.
@@ -212,11 +212,11 @@ export default function GuardOperationsPage() {
         </div>
 
         {/* Quick Actions for Guards */}
-        <div className="bg-gray-50 border border-gray-200 rounded p-6">
+        <div className="bg-surface-background border border-surface-border rounded p-6">
           <h3 className="font-semibold mb-3">Guard Quick Actions</h3>
           <div className="flex gap-3">
             <button
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="btn btn-primary"
               onClick={handleToggleWater}
               disabled={actionLoading}
             >
@@ -224,7 +224,7 @@ export default function GuardOperationsPage() {
             </button>
             {garbageEvent ? (
               <button
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                className="btn btn-danger"
                 onClick={handleGarbageEntryExit}
                 disabled={actionLoading}
               >
@@ -232,7 +232,7 @@ export default function GuardOperationsPage() {
               </button>
             ) : (
               <button
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                className="btn btn-success"
                 onClick={handleGarbageEntryExit}
                 disabled={actionLoading}
               >
@@ -240,7 +240,7 @@ export default function GuardOperationsPage() {
               </button>
             )}
             <button
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+              className="btn btn-ghost"
               onClick={() => (window.location.href = "/guard-patrols")}
             >
               View History

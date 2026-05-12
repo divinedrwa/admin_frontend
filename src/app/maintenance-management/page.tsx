@@ -423,15 +423,16 @@ export default function MaintenanceManagementPage() {
   return (
     <AppShell title="Maintenance Payment Management">
       <div className="space-y-6">
-        <div className="bg-white border border-gray-200 rounded p-4 space-y-4">
-          <h3 className="text-base font-semibold text-gray-900">Select Financial Year and Month</h3>
+        <div className="card">
+          <div className="card-header"><h3 className="text-base font-semibold text-fg-primary">Select Financial Year and Month</h3></div>
+          <div className="card-body space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Financial Year</label>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Financial Year</label>
               <select
                 value={selectedFinancialYearId}
                 onChange={(e) => setSelectedFinancialYearId(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 w-full"
+                className="input w-full"
               >
                 <option value="">Select financial year...</option>
                 {financialYears.map((fy) => (
@@ -442,11 +443,11 @@ export default function MaintenanceManagementPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Month (from created billing cycles)</label>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Month (from created billing cycles)</label>
               <select
                 value={selectedCycleId}
                 onChange={(e) => setSelectedCycleId(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 w-full"
+                className="input w-full"
                 disabled={!selectedFinancialYearId}
               >
                 <option value="">Select month...</option>
@@ -458,22 +459,24 @@ export default function MaintenanceManagementPage() {
               </select>
             </div>
           </div>
+          </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded p-4 space-y-4">
-          <h3 className="text-base font-semibold text-gray-900">Maintenance Amount Rules</h3>
-          <p className="text-sm text-gray-600">
+        <div className="card">
+          <div className="card-header"><h3 className="text-base font-semibold text-fg-primary">Maintenance Amount Rules</h3></div>
+          <div className="card-body space-y-4">
+          <p className="text-sm text-fg-secondary">
             Set custom amount for a single villa for the selected month. After payments are posted, amounts still
             update for that villa&apos;s row (or use <strong>Edit</strong> in the table for expected and collected).
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Villa</label>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Villa</label>
               <select
                 value={selectedVillaId}
                 onChange={(e) => setSelectedVillaId(e.target.value)}
                 disabled={!cycleEditable && !!selectedCycleId}
-                className="border border-gray-300 rounded px-3 py-2 w-full disabled:opacity-50"
+                className="input w-full disabled:opacity-50"
               >
                 <option value="">Select villa...</option>
                 {villas.map((v) => (
@@ -484,7 +487,7 @@ export default function MaintenanceManagementPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Custom amount (₹)</label>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Custom amount (₹)</label>
               <input
                 type="number"
                 min={0}
@@ -492,7 +495,7 @@ export default function MaintenanceManagementPage() {
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
                 disabled={!cycleEditable && !!selectedCycleId}
-                className="border border-gray-300 rounded px-3 py-2 w-full disabled:opacity-50"
+                className="input w-full disabled:opacity-50"
               />
             </div>
             <button
@@ -500,76 +503,77 @@ export default function MaintenanceManagementPage() {
               onClick={() => void saveVillaCustomAmount()}
               disabled={loading || !selectedCycleId || !cycleEditable}
               title={!cycleEditable ? "Only OPEN billing periods can be edited" : undefined}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+              className="btn btn-primary disabled:opacity-50"
             >
               Save for selected month
             </button>
+          </div>
           </div>
         </div>
 
         {summary && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="bg-blue-50 border border-blue-200 rounded p-3">
-              <div className="text-xs text-blue-700">Total Villas</div>
-              <div className="text-lg font-bold text-blue-900">{summary.totalVillas}</div>
+            <div className="stat-card bg-brand-primary-light">
+              <div className="stat-card-label text-brand-primary">Total Villas</div>
+              <div className="stat-card-value text-lg text-fg-primary">{summary.totalVillas}</div>
             </div>
-            <div className="bg-green-50 border border-green-200 rounded p-3">
-              <div className="text-xs text-green-700">Paid</div>
-              <div className="text-lg font-bold text-green-900">{summary.paidCount}</div>
+            <div className="stat-card bg-approved-bg">
+              <div className="stat-card-label text-approved-fg">Paid</div>
+              <div className="stat-card-value text-lg text-fg-primary">{summary.paidCount}</div>
             </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-              <div className="text-xs text-yellow-700">Unpaid</div>
-              <div className="text-lg font-bold text-yellow-900">{summary.unpaidCount}</div>
+            <div className="stat-card bg-pending-bg">
+              <div className="stat-card-label text-pending-fg">Unpaid</div>
+              <div className="stat-card-value text-lg text-fg-primary">{summary.unpaidCount}</div>
             </div>
-            <div className="bg-red-50 border border-red-200 rounded p-3">
-              <div className="text-xs text-red-700">Overdue</div>
-              <div className="text-lg font-bold text-red-900">{summary.overdueCount}</div>
+            <div className="stat-card bg-denied-bg">
+              <div className="stat-card-label text-denied-fg">Overdue</div>
+              <div className="stat-card-value text-lg text-fg-primary">{summary.overdueCount}</div>
             </div>
-            <div className="bg-purple-50 border border-purple-200 rounded p-3">
-              <div className="text-xs text-purple-700">Collection</div>
-              <div className="text-lg font-bold text-purple-900">{summary.collectionRate}%</div>
+            <div className="stat-card bg-brand-primary-light">
+              <div className="stat-card-label text-brand-primary">Collection</div>
+              <div className="stat-card-value text-lg text-fg-primary">{summary.collectionRate}%</div>
             </div>
           </div>
         )}
 
         {/* Advance Credit explainer */}
         {residents.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded">
+          <div className="bg-brand-primary-light border border-surface-border rounded">
             <button
               type="button"
               onClick={() => setShowCreditHelp(!showCreditHelp)}
               className="w-full px-4 py-2.5 flex items-center justify-between text-left"
             >
-              <span className="text-sm font-medium text-blue-900">
+              <span className="text-sm font-medium text-fg-primary">
                 What is Advance Credit?
               </span>
-              <span className="text-blue-600 text-xs">{showCreditHelp ? "Hide" : "Show"}</span>
+              <span className="text-brand-primary text-xs">{showCreditHelp ? "Hide" : "Show"}</span>
             </button>
             {showCreditHelp && (
-              <div className="px-4 pb-3 text-sm text-blue-900 space-y-2 border-t border-blue-200 pt-3">
+              <div className="px-4 pb-3 text-sm text-fg-primary space-y-2 border-t border-surface-border pt-3">
                 <p>
                   <strong>Advance credit</strong> is money a resident has paid in advance that hasn&apos;t been used yet.
                   It works like a wallet balance.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div className="bg-white rounded p-3 border border-blue-100">
+                  <div className="bg-surface rounded p-3 border border-surface-border">
                     <div className="font-semibold mb-1">How credit is created</div>
-                    <ul className="list-disc list-inside space-y-0.5 text-blue-800">
+                    <ul className="list-disc list-inside space-y-0.5 text-info-fg">
                       <li>Resident overpays (pays more than the monthly amount)</li>
                       <li>Admin manually adds credit via &quot;Manage Credit&quot;</li>
                     </ul>
                   </div>
-                  <div className="bg-white rounded p-3 border border-blue-100">
+                  <div className="bg-surface rounded p-3 border border-surface-border">
                     <div className="font-semibold mb-1">How credit is used</div>
-                    <ul className="list-disc list-inside space-y-0.5 text-blue-800">
+                    <ul className="list-disc list-inside space-y-0.5 text-info-fg">
                       <li>Click the green credit badge on any villa row</li>
                       <li>Choose &quot;Use credit for this month&quot; to apply it</li>
                       <li>The credit settles the pending amount (full or partial)</li>
                     </ul>
                   </div>
-                  <div className="bg-white rounded p-3 border border-blue-100">
+                  <div className="bg-surface rounded p-3 border border-surface-border">
                     <div className="font-semibold mb-1">Manual adjustments</div>
-                    <ul className="list-disc list-inside space-y-0.5 text-blue-800">
+                    <ul className="list-disc list-inside space-y-0.5 text-info-fg">
                       <li><strong>Add credit</strong> — record advance cash received offline</li>
                       <li><strong>Deduct credit</strong> — correct a mistake or reverse an entry</li>
                     </ul>
@@ -580,11 +584,11 @@ export default function MaintenanceManagementPage() {
           </div>
         )}
 
-        <div className="flex gap-3 items-center">
+        <div className="filter-bar flex gap-3 items-center">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="border border-gray-300 rounded px-3 py-2"
+            className="input"
           >
             <option value="all">All status</option>
             <option value="PAID">Paid</option>
@@ -595,22 +599,22 @@ export default function MaintenanceManagementPage() {
           <input
             type="text"
             placeholder="Search villa or owner..."
-            className="border border-gray-300 rounded px-3 py-2 flex-1"
+            className="input flex-1"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <div className="bg-white border border-gray-200 rounded overflow-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+        <div className="table-wrapper">
+          <table className="table">
+            <thead className="table-head">
               <tr>
-                <th className="px-4 py-3">Villa</th>
-                <th className="px-4 py-3">Owner</th>
-                <th className="px-4 py-3">Amount</th>
-                <th className="px-4 py-3">Advance Credit</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Actions</th>
+                <th className="table-th">Villa</th>
+                <th className="table-th">Owner</th>
+                <th className="table-th">Amount</th>
+                <th className="table-th">Advance Credit</th>
+                <th className="table-th">Status</th>
+                <th className="table-th">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -618,26 +622,26 @@ export default function MaintenanceManagementPage() {
                 const credit = r.advanceCredit ?? 0;
                 const remaining = r.amount - (r.paidTowardCycle ?? 0);
                 return (
-                  <tr key={r.villaId} className="border-t border-gray-100">
-                    <td className="px-4 py-3 font-medium">{r.villaNumber}</td>
-                    <td className="px-4 py-3">{r.ownerName}</td>
-                    <td className="px-4 py-3">
+                  <tr key={r.villaId} className="table-row">
+                    <td className="table-td font-medium">{r.villaNumber}</td>
+                    <td className="table-td">{r.ownerName}</td>
+                    <td className="table-td">
                       {r.paidTowardCycle != null && r.paidTowardCycle > 0
                         ? `${formatCurrency(r.paidTowardCycle)} / ${formatCurrency(r.amount)}`
                         : formatCurrency(r.amount)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="table-td">
                       {credit > 0 ? (
                         <button
                           type="button"
                           onClick={() => openCreditModal(r)}
                           disabled={!cycleEditable || loading}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-green-100 border border-green-300 px-2.5 py-1 text-xs font-semibold text-green-800 hover:bg-green-200 transition-colors disabled:opacity-40"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-approved-bg border border-approved-bg px-2.5 py-1 text-xs font-semibold text-approved-fg hover:bg-approved-bg transition-colors disabled:opacity-40"
                           title="Click to manage this credit"
                         >
                           {formatCurrency(credit)}
                           {r.status !== "PAID" && remaining > 0 && (
-                            <span className="text-green-600">- use it</span>
+                            <span className="text-approved-solid">- use it</span>
                           )}
                         </button>
                       ) : (
@@ -645,27 +649,27 @@ export default function MaintenanceManagementPage() {
                           type="button"
                           onClick={() => openCreditModal(r)}
                           disabled={!cycleEditable || loading}
-                          className="text-gray-400 hover:text-purple-600 text-xs disabled:opacity-40"
+                          className="text-fg-tertiary hover:text-brand-primary text-xs disabled:opacity-40"
                           title="Add advance credit"
                         >
                           + Add
                         </button>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                    <td className="table-td">
+                      <span className={`badge ${
                         r.status === "PAID"
-                          ? "bg-green-100 text-green-800"
+                          ? "badge-success"
                           : r.status === "OVERDUE"
-                            ? "bg-red-100 text-red-800"
+                            ? "badge-danger"
                             : r.status === "PARTIAL"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-800"
+                              ? "badge-warning"
+                              : "badge-gray"
                       }`}>
                         {r.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="table-td">
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
@@ -681,13 +685,13 @@ export default function MaintenanceManagementPage() {
                             type="button"
                             onClick={() => openMarkPaid(r)}
                             disabled={!cycleEditable || loading}
-                            className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-40"
+                            className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
                           >
                             Mark paid
                           </button>
                         )}
                         {r.status === "PAID" && (
-                          <span className="text-gray-500 text-xs">Receipt: {r.receiptNumber || "—"}</span>
+                          <span className="text-fg-secondary text-xs">Receipt: {r.receiptNumber || "—"}</span>
                         )}
                       </div>
                     </td>
@@ -696,7 +700,7 @@ export default function MaintenanceManagementPage() {
               })}
               {filteredResidents.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-6 text-center text-fg-secondary">
                     {selectedCycleId ? "No residents found" : "Please select financial year and month"}
                   </td>
                 </tr>
@@ -708,16 +712,19 @@ export default function MaintenanceManagementPage() {
 
       {/* ── Row Edit modal ── */}
       {showRowEditModal && rowEdit && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-            <h2 className="text-lg font-semibold mb-1">Edit villa row</h2>
-            <p className="text-sm text-gray-600 mb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md">
+            <div className="card-header">
+              <h2 className="text-lg font-semibold">Edit villa row</h2>
+            </div>
+            <div className="card-body">
+            <p className="text-sm text-fg-secondary mb-4">
               {rowEdit.villaNumber} — adjust expected maintenance and recorded collected amount (manual correction).
               If collected is more than expected, the extra will carry forward as resident advance credit.
             </p>
             <form onSubmit={submitRowEdit} className="space-y-3">
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Expected (₹)</label>
+                <label className="block text-sm text-fg-primary mb-1">Expected (₹)</label>
                 <input
                   type="number"
                   min={0}
@@ -725,11 +732,11 @@ export default function MaintenanceManagementPage() {
                   required
                   value={rowEdit.expectedStr}
                   onChange={(e) => setRowEdit((s) => (s ? { ...s, expectedStr: e.target.value } : s))}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input w-full"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Collected / paid toward cycle (₹)</label>
+                <label className="block text-sm text-fg-primary mb-1">Collected / paid toward cycle (₹)</label>
                 <input
                   type="number"
                   min={0}
@@ -737,10 +744,10 @@ export default function MaintenanceManagementPage() {
                   required
                   value={rowEdit.paidStr}
                   onChange={(e) => setRowEdit((s) => (s ? { ...s, paidStr: e.target.value } : s))}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input w-full"
                 />
               </div>
-              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded px-2 py-1.5">
+              <p className="text-xs text-pending-fg bg-pending-bg border border-pending-bg rounded px-2 py-1.5">
                 This updates the billing snapshot and resident billing ledger. It does not create or delete payment
                 receipt rows; use that only when you need to correct totals already posted. Any collected amount above
                 the expected cycle amount will remain as advance credit for this resident.
@@ -749,7 +756,7 @@ export default function MaintenanceManagementPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900 disabled:opacity-50"
+                  className="btn btn-primary flex-1 disabled:opacity-50"
                 >
                   Save row
                 </button>
@@ -759,35 +766,39 @@ export default function MaintenanceManagementPage() {
                     setShowRowEditModal(false);
                     setRowEdit(null);
                   }}
-                  className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost flex-1"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* ── Mark Paid modal ── */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Mark Payment as Paid</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md">
+            <div className="card-header">
+              <h2 className="text-lg font-semibold">Mark Payment as Paid</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={submitMarkPaid} className="space-y-3">
               {(() => {
                 const row = residents.find((r) => r.villaId === paymentForm.villaId);
                 const credit = row?.advanceCredit ?? 0;
                 return (
                   <>
-                    <div className="text-sm text-gray-700">Villa: {paymentForm.villaNumber}</div>
+                    <div className="text-sm text-fg-primary">Villa: {paymentForm.villaNumber}</div>
                     {credit > 0 && (
-                      <p className="text-xs text-green-800 bg-green-50 border border-green-100 rounded px-2 py-1.5">
+                      <p className="text-xs text-approved-fg bg-approved-bg border border-surface-border rounded px-2 py-1.5">
                         This villa has {formatCurrency(credit)} advance credit. Close this modal and click
                         the green credit badge to use it instead, or enter cash received below.
                       </p>
                     )}
-                    <p className="text-xs text-blue-800 bg-blue-50 border border-blue-100 rounded px-2 py-1.5">
+                    <p className="text-xs text-info-fg bg-brand-primary-light border border-surface-border rounded px-2 py-1.5">
                       You can enter more than this month&apos;s amount. Any extra will automatically become
                       advance credit for future months.
                     </p>
@@ -795,7 +806,7 @@ export default function MaintenanceManagementPage() {
                 );
               })()}
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Amount</label>
+                <label className="block text-sm text-fg-primary mb-1">Amount</label>
                 <input
                   type="number"
                   min={0}
@@ -803,27 +814,27 @@ export default function MaintenanceManagementPage() {
                   required
                   value={paymentForm.amount}
                   onChange={(e) => setPaymentForm((p) => ({ ...p, amount: Number(e.target.value) }))}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input w-full"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Payment date</label>
+                <label className="block text-sm text-fg-primary mb-1">Payment date</label>
                 <input
                   type="date"
                   required
                   value={paymentForm.paymentDate}
                   onChange={(e) => setPaymentForm((p) => ({ ...p, paymentDate: e.target.value }))}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input w-full"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Mode</label>
+                <label className="block text-sm text-fg-primary mb-1">Mode</label>
                 <select
                   value={paymentForm.paymentMode}
                   onChange={(e) =>
                     setPaymentForm((p) => ({ ...p, paymentMode: e.target.value as PaymentMode }))
                   }
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input w-full"
                 >
                   <option value="CASH">Cash</option>
                   <option value="UPI">UPI</option>
@@ -832,64 +843,65 @@ export default function MaintenanceManagementPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Transaction ID (optional)</label>
+                <label className="block text-sm text-fg-primary mb-1">Transaction ID (optional)</label>
                 <input
                   type="text"
                   value={paymentForm.transactionId}
                   onChange={(e) => setPaymentForm((p) => ({ ...p, transactionId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input w-full"
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="btn btn-primary flex-1 disabled:opacity-50"
                 >
                   Save
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost flex-1"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* ── Unified Credit modal ── */}
       {showCreditModal && creditRow && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md shadow-lg">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md">
             {/* Header with balance */}
-            <div className="p-5 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">
+            <div className="card-header">
+              <h2 className="text-lg font-semibold text-fg-primary">
                 Advance Credit — Villa {creditRow.villaNumber}
               </h2>
-              <p className="text-sm text-gray-500 mt-0.5">{creditRow.ownerName}</p>
+              <p className="text-sm text-fg-secondary mt-0.5">{creditRow.ownerName}</p>
               <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-green-700">
+                <span className="text-2xl font-bold text-approved-fg">
                   {formatCurrency(creditRow.advanceCredit ?? 0)}
                 </span>
-                <span className="text-sm text-gray-500">available balance</span>
+                <span className="text-sm text-fg-secondary">available balance</span>
               </div>
             </div>
 
             {/* Action tabs */}
             <div className="px-5 pt-4">
-              <div className="flex rounded-lg bg-gray-100 p-1 gap-1">
+              <div className="flex rounded-lg bg-surface-elevated p-1 gap-1">
                 {(creditRow.advanceCredit ?? 0) > 0 && creditRow.status !== "PAID" && (
                   <button
                     type="button"
                     onClick={() => setCreditAction("apply")}
                     className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                       creditAction === "apply"
-                        ? "bg-white text-green-700 shadow-sm"
-                        : "text-gray-600 hover:text-gray-900"
+                        ? "bg-surface text-approved-fg shadow-sm"
+                        : "text-fg-secondary hover:text-fg-primary"
                     }`}
                   >
                     Use for this month
@@ -900,8 +912,8 @@ export default function MaintenanceManagementPage() {
                   onClick={() => setCreditAction("add")}
                   className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     creditAction === "add"
-                      ? "bg-white text-purple-700 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "bg-surface text-brand-primary shadow-sm"
+                      : "text-fg-secondary hover:text-fg-primary"
                   }`}
                 >
                   Add credit
@@ -912,8 +924,8 @@ export default function MaintenanceManagementPage() {
                     onClick={() => setCreditAction("deduct")}
                     className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                       creditAction === "deduct"
-                        ? "bg-white text-red-700 shadow-sm"
-                        : "text-gray-600 hover:text-gray-900"
+                        ? "bg-surface text-denied-fg shadow-sm"
+                        : "text-fg-secondary hover:text-fg-primary"
                     }`}
                   >
                     Deduct
@@ -926,9 +938,9 @@ export default function MaintenanceManagementPage() {
             <form onSubmit={submitCreditAction} className="p-5 space-y-4">
               {creditAction === "apply" && (
                 <>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-900">
+                  <div className="bg-approved-bg border border-approved-bg rounded-lg p-3 text-sm text-fg-primary">
                     <p className="font-medium mb-1">Use credit to settle this month</p>
-                    <p className="text-green-700 text-xs">
+                    <p className="text-approved-fg text-xs">
                       The system will apply up to {formatCurrency(creditRow.advanceCredit ?? 0)} from the
                       available balance toward the {formatCurrency(Math.max(0, creditRow.amount - (creditRow.paidTowardCycle ?? 0)))} remaining
                       due for {selectedCycle ? `${MONTHS[selectedCycle.periodMonth - 1]} ${selectedCycle.periodYear}` : "this month"}.
@@ -940,12 +952,12 @@ export default function MaintenanceManagementPage() {
 
               {creditAction === "add" && (
                 <>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-800">
+                  <div className="bg-brand-primary-light border border-surface-border rounded-lg p-3 text-xs text-info-fg">
                     Record advance money received outside the system. This amount will be added to the
                     credit balance and can be used to settle future months.
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">Amount to add (₹)</label>
+                    <label className="block text-sm text-fg-primary mb-1">Amount to add (₹)</label>
                     <input
                       type="number"
                       min={0.01}
@@ -954,18 +966,18 @@ export default function MaintenanceManagementPage() {
                       value={creditAmount}
                       onChange={(e) => setCreditAmount(e.target.value)}
                       placeholder="e.g. 5000"
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input w-full"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">Reason</label>
+                    <label className="block text-sm text-fg-primary mb-1">Reason</label>
                     <input
                       type="text"
                       required
                       value={creditRemarks}
                       onChange={(e) => setCreditRemarks(e.target.value)}
                       placeholder="e.g. Advance cash received for 3 months"
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input w-full"
                     />
                   </div>
                 </>
@@ -973,12 +985,12 @@ export default function MaintenanceManagementPage() {
 
               {creditAction === "deduct" && (
                 <>
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800">
+                  <div className="bg-denied-bg border border-denied-bg rounded-lg p-3 text-xs text-denied-fg">
                     Remove credit from this villa&apos;s balance. Use this to correct a mistake or reverse
                     an incorrect entry. You cannot deduct more than the available {formatCurrency(creditRow.advanceCredit ?? 0)}.
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">Amount to deduct (₹)</label>
+                    <label className="block text-sm text-fg-primary mb-1">Amount to deduct (₹)</label>
                     <input
                       type="number"
                       min={0.01}
@@ -988,18 +1000,18 @@ export default function MaintenanceManagementPage() {
                       value={creditAmount}
                       onChange={(e) => setCreditAmount(e.target.value)}
                       placeholder={`Max ${formatCurrency(creditRow.advanceCredit ?? 0)}`}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input w-full"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">Reason</label>
+                    <label className="block text-sm text-fg-primary mb-1">Reason</label>
                     <input
                       type="text"
                       required
                       value={creditRemarks}
                       onChange={(e) => setCreditRemarks(e.target.value)}
                       placeholder="e.g. Reversing duplicate credit entry"
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input w-full"
                     />
                   </div>
                 </>
@@ -1011,10 +1023,10 @@ export default function MaintenanceManagementPage() {
                   disabled={loading}
                   className={`flex-1 text-white px-4 py-2 rounded font-medium disabled:opacity-50 ${
                     creditAction === "apply"
-                      ? "bg-green-600 hover:bg-green-700"
+                      ? "bg-approved-solid hover:bg-approved-solid hover:opacity-90"
                       : creditAction === "add"
-                        ? "bg-purple-600 hover:bg-purple-700"
-                        : "bg-red-600 hover:bg-red-700"
+                        ? "bg-brand-primary hover:bg-brand-primary-hover"
+                        : "bg-brand-danger hover:bg-brand-danger hover:opacity-90"
                   }`}
                 >
                   {creditAction === "apply"
@@ -1026,7 +1038,7 @@ export default function MaintenanceManagementPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreditModal(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost flex-1"
                 >
                   Cancel
                 </button>

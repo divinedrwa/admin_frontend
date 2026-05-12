@@ -159,8 +159,9 @@ export default function ExpensesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-600">Loading expenses...</div>
+      <div className="loading-state">
+        <div className="loading-spinner w-10 h-10"></div>
+        <p className="loading-state-text">Loading expenses...</p>
       </div>
     );
   }
@@ -168,22 +169,22 @@ export default function ExpensesPage() {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-action-bar mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Monthly Expenses</h1>
-          <p className="text-gray-600 mt-1">Track all society operational expenses</p>
+          <h1 className="text-3xl font-bold text-fg-primary">Monthly Expenses</h1>
+          <p className="text-fg-secondary mt-1">Track all society operational expenses</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={exportToExcel}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            className="btn btn-success flex items-center gap-2"
           >
             <Download size={20} />
             Export
           </button>
           <Link
             href="/expenses/add"
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn btn-primary flex items-center gap-2"
           >
             <Plus size={20} />
             Add Expense
@@ -193,50 +194,50 @@ export default function ExpensesPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm text-gray-600 mb-1">Total Expenses</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="stat-card">
+          <div className="stat-card-label">Total Expenses</div>
+          <div className="stat-card-value">
             ₹{stats.total.toLocaleString()}
           </div>
-          <div className="text-sm text-gray-500 mt-1">{stats.count} entries</div>
+          <div className="text-sm text-fg-secondary mt-1">{stats.count} entries</div>
         </div>
 
-        <div className="bg-blue-50 rounded-lg shadow p-6">
-          <div className="text-sm text-blue-600 mb-1">This Month</div>
-          <div className="text-2xl font-bold text-blue-900">
+        <div className="stat-card bg-brand-primary-light">
+          <div className="stat-card-label text-brand-primary">This Month</div>
+          <div className="stat-card-value text-info-fg">
             ₹{stats.thisMonth.toLocaleString()}
           </div>
-          <div className="text-sm text-blue-600 mt-1">
+          <div className="text-sm text-brand-primary mt-1">
             {MONTHS[new Date().getMonth()]} {new Date().getFullYear()}
           </div>
         </div>
 
-        <div className="bg-green-50 rounded-lg shadow p-6">
-          <div className="text-sm text-green-600 mb-1">This Year</div>
-          <div className="text-2xl font-bold text-green-900">
+        <div className="stat-card bg-approved-bg">
+          <div className="stat-card-label text-approved-solid">This Year</div>
+          <div className="stat-card-value text-approved-fg">
             ₹{stats.thisYear.toLocaleString()}
           </div>
-          <div className="text-sm text-green-600 mt-1">{new Date().getFullYear()}</div>
+          <div className="text-sm text-approved-solid mt-1">{new Date().getFullYear()}</div>
         </div>
 
-        <div className="bg-purple-50 rounded-lg shadow p-6">
-          <div className="text-sm text-purple-600 mb-1">Avg per Month</div>
-          <div className="text-2xl font-bold text-purple-900">
+        <div className="stat-card bg-brand-primary-light">
+          <div className="stat-card-label text-brand-primary">Avg per Month</div>
+          <div className="stat-card-value text-info-fg">
             ₹{stats.thisYear > 0 ? Math.round(stats.thisYear / new Date().getMonth() + 1).toLocaleString() : 0}
           </div>
-          <div className="text-sm text-purple-600 mt-1">Current year</div>
+          <div className="text-sm text-brand-primary mt-1">Current year</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <div className="filter-bar mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Filter size={20} className="text-gray-600" />
-          <span className="font-semibold text-gray-900">Filters</span>
+          <Filter size={20} className="text-fg-secondary" />
+          <span className="font-semibold text-fg-primary">Filters</span>
           {(searchTerm || selectedCategory || selectedMonth || selectedYear || selectedStatus || selectedPaymentMode) && (
             <button
               onClick={clearFilters}
-              className="ml-auto text-sm text-blue-600 hover:text-blue-700"
+              className="ml-auto text-sm text-brand-primary hover:text-brand-primary"
             >
               Clear All
             </button>
@@ -247,14 +248,14 @@ export default function ExpensesPage() {
           {/* Search */}
           <div className="md:col-span-2">
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+              <Search size={18} className="absolute left-3 top-3 text-fg-tertiary" />
               <input
                 type="text"
                 placeholder="Search title, description, vendor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && fetchExpenses()}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg"
+                className="input pl-10"
               />
             </div>
           </div>
@@ -263,7 +264,7 @@ export default function ExpensesPage() {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
+            className="input"
           >
             <option value="">All Categories</option>
             {categories.map(cat => (
@@ -277,7 +278,7 @@ export default function ExpensesPage() {
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
+            className="input"
           >
             <option value="">All Months</option>
             {MONTHS.map((month, index) => (
@@ -289,7 +290,7 @@ export default function ExpensesPage() {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
+            className="input"
           >
             <option value="">All Years</option>
             {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -301,7 +302,7 @@ export default function ExpensesPage() {
           <select
             value={selectedPaymentMode}
             onChange={(e) => setSelectedPaymentMode(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
+            className="input"
           >
             <option value="">All Payment Modes</option>
             <option value="CASH">Cash</option>
@@ -314,61 +315,49 @@ export default function ExpensesPage() {
       </div>
 
       {/* Expenses Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="table-wrapper">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+          <table className="table">
+            <thead className="table-head">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Paid To
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Attachments
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="table-th">Date</th>
+                <th className="table-th">Category</th>
+                <th className="table-th">Title</th>
+                <th className="table-th">Paid To</th>
+                <th className="table-th">Amount</th>
+                <th className="table-th">Payment</th>
+                <th className="table-th">Attachments</th>
+                <th className="table-th text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-surface divide-y divide-surface-border">
               {expenses.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    No expenses found. Add your first expense to get started.
+                  <td colSpan={8} className="px-6 py-12 text-center">
+                    <div className="empty-state">
+                      <span className="empty-state-icon">💰</span>
+                      <p className="empty-state-title">No expenses found</p>
+                      <p className="empty-state-text">Add your first expense to get started.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 expenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={expense.id} className="table-row">
+                    <td className="table-td whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <Calendar size={16} className="text-gray-400" />
-                        <span className="text-sm text-gray-900">
+                        <Calendar size={16} className="text-fg-tertiary" />
+                        <span className="text-sm text-fg-primary">
                           {new Date(expense.paymentDate).toLocaleDateString()}
                         </span>
                       </div>
                       {expense.month && expense.year && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-fg-secondary">
                           {MONTHS[expense.month - 1]} {expense.year}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="table-td whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span
                           className="w-8 h-8 rounded flex items-center justify-center"
@@ -376,75 +365,75 @@ export default function ExpensesPage() {
                         >
                           {expense.category.icon || '📋'}
                         </span>
-                        <span className="text-sm text-gray-900">
+                        <span className="text-sm text-fg-primary">
                           {expense.category.name}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
+                    <td className="table-td">
+                      <div className="text-sm font-medium text-fg-primary">
                         {expense.title}
                       </div>
                       {expense.description && (
-                        <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">
+                        <div className="text-xs text-fg-secondary mt-1 max-w-xs truncate">
                           {expense.description}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{expense.paidTo}</div>
+                    <td className="table-td whitespace-nowrap">
+                      <div className="text-sm text-fg-primary">{expense.paidTo}</div>
                       {expense.receiptNumber && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-fg-secondary">
                           #{expense.receiptNumber}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">
+                    <td className="table-td whitespace-nowrap">
+                      <div className="text-sm font-semibold text-fg-primary">
                         ₹{expense.amount.toLocaleString()}
                       </div>
                       {expense.netAmount !== expense.amount && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-fg-secondary">
                           Net: ₹{expense.netAmount.toLocaleString()}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        expense.paymentMode === 'UPI' ? 'bg-purple-100 text-purple-800' :
-                        expense.paymentMode === 'CARD' ? 'bg-blue-100 text-blue-800' :
-                        expense.paymentMode === 'CASH' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
+                    <td className="table-td whitespace-nowrap">
+                      <span className={`badge ${
+                        expense.paymentMode === 'UPI' ? 'badge-info' :
+                        expense.paymentMode === 'CARD' ? 'badge-info' :
+                        expense.paymentMode === 'CASH' ? 'badge-success' :
+                        'badge-gray'
                       }`}>
                         {expense.paymentMode}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="table-td whitespace-nowrap">
                       {expense.attachments.length > 0 ? (
-                        <span className="text-sm text-blue-600">
+                        <span className="text-sm text-brand-primary">
                           📎 {expense.attachments.length} file(s)
                         </span>
                       ) : (
-                        <span className="text-sm text-gray-400">-</span>
+                        <span className="text-sm text-fg-tertiary">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="table-td whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/expenses/${expense.id}`}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-brand-primary hover:text-brand-primary"
                         >
                           <Eye size={18} />
                         </Link>
                         <Link
                           href={`/expenses/edit/${expense.id}`}
-                          className="text-gray-600 hover:text-gray-900"
+                          className="text-fg-secondary hover:text-fg-primary"
                         >
                           <Edit size={18} />
                         </Link>
                         <button
                           onClick={() => handleDelete(expense.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-brand-danger hover:text-brand-danger"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -462,19 +451,19 @@ export default function ExpensesPage() {
       <div className="mt-6 flex gap-4">
         <Link
           href="/expenses-summary"
-          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          className="text-brand-primary hover:text-brand-primary text-sm font-medium"
         >
           View Monthly Summary →
         </Link>
         <Link
           href="/expenses-summary/yearly"
-          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          className="text-brand-primary hover:text-brand-primary text-sm font-medium"
         >
           View Yearly Summary →
         </Link>
         <Link
           href="/expense-categories"
-          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          className="text-brand-primary hover:text-brand-primary text-sm font-medium"
         >
           Manage Categories →
         </Link>

@@ -25,12 +25,12 @@ export default function YearlySummaryPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch yearly summary
       const summaryRes = await api.get(`/expenses/summary/yearly?year=${year}`);
       const summaryData = summaryRes.data;
       setSummary(summaryData);
-      
+
       // Fetch top categories
       const topCatRes = await api.get(`/expenses/analytics/top-categories?year=${year}&limit=10`);
       const topCatData = topCatRes.data ?? [];
@@ -50,7 +50,7 @@ export default function YearlySummaryPage() {
       monthlySummaries: summary?.monthlySummaries,
       topCategories
     };
-    
+
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -61,8 +61,9 @@ export default function YearlySummaryPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-600">Loading yearly summary...</div>
+      <div className="loading-state">
+        <div className="loading-spinner w-10 h-10"></div>
+        <p className="loading-state-text">Loading yearly summary...</p>
       </div>
     );
   }
@@ -85,14 +86,14 @@ export default function YearlySummaryPage() {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-action-bar mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Yearly Expense Report</h1>
-          <p className="text-gray-600 mt-1">Comprehensive annual expense analysis</p>
+          <h1 className="text-3xl font-bold text-fg-primary">Yearly Expense Report</h1>
+          <p className="text-fg-secondary mt-1">Comprehensive annual expense analysis</p>
         </div>
         <button
           onClick={exportYearlyReport}
-          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+          className="btn btn-success flex items-center gap-2"
         >
           <Download size={20} />
           Export Report
@@ -100,14 +101,14 @@ export default function YearlySummaryPage() {
       </div>
 
       {/* Year Selector */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <div className="filter-bar mb-6">
         <div className="flex items-center gap-4">
-          <Calendar size={20} className="text-gray-600" />
-          <span className="font-medium text-gray-900">Select Year:</span>
+          <Calendar size={20} className="text-fg-secondary" />
+          <span className="font-medium text-fg-primary">Select Year:</span>
           <select
             value={year}
             onChange={(e) => setYear(parseInt(e.target.value))}
-            className="px-4 py-2 border rounded-lg"
+            className="input"
           >
             {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
               <option key={y} value={y}>{y}</option>
@@ -118,9 +119,9 @@ export default function YearlySummaryPage() {
 
       {/* Yearly Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-        <div className="md:col-span-2 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg shadow-lg p-6">
-          <div className="text-sm opacity-90 mb-2">Total Expenses ({year})</div>
-          <div className="text-4xl font-bold mb-1">
+        <div className="md:col-span-2 stat-card bg-gradient-to-br from-brand-primary to-brand-primary-hover text-white">
+          <div className="stat-card-label opacity-90">Total Expenses ({year})</div>
+          <div className="stat-card-value text-4xl text-white">
             ₹{yearlyTotal.totalExpenses?.toLocaleString() || 0}
           </div>
           <div className="text-sm opacity-75">
@@ -128,221 +129,221 @@ export default function YearlySummaryPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm text-gray-600 mb-2">Average/Month</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="stat-card">
+          <div className="stat-card-label">Average/Month</div>
+          <div className="stat-card-value">
             ₹{Math.round(avgPerMonth).toLocaleString()}
           </div>
-          <div className="text-xs text-gray-500 mt-2">
+          <div className="text-xs text-fg-secondary mt-2">
             {monthlySummaries.length} months recorded
           </div>
         </div>
 
-        <div className="bg-green-50 rounded-lg shadow p-6">
-          <div className="flex items-center gap-2 text-sm text-green-600 mb-2">
+        <div className="stat-card bg-approved-bg">
+          <div className="stat-card-label flex items-center gap-2 text-approved-solid">
             <TrendingUp size={16} />
             Highest Month
           </div>
-          <div className="text-xl font-bold text-green-900">
+          <div className="stat-card-value text-approved-fg text-xl">
             ₹{highestMonth?.totalExpenses?.toLocaleString() || 0}
           </div>
-          <div className="text-xs text-green-600 mt-2">
+          <div className="text-xs text-approved-solid mt-2">
             {MONTHS[highestMonth?.month - 1]} {year}
           </div>
         </div>
 
-        <div className="bg-blue-50 rounded-lg shadow p-6">
-          <div className="flex items-center gap-2 text-sm text-blue-600 mb-2">
+        <div className="stat-card bg-brand-primary-light">
+          <div className="stat-card-label flex items-center gap-2 text-brand-primary">
             <TrendingDown size={16} />
             Lowest Month
           </div>
-          <div className="text-xl font-bold text-blue-900">
+          <div className="stat-card-value text-info-fg text-xl">
             ₹{lowestMonth?.totalExpenses?.toLocaleString() || 0}
           </div>
-          <div className="text-xs text-blue-600 mt-2">
+          <div className="text-xs text-brand-primary mt-2">
             {MONTHS[lowestMonth?.month - 1]} {year}
           </div>
         </div>
       </div>
 
       {/* Month-by-Month Breakdown */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">
-          Month-by-Month Breakdown ({year})
-        </h2>
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="text-lg font-semibold text-fg-primary">
+            Month-by-Month Breakdown ({year})
+          </h2>
+        </div>
+        <div className="card-body">
+          {monthlySummaries.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-state-icon">📅</span>
+              <p className="empty-state-title">No expenses recorded</p>
+              <p className="empty-state-text">No expenses recorded for {year}.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead className="table-head">
+                  <tr>
+                    <th className="table-th">Month</th>
+                    <th className="table-th text-right">Total Expenses</th>
+                    <th className="table-th text-right">vs Previous</th>
+                    <th className="table-th text-right">Entries</th>
+                    <th className="table-th text-right">Visual</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-border">
+                  {MONTHS.map((monthName, index) => {
+                    const monthData = monthlySummaries.find((m: any) => m.month === index + 1);
+                    const prevMonthData = monthlySummaries.find((m: any) => m.month === index);
 
-        {monthlySummaries.length === 0 ? (
-          <div className="text-center text-gray-500 py-12">
-            No expenses recorded for {year}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Month
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Total Expenses
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    vs Previous
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Entries
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    Visual
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {MONTHS.map((monthName, index) => {
-                  const monthData = monthlySummaries.find((m: any) => m.month === index + 1);
-                  const prevMonthData = monthlySummaries.find((m: any) => m.month === index);
-                  
-                  if (!monthData) {
+                    if (!monthData) {
+                      return (
+                        <tr key={index} className="bg-surface-background">
+                          <td className="table-td text-fg-secondary">{monthName}</td>
+                          <td colSpan={4} className="table-td text-center text-fg-tertiary">
+                            No data
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    const prevTotal = prevMonthData?.totalExpenses || 0;
+                    const change = prevTotal > 0
+                      ? ((monthData.totalExpenses - prevTotal) / prevTotal) * 100
+                      : 0;
+                    const barWidth = (monthData.totalExpenses / maxMonthlyExpense) * 100;
+
                     return (
-                      <tr key={index} className="bg-gray-50">
-                        <td className="px-6 py-4 text-sm text-gray-500">{monthName}</td>
-                        <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-400">
-                          No data
+                      <tr key={index} className="table-row">
+                        <td className="table-td font-medium text-fg-primary">
+                          {monthName}
+                        </td>
+                        <td className="table-td text-right font-semibold text-fg-primary">
+                          ₹{monthData.totalExpenses.toLocaleString()}
+                        </td>
+                        <td className="table-td text-right">
+                          {prevTotal === 0 ? (
+                            <span className="text-fg-tertiary">-</span>
+                          ) : (
+                            <span className={change >= 0 ? 'text-brand-danger' : 'text-approved-solid'}>
+                              {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
+                            </span>
+                          )}
+                        </td>
+                        <td className="table-td text-right text-fg-secondary">
+                          {monthData.expenseCount}
+                        </td>
+                        <td className="table-td">
+                          <div className="w-full bg-surface-elevated rounded-full h-2">
+                            <div
+                              className="bg-brand-primary h-2 rounded-full"
+                              style={{ width: `${barWidth}%` }}
+                            />
+                          </div>
                         </td>
                       </tr>
                     );
-                  }
-
-                  const prevTotal = prevMonthData?.totalExpenses || 0;
-                  const change = prevTotal > 0 
-                    ? ((monthData.totalExpenses - prevTotal) / prevTotal) * 100 
-                    : 0;
-                  const barWidth = (monthData.totalExpenses / maxMonthlyExpense) * 100;
-
-                  return (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {monthName}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">
-                        ₹{monthData.totalExpenses.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right">
-                        {prevTotal === 0 ? (
-                          <span className="text-gray-400">-</span>
-                        ) : (
-                          <span className={change >= 0 ? 'text-red-600' : 'text-green-600'}>
-                            {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right text-gray-600">
-                        {monthData.expenseCount}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${barWidth}%` }}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot className="bg-gray-100 font-semibold">
-                <tr>
-                  <td className="px-6 py-4 text-sm text-gray-900">Total ({year})</td>
-                  <td className="px-6 py-4 text-sm text-right text-gray-900">
-                    ₹{yearlyTotal.totalExpenses?.toLocaleString() || 0}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-right text-gray-600">-</td>
-                  <td className="px-6 py-4 text-sm text-right text-gray-900">
-                    {yearlyTotal.expenseCount || 0}
-                  </td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
+                  })}
+                </tbody>
+                <tfoot className="bg-surface-elevated font-semibold">
+                  <tr>
+                    <td className="table-td text-fg-primary">Total ({year})</td>
+                    <td className="table-td text-right text-fg-primary">
+                      ₹{yearlyTotal.totalExpenses?.toLocaleString() || 0}
+                    </td>
+                    <td className="table-td text-right text-fg-secondary">-</td>
+                    <td className="table-td text-right text-fg-primary">
+                      {yearlyTotal.expenseCount || 0}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Top Categories for the Year */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">
-          Top Categories ({year})
-        </h2>
-
-        {topCategories.length === 0 ? (
-          <div className="text-center text-gray-500 py-12">
-            No category data available
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {topCategories.map((cat, index) => {
-              const percentage = ((cat.totalAmount / (yearlyTotal.totalExpenses || 1)) * 100).toFixed(1);
-              return (
-                <div key={index} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="text-xl font-bold text-gray-400 w-8">
-                        #{index + 1}
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="text-lg font-semibold text-fg-primary">
+            Top Categories ({year})
+          </h2>
+        </div>
+        <div className="card-body">
+          {topCategories.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-state-icon">📊</span>
+              <p className="empty-state-title">No category data available</p>
+              <p className="empty-state-text">Add expenses to see category rankings.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {topCategories.map((cat, index) => {
+                const percentage = ((cat.totalAmount / (yearlyTotal.totalExpenses || 1)) * 100).toFixed(1);
+                return (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="text-xl font-bold text-fg-tertiary w-8">
+                          #{index + 1}
+                        </div>
+                        <div
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: cat.categoryColor || '#3B82F6' }}
+                        />
+                        <span className="font-medium text-fg-primary">{cat.categoryName}</span>
+                        <span className="text-sm text-fg-secondary">({cat.count} entries)</span>
                       </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-fg-primary">
+                          ₹{cat.totalAmount?.toLocaleString() || 0}
+                        </div>
+                        <div className="text-xs text-fg-secondary">{percentage}%</div>
+                      </div>
+                    </div>
+                    <div className="w-full bg-surface-elevated rounded-full h-3">
                       <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: cat.categoryColor || '#3B82F6' }}
+                        className="h-3 rounded-full"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: cat.categoryColor || '#3B82F6'
+                        }}
                       />
-                      <span className="font-medium text-gray-900">{cat.categoryName}</span>
-                      <span className="text-sm text-gray-500">({cat.count} entries)</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-gray-900">
-                        ₹{cat.totalAmount?.toLocaleString() || 0}
-                      </div>
-                      <div className="text-xs text-gray-500">{percentage}%</div>
                     </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="h-3 rounded-full"
-                      style={{
-                        width: `${percentage}%`,
-                        backgroundColor: cat.categoryColor || '#3B82F6'
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-4">
         <Link
           href="/expenses"
-          className="text-blue-600 hover:text-blue-700 font-medium"
+          className="text-brand-primary hover:text-brand-primary font-medium"
         >
           View All Expenses →
         </Link>
         <Link
           href="/expenses/add"
-          className="text-blue-600 hover:text-blue-700 font-medium"
+          className="text-brand-primary hover:text-brand-primary font-medium"
         >
           Add New Expense →
         </Link>
         <Link
           href="/expenses-summary"
-          className="text-blue-600 hover:text-blue-700 font-medium"
+          className="text-brand-primary hover:text-brand-primary font-medium"
         >
           View Monthly Summary →
         </Link>
         <Link
           href="/expense-categories"
-          className="text-blue-600 hover:text-blue-700 font-medium"
+          className="text-brand-primary hover:text-brand-primary font-medium"
         >
           Manage Categories →
         </Link>

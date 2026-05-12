@@ -22,8 +22,30 @@ const config: Config = {
       colors: {
         brand: {
           primary: "var(--gp-brand-primary)",
+          "primary-hover": "var(--gp-brand-primary-hover)",
+          "primary-light": "var(--gp-brand-primary-light)",
           accent: "var(--gp-brand-accent)",
           danger: "var(--gp-brand-danger)",
+        },
+        sidebar: {
+          from: "var(--gp-sidebar-from)",
+          via: "var(--gp-sidebar-via)",
+          to: "var(--gp-sidebar-to)",
+          "active-text": "var(--gp-sidebar-active-text)",
+          "active-bg": "var(--gp-sidebar-active-bg)",
+          "hover-bg": "var(--gp-sidebar-hover-bg)",
+          "muted-text": "var(--gp-sidebar-muted-text)",
+          border: "var(--gp-sidebar-border)",
+        },
+        login: {
+          from: "var(--gp-login-from)",
+          via: "var(--gp-login-via)",
+          to: "var(--gp-login-to)",
+        },
+        "super-login": {
+          from: "var(--gp-super-login-from)",
+          via: "var(--gp-super-login-via)",
+          to: "var(--gp-super-login-to)",
         },
         surface: {
           background: "var(--gp-surface-background)",

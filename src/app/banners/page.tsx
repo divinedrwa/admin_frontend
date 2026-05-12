@@ -174,59 +174,62 @@ export default function BannersPage() {
 
   const getTypeBadge = (type: string) => {
     const badges: Record<string, string> = {
-      EVENT: "bg-blue-100 text-blue-800",
-      ANNOUNCEMENT: "bg-green-100 text-green-800",
-      FESTIVAL: "bg-purple-100 text-purple-800",
-      EMERGENCY: "bg-red-100 text-red-800",
-      MAINTENANCE: "bg-yellow-100 text-yellow-800",
-      OFFER: "bg-pink-100 text-pink-800",
-      COMMUNITY: "bg-indigo-100 text-indigo-800",
+      EVENT: "badge-primary",
+      ANNOUNCEMENT: "badge-success",
+      FESTIVAL: "badge-info",
+      EMERGENCY: "badge-danger",
+      MAINTENANCE: "badge-warning",
+      OFFER: "badge-info",
+      COMMUNITY: "badge-primary",
     };
-    return badges[type] || "bg-gray-100 text-gray-800";
+    return badges[type] || "badge-gray";
   };
 
   return (
     <AppShell title="Banners & Events">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Manage banners and events for mobile app carousel</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Manage banners and events for mobile app carousel</p>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Create Banner
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingBanner ? "Edit Banner" : "Create New Banner"}
-            </h3>
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-lg font-semibold">
+                {editingBanner ? "Edit Banner" : "Create New Banner"}
+              </h3>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Title *
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="Holi Celebration 2026"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Type *
                   </label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     required
                   >
                     <option value="EVENT">Event</option>
@@ -240,33 +243,33 @@ export default function BannersPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     rows={3}
                     placeholder="Join us for Holi celebrations at the clubhouse..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Image URL
                   </label>
                   <input
                     type="url"
                     value={formData.imageUrl}
                     onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="https://example.com/banner.jpg"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Priority (0-100)
                   </label>
                   <input
@@ -275,49 +278,49 @@ export default function BannersPage() {
                     max="100"
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="0"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Higher priority shows first</p>
+                  <p className="text-xs text-fg-secondary mt-1">Higher priority shows first</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Start Date *
                   </label>
                   <input
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     End Date (optional)
                   </label>
                   <input
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Action URL (Deep Link)
                   </label>
                   <input
                     type="url"
                     value={formData.actionUrl}
                     onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="societyapp://events/holi-2026"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Optional deep link for mobile app navigation</p>
+                  <p className="text-xs text-fg-secondary mt-1">Optional deep link for mobile app navigation</p>
                 </div>
 
                 <div className="md:col-span-2">
@@ -328,7 +331,7 @@ export default function BannersPage() {
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                       className="mr-2"
                     />
-                    <span className="text-sm font-medium text-gray-700">Active (Visible in app)</span>
+                    <span className="text-sm font-medium text-fg-primary">Active (Visible in app)</span>
                   </label>
                 </div>
               </div>
@@ -337,37 +340,45 @@ export default function BannersPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Saving..." : (editingBanner ? "Update Banner" : "Create Banner")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
         {loading ? (
-          <p className="text-gray-500">Loading banners...</p>
+          <div className="loading-state">
+            <div className="loading-spinner w-10 h-10"></div>
+            <p className="loading-state-text">Loading banners...</p>
+          </div>
         ) : banners.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded p-8 text-center">
-            <p className="text-gray-500">No banners created yet. Click "Create Banner" to add one.</p>
+          <div className="card">
+            <div className="empty-state">
+              <span className="empty-state-icon">🎯</span>
+              <p className="empty-state-title">No Banners Created</p>
+              <p className="empty-state-text">Click &quot;Create Banner&quot; to add one.</p>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {banners.map((banner) => (
               <div
                 key={banner.id}
-                className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                className="card overflow-hidden"
               >
                 {banner.imageUrl && (
-                  <div className="h-48 bg-gray-200">
+                  <div className="h-48 bg-surface-elevated">
                     <img
                       src={banner.imageUrl}
                       alt={banner.title}
@@ -381,33 +392,33 @@ export default function BannersPage() {
                 
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getTypeBadge(banner.type)}`}>
+                    <span className={`badge font-semibold ${getTypeBadge(banner.type)}`}>
                       {banner.type}
                     </span>
-                    <span className="text-xs text-gray-500">Priority: {banner.priority}</span>
+                    <span className="text-xs text-fg-secondary">Priority: {banner.priority}</span>
                   </div>
 
                   <h3 className="font-semibold text-lg mb-2">{banner.title}</h3>
                   
                   {banner.description && (
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-3">{banner.description}</p>
+                    <p className="text-sm text-fg-secondary mb-3 line-clamp-3">{banner.description}</p>
                   )}
 
-                  <div className="text-xs text-gray-500 space-y-1 mb-3">
+                  <div className="text-xs text-fg-secondary space-y-1 mb-3">
                     <p>Start: {formatDate(banner.startDate)}</p>
                     {banner.endDate && <p>End: {formatDate(banner.endDate)}</p>}
                     <p>Created by: {banner.creator.name}</p>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs font-semibold ${banner.isActive ? "text-green-600" : "text-red-600"}`}>
+                    <span className={`text-xs font-semibold ${banner.isActive ? "text-approved-solid" : "text-brand-danger"}`}>
                       {banner.isActive ? "● Active" : "○ Inactive"}
                     </span>
                     
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEdit(banner)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                        className="p-2 text-brand-primary hover:bg-brand-primary-light rounded"
                         title="Edit banner"
                       >
                         ✏️
@@ -415,7 +426,7 @@ export default function BannersPage() {
                       <button
                         onClick={() => handleDelete(banner.id)}
                         disabled={deletingBannerId === banner.id}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                        className="p-2 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
                         title="Delete banner"
                       >
                         🗑️

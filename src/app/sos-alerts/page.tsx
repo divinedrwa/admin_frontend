@@ -161,17 +161,17 @@ export default function SOSAlertsPage() {
       case "CREATED":
       case "ACTIVE":
       case "PENDING":
-        return "bg-red-100 text-red-800 animate-pulse";
+        return "bg-denied-bg text-denied-fg animate-pulse";
       case "ACKNOWLEDGED":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-pending-bg text-pending-fg";
       case "IN_PROGRESS":
         return "bg-orange-100 text-orange-900";
       case "RESOLVED":
-        return "bg-green-100 text-green-800";
+        return "bg-approved-bg text-approved-fg";
       case "CANCELLED":
-        return "bg-gray-200 text-gray-800";
+        return "bg-surface-elevated text-fg-primary";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-surface-elevated text-fg-primary";
     }
   };
 
@@ -216,49 +216,39 @@ export default function SOSAlertsPage() {
       <div className="space-y-4">
         {/* Alert Banner for Active SOS */}
         {activeCount > 0 && (
-          <div className="bg-red-100 border-l-4 border-red-500 p-4 rounded">
-            <div className="flex items-center">
-              <span className="text-2xl mr-3 animate-pulse">🚨</span>
+          <div className="bg-denied-bg border-l-4 border-brand-danger p-5 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-brand-danger/20 flex items-center justify-center">
+                <span className="text-2xl animate-pulse">🚨</span>
+              </div>
               <div>
-                <p className="font-bold text-red-800">
-                  {activeCount} ACTIVE EMERGENCY ALERT{activeCount > 1 ? "S" : ""}
+                <p className="font-bold text-denied-fg text-lg">
+                  {activeCount} Active Emergency Alert{activeCount > 1 ? "s" : ""}
                 </p>
-                <p className="text-sm text-red-700">Immediate attention required!</p>
+                <p className="text-sm text-denied-fg/80">Immediate attention required</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Filters */}
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="tabs">
             <button
               onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded ${
-                filter === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 border border-gray-300"
-              }`}
+              className={`tab ${filter === "all" ? "tab-active" : "tab-inactive"}`}
             >
               All Alerts
             </button>
             <button
               onClick={() => setFilter("active")}
-              className={`px-4 py-2 rounded ${
-                filter === "active"
-                  ? "bg-red-600 text-white"
-                  : "bg-white text-gray-700 border border-gray-300"
-              }`}
+              className={`tab ${filter === "active" ? "tab-active" : "tab-inactive"}`}
             >
               Active ({activeCount})
             </button>
             <button
               onClick={() => setFilter("resolved")}
-              className={`px-4 py-2 rounded ${
-                filter === "resolved"
-                  ? "bg-green-600 text-white"
-                  : "bg-white text-gray-700 border border-gray-300"
-              }`}
+              className={`tab ${filter === "resolved" ? "tab-active" : "tab-inactive"}`}
             >
               Resolved
             </button>
@@ -266,33 +256,36 @@ export default function SOSAlertsPage() {
           <div className="flex gap-2">
             <button
               onClick={handleOpenForm}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              className="btn btn-danger"
             >
               + Create Alert (Test)
             </button>
             <button
               onClick={loadAlerts}
-              className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+              className="btn btn-ghost"
             >
-              🔄 Refresh
+              Refresh
             </button>
           </div>
         </div>
 
         {/* Create Form */}
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">Create SOS Alert (Test)</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-bold text-fg-primary">Create SOS Alert (Test)</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Villa *
                 </label>
                 <select
                   required
                   value={formData.villaId}
                   onChange={(e) => setFormData({ ...formData, villaId: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                 >
                   <option value="">Select villa</option>
                   {villas.map((villa) => (
@@ -304,13 +297,13 @@ export default function SOSAlertsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Emergency Type *
                 </label>
                 <select
                   value={formData.emergencyType}
                   onChange={(e) => setFormData({ ...formData, emergencyType: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                 >
                   <option value="MEDICAL">🏥 Medical Emergency</option>
                   <option value="FIRE">🔥 Fire Emergency</option>
@@ -321,19 +314,19 @@ export default function SOSAlertsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Message (Optional)
                 </label>
                 <textarea
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="Provide details about the emergency..."
                   rows={3}
                 />
               </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+              <div className="bg-pending-bg border border-pending-bg rounded p-3 text-sm text-pending-fg">
                 ⚠️ This creates a test SOS alert. In production, residents create alerts from their mobile app.
               </div>
 
@@ -341,36 +334,46 @@ export default function SOSAlertsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+                  className="btn btn-danger"
                 >
                   {submitting ? "Creating..." : "Create Alert"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
         {/* Alerts List */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {loading ? (
-            <div className="text-gray-500">Loading alerts...</div>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading alerts...</p>
+            </div>
           ) : filteredAlerts.length === 0 ? (
-            <div className="bg-white rounded border border-gray-200 p-8 text-center text-gray-500">
-              No {filter === "active" ? "active" : filter === "resolved" ? "resolved" : ""} alerts
+            <div className="card">
+              <div className="empty-state">
+                <span className="empty-state-icon">🛡️</span>
+                <p className="empty-state-title">
+                  No {filter === "active" ? "active" : filter === "resolved" ? "resolved" : ""} alerts
+                </p>
+                <p className="empty-state-text">Emergency alerts from residents will appear here in real-time.</p>
+              </div>
             </div>
           ) : (
             filteredAlerts.map((alert) => (
               <div
                 key={alert.id}
-                className={`bg-white rounded border-2 p-4 ${
-                  !isTerminal(alert.status) ? "border-red-500" : "border-gray-200"
+                className={`card p-5 ${
+                  !isTerminal(alert.status) ? "border-2 border-brand-danger shadow-md" : ""
                 }`}
               >
                 <div className="flex justify-between items-start">
@@ -379,7 +382,7 @@ export default function SOSAlertsPage() {
                       <span className="text-2xl">{getEmergencyIcon(alert.emergencyType)}</span>
                       <div>
                         <h3 className="font-bold text-lg">{alert.emergencyType} EMERGENCY</h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-fg-secondary">
                           Villa {alert.villa.villaNumber}
                           {alert.villa.block ? ` (Block ${alert.villa.block})` : ""} •{" "}
                           {alert.user.name}
@@ -391,10 +394,10 @@ export default function SOSAlertsPage() {
                     </div>
 
                     {alert.message && (
-                      <p className="text-gray-700 mb-2 ml-11">{alert.message}</p>
+                      <p className="text-fg-primary mb-2 ml-11">{alert.message}</p>
                     )}
 
-                    <div className="flex gap-6 text-sm text-gray-600 ml-11">
+                    <div className="flex gap-6 text-sm text-fg-secondary ml-11">
                       <div>
                         <span className="font-medium">Triggered:</span> {formatTime(alert.createdAt)}
                       </div>
@@ -418,7 +421,7 @@ export default function SOSAlertsPage() {
                       alert.status === "PENDING") && (
                       <button
                         onClick={() => handleAcknowledge(alert.id)}
-                        className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-sm"
+                        className="btn bg-pending-solid text-fg-inverse hover:opacity-90 text-sm"
                       >
                         Acknowledge
                       </button>
@@ -426,15 +429,15 @@ export default function SOSAlertsPage() {
                     {alert.status === "ACKNOWLEDGED" && (
                       <button
                         onClick={() => handleStart(alert.id)}
-                        className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 text-sm"
+                        className="btn bg-pending-solid text-fg-inverse hover:opacity-90 text-sm"
                       >
-                        Start
+                        Start Response
                       </button>
                     )}
                     {!isTerminal(alert.status) && (
                       <button
                         onClick={() => handleResolve(alert.id)}
-                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
+                        className="btn btn-success text-sm"
                       >
                         Resolve
                       </button>

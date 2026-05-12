@@ -126,36 +126,33 @@ function LoginPageInner() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
-
-      {/* Login Card */}
-      <div className="w-full max-w-md relative z-10">
+    <main
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{
+        background: `linear-gradient(to bottom right, var(--gp-login-from), var(--gp-login-via), var(--gp-login-to))`,
+      }}
+    >
+      <div className="w-full max-w-md">
         {/* Logo & Branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-4 p-2">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl border border-white/20 mb-4 p-2">
             <Image
               src="/favicon-192.png"
               alt="GatePass+"
-              width={64}
-              height={64}
+              width={48}
+              height={48}
               priority
             />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">GatePass+</h1>
-          <p className="text-blue-100 text-lg">Reside. Approve. Manage.</p>
+          <h1 className="text-3xl font-bold text-white">GatePass+</h1>
+          <p className="text-fg-tertiary mt-2 text-sm">Society admin · manage & approve</p>
         </div>
 
         {/* Login Form Card */}
-        <form onSubmit={onSubmit} className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-8 space-y-6 border border-white/20">
+        <form onSubmit={onSubmit} className="rounded-2xl shadow-2xl p-8 space-y-5 border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)' }}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-fg-primary mb-2">
                 Society
               </label>
               <select
@@ -181,12 +178,12 @@ function LoginPageInner() {
 
             {/* Username or Email Input */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-fg-primary mb-2">
                 Username or Email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-400 text-lg">👤</span>
+                  <span className="text-fg-tertiary text-lg">👤</span>
                 </div>
                 <input
                   type="text"
@@ -202,12 +199,12 @@ function LoginPageInner() {
 
             {/* Password Input */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-fg-primary mb-2">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-400 text-lg">🔒</span>
+                  <span className="text-fg-tertiary text-lg">🔒</span>
                 </div>
                 <input
                   type="password"
@@ -238,7 +235,6 @@ function LoginPageInner() {
                 "Sign In"
               )}
             </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
           </button>
 
           {ENABLE_DEMO_LOGIN && DEMO_ADMIN_PASSWORD ? (
@@ -246,10 +242,10 @@ function LoginPageInner() {
               {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
+                  <div className="w-full border-t border-surface-border"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500 font-medium">Quick Login</span>
+                  <span className="px-4 bg-surface text-fg-secondary font-medium">Quick Login</span>
                 </div>
               </div>
 
@@ -258,25 +254,25 @@ function LoginPageInner() {
                 <button
                   type="button"
                   onClick={() => quickLogin(DEMO_ADMIN_USERNAME, DEMO_ADMIN_PASSWORD)}
-                  className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors border border-blue-200"
+                  className="px-4 py-2 bg-info-bg text-info-fg rounded-lg text-sm font-semibold hover:opacity-90 transition-colors border border-surface-border"
                 >
                   👨‍💼 Demo admin
                 </button>
               </div>
 
               {/* Test Credentials Info */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
-                <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+              <div className="bg-brand-primary-light rounded-lg p-4 border border-surface-border">
+                <p className="text-xs font-semibold text-fg-primary mb-2 flex items-center">
                   <span className="text-base mr-2">ℹ️</span>
                   Demo credentials
                 </p>
-                <p className="text-xs text-gray-600 mb-2">
+                <p className="text-xs text-fg-secondary mb-2">
                   Demo login is enabled via environment variables.
                 </p>
-                <div className="text-xs text-gray-600 space-y-1.5">
-                  <div className="flex justify-between items-center bg-white/50 px-2 py-1 rounded">
+                <div className="text-xs text-fg-secondary space-y-1.5">
+                  <div className="flex justify-between items-center bg-surface/50 px-2 py-1 rounded">
                     <span className="font-medium">Admin (web):</span>
-                    <code className="font-mono text-blue-600">{DEMO_ADMIN_USERNAME} / ********</code>
+                    <code className="font-mono text-brand-primary">{DEMO_ADMIN_USERNAME} / ********</code>
                   </div>
                 </div>
               </div>
@@ -285,7 +281,7 @@ function LoginPageInner() {
 
           <p className="text-center text-sm">
             Have an invite?{" "}
-            <Link href="/invite/accept" className="text-blue-700 font-semibold underline">
+            <Link href="/invite/accept" className="text-brand-primary font-semibold underline">
               Complete registration on web
             </Link>
           </p>
@@ -293,7 +289,7 @@ function LoginPageInner() {
           <p className="text-center text-sm">
             <Link
               href="/super-admin/login?prefill=1"
-              className="text-slate-700 font-semibold underline"
+              className="text-fg-secondary font-semibold underline"
             >
               Platform super admin
             </Link>
@@ -301,27 +297,11 @@ function LoginPageInner() {
         </form>
 
         {/* Footer */}
-        <p className="text-center text-blue-100 text-sm mt-6">
+        <p className="text-center text-sm mt-6" style={{ color: 'var(--gp-sidebar-muted-text)' }}>
           © 2026 GatePass+. All rights reserved.
         </p>
       </div>
 
-      <style jsx>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </main>
   );
 }
@@ -330,7 +310,12 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-800 text-white">
+        <main
+          className="min-h-screen flex items-center justify-center text-fg-inverse"
+          style={{
+            background: `linear-gradient(to bottom right, var(--gp-login-from), var(--gp-login-to))`,
+          }}
+        >
           Loading…
         </main>
       }

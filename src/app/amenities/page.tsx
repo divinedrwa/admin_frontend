@@ -163,42 +163,45 @@ export default function AmenitiesPage() {
   return (
     <AppShell title="Amenities">
       <div className="space-y-4">
-        <div className="flex justify-between items-center gap-4 flex-wrap">
+        <div className="page-action-bar">
           <div>
-            <p className="text-gray-600">Define pools, halls, courts, and other bookable facilities.</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-fg-secondary">Define pools, halls, courts, and other bookable facilities.</p>
+            <p className="text-sm text-fg-secondary mt-1">
               Use <strong>Bookings</strong> in the sidebar to reserve slots; use <strong>Amenity calendar</strong> under Analytics for the schedule view.
             </p>
           </div>
           <button
             onClick={() => handleOpenForm()}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Add Amenity
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingAmenity ? "Edit Amenity" : "Create New Amenity"}
-            </h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">
+                {editingAmenity ? "Edit Amenity" : "Create New Amenity"}
+              </h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Name *</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., Swimming Pool, Community Hall"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Type *</label>
                   <select
                     required
                     value={formData.type}
@@ -208,7 +211,7 @@ export default function AmenitiesPage() {
                         type: e.target.value as AmenityTypeId
                       })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     {AMENITY_TYPE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -220,13 +223,13 @@ export default function AmenitiesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Description
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   rows={3}
                   placeholder="Describe the amenity and its facilities"
                 />
@@ -234,7 +237,7 @@ export default function AmenitiesPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Capacity *
                   </label>
                   <input
@@ -243,13 +246,13 @@ export default function AmenitiesPage() {
                     min="1"
                     value={formData.capacity}
                     onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="Max people"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Price per Hour (₹)
                   </label>
                   <input
@@ -258,7 +261,7 @@ export default function AmenitiesPage() {
                     step="0.01"
                     value={formData.pricePerHour}
                     onChange={(e) => setFormData({ ...formData, pricePerHour: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="0 for free"
                   />
                 </div>
@@ -271,7 +274,7 @@ export default function AmenitiesPage() {
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                       className="w-4 h-4"
                     />
-                    <span className="text-sm font-medium text-gray-700">Active</span>
+                    <span className="text-sm font-medium text-fg-primary">Active</span>
                   </label>
                 </div>
               </div>
@@ -280,45 +283,52 @@ export default function AmenitiesPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Saving..." : editingAmenity ? "Update" : "Create"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
-            <p className="text-gray-500 col-span-full">Loading amenities...</p>
+            <div className="loading-state col-span-full">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading amenities...</p>
+            </div>
           ) : amenities.length === 0 ? (
-            <p className="text-gray-500 col-span-full text-center py-8">
-              No amenities found. Click "Add Amenity" to create your first amenity.
-            </p>
+            <div className="empty-state col-span-full">
+              <span className="empty-state-icon">🏊</span>
+              <p className="empty-state-title">No amenities found</p>
+              <p className="empty-state-text">Click &quot;Add Amenity&quot; to create your first amenity.</p>
+            </div>
           ) : (
             amenities.map((amenity) => (
-              <div key={amenity.id} className="bg-white border border-gray-200 rounded p-4">
+              <div key={amenity.id} className="card">
+                <div className="card-body">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-lg">{amenity.name}</h3>
                   <span
-                    className={`px-2 py-1 text-xs rounded ${
+                    className={`badge ${
                       amenity.isActive
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                        ? "badge-success"
+                        : "badge-gray"
                     }`}
                   >
                     {amenity.isActive ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <div className="space-y-2 text-sm text-gray-600">
+                <div className="space-y-2 text-sm text-fg-secondary">
                   <div>
                     <span className="font-medium">Type:</span> {formatAmenityType(amenity.type)}
                   </div>
@@ -341,10 +351,11 @@ export default function AmenitiesPage() {
                 <div className="flex gap-2 mt-4">
                   <button
                     onClick={() => handleOpenForm(amenity)}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
+                    className="text-brand-primary hover:text-info-fg text-sm"
                   >
                     Edit
                   </button>
+                </div>
                 </div>
               </div>
             ))

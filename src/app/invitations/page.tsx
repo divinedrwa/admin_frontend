@@ -126,17 +126,22 @@ export default function InvitationsAdminPage() {
   return (
     <AppShell title="Invitations">
       <div className="max-w-4xl space-y-8">
-        <p className="text-gray-600">
-          Create invite links for new admins, residents, or guards. They complete signup on{" "}
-          <span className="font-mono text-sm bg-gray-100 px-1 rounded">/invite/accept</span> or in the mobile app
-          (Join with invite).
-        </p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">
+            Create invite links for new admins, residents, or guards. They complete signup on{" "}
+            <span className="font-mono text-sm bg-surface-elevated px-1 rounded">/invite/accept</span> or in the mobile app
+            (Join with invite).
+          </p>
+        </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">New invitation</h2>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="text-lg font-semibold text-fg-primary">New invitation</h2>
+          </div>
+          <div className="card-body space-y-4">
           <form onSubmit={(e) => void onCreate(e)} className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Role</label>
               <select
                 className="input w-full"
                 value={role}
@@ -151,7 +156,7 @@ export default function InvitationsAdminPage() {
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
-            <div className="sm:col-span-2 text-sm text-gray-500">
+            <div className="sm:col-span-2 text-sm text-fg-secondary">
               {role === "RESIDENT" ? (
                 <div className="space-y-2">
                   <p>Optional: attach a villa so the resident does not need to enter an id at signup.</p>
@@ -170,7 +175,7 @@ export default function InvitationsAdminPage() {
                       ))}
                     </select>
                   ) : (
-                    <p className="text-amber-700">No villas loaded — add villas first.</p>
+                    <p className="text-pending-fg">No villas loaded — add villas first.</p>
                   )}
                 </div>
               ) : (
@@ -178,18 +183,18 @@ export default function InvitationsAdminPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Phone (optional)</label>
               <input className="input w-full" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Email (optional)</label>
               <input type="email" className="input w-full" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="sm:col-span-2">
               <button
                 type="submit"
                 disabled={creating}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50"
+                className="btn btn-primary"
               >
                 {creating ? "Creating…" : "Create invitation"}
               </button>
@@ -197,12 +202,12 @@ export default function InvitationsAdminPage() {
           </form>
 
           {(lastCreatedLink || copyToken) && (
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 space-y-2 text-sm">
-              <p className="font-medium text-blue-900">Share this once (token is not shown again in the list).</p>
+            <div className="rounded-lg bg-brand-primary-light border border-surface-border p-4 space-y-2 text-sm">
+              <p className="font-medium text-fg-primary">Share this once (token is not shown again in the list).</p>
               {lastCreatedLink && (
                 <div className="flex gap-2 items-center flex-wrap">
                   <code className="text-xs break-all flex-1 min-w-[200px]">{lastCreatedLink}</code>
-                  <button type="button" className="text-blue-700 underline" onClick={() => void copy(lastCreatedLink)}>
+                  <button type="button" className="text-brand-primary underline" onClick={() => void copy(lastCreatedLink)}>
                     Copy link
                   </button>
                 </div>
@@ -210,55 +215,68 @@ export default function InvitationsAdminPage() {
               {copyToken && (
                 <div className="flex gap-2 items-center flex-wrap">
                   <code className="text-xs break-all flex-1 font-mono">{copyToken}</code>
-                  <button type="button" className="text-blue-700 underline" onClick={() => void copy(copyToken)}>
+                  <button type="button" className="text-brand-primary underline" onClick={() => void copy(copyToken)}>
                     Copy token
                   </button>
                 </div>
               )}
             </div>
           )}
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Recent invitations</h2>
+        <div className="table-wrapper overflow-x-auto">
+          <div className="card-header">
+            <h2 className="text-lg font-semibold text-fg-primary">Recent invitations</h2>
           </div>
           {loading ? (
-            <p className="p-6 text-gray-500">Loading…</p>
+            <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading invitations...</p></div>
           ) : rows.length === 0 ? (
-            <p className="p-6 text-gray-500">No invitations yet.</p>
+            <div className="empty-state">
+              <span className="empty-state-icon">✉️</span>
+              <p className="empty-state-title">No invitations yet</p>
+              <p className="empty-state-text">Create an invitation above to get started.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-left text-gray-600">
+              <table className="table">
+                <thead className="table-head">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Villa</th>
-                    <th className="px-4 py-3 font-medium">Role</th>
-                    <th className="px-4 py-3 font-medium">Contact</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Expires</th>
-                    <th className="px-4 py-3 font-medium"></th>
+                    <th className="table-th">Villa</th>
+                    <th className="table-th">Role</th>
+                    <th className="table-th">Contact</th>
+                    <th className="table-th">Status</th>
+                    <th className="table-th">Expires</th>
+                    <th className="table-th"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody>
                   {rows.map((r) => (
-                    <tr key={r.id}>
-                      <td className="px-4 py-3">
+                    <tr key={r.id} className="table-row">
+                      <td className="table-td">
                         {r.villa
                           ? `${r.villa.villaNumber}${r.villa.block ? ` (${r.villa.block})` : ""}`
                           : "—"}
                       </td>
-                      <td className="px-4 py-3">{r.role}</td>
-                      <td className="px-4 py-3">
+                      <td className="table-td">
+                        <span className={`badge ${r.role === "ADMIN" ? "badge-primary" : r.role === "GUARD" ? "badge-success" : "badge-info"}`}>
+                          {r.role}
+                        </span>
+                      </td>
+                      <td className="table-td">
                         {[r.phone, r.email].filter(Boolean).join(" · ") || "—"}
                       </td>
-                      <td className="px-4 py-3">{r.status}</td>
-                      <td className="px-4 py-3">{new Date(r.expiresAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="table-td">
+                        <span className={`badge ${r.status === "PENDING" ? "badge-warning" : r.status === "ACCEPTED" ? "badge-success" : "badge-danger"}`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="table-td">{new Date(r.expiresAt).toLocaleDateString()}</td>
+                      <td className="table-td text-right">
                         {r.status === "PENDING" && (
                           <button
                             type="button"
-                            className="text-red-600 hover:underline"
+                            className="text-brand-danger hover:underline"
                             onClick={() => void revoke(r.id)}
                           >
                             Revoke

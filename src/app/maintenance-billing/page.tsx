@@ -69,16 +69,16 @@ function fmtDateOnly(iso: string): string {
 }
 
 function paymentDeltaStyles(delta: number) {
-  if (delta > 0) return "text-emerald-700 font-semibold";
-  if (delta < 0) return "text-red-700 font-semibold";
+  if (delta > 0) return "text-approved-fg font-semibold";
+  if (delta < 0) return "text-denied-fg font-semibold";
   return "text-slate-700 font-semibold";
 }
 
 function statusBadgeStyles(status: string) {
-  if (status === "CREDIT") return "bg-emerald-100 text-emerald-800 border-emerald-200";
-  if (status === "DUE") return "bg-red-100 text-red-800 border-red-200";
+  if (status === "CREDIT") return "bg-approved-bg text-approved-fg border-approved-bg";
+  if (status === "DUE") return "bg-denied-bg text-denied-fg border-denied-bg";
   if (status === "SETTLED") return "bg-slate-100 text-slate-700 border-slate-200";
-  return "bg-gray-100 text-gray-700 border-gray-200";
+  return "bg-surface-elevated text-fg-primary border-surface-border";
 }
 
 export default function MaintenanceBillingPage() {
@@ -462,12 +462,12 @@ export default function MaintenanceBillingPage() {
   }
 
   function statusBadge(status: string) {
-    const color =
-      status === "OPEN" ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
-      status === "UPCOMING" ? "bg-amber-100 text-amber-800 border-amber-200" :
-      "bg-slate-100 text-slate-700 border-slate-200";
+    const badgeClass =
+      status === "OPEN" ? "badge-success" :
+      status === "UPCOMING" ? "badge-warning" :
+      "badge-gray";
     return (
-      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${color}`}>
+      <span className={`badge ${badgeClass}`}>
         {status}
       </span>
     );
@@ -476,24 +476,22 @@ export default function MaintenanceBillingPage() {
   return (
     <AppShell title="Maintenance billing cycles">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-4">
+        <div className="tabs pb-4">
           {(["cycles", "residents", "audit"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === t ? "bg-blue-600 text-white" : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
-              }`}
+              className={tab === t ? "tab tab-active" : "tab tab-inactive"}
             >
               {t === "cycles" ? "Cycles" : t === "residents" ? "Residents" : "Audit log"}
             </button>
           ))}
           <div className="ml-auto flex items-center gap-4">
-            <span className="text-sm text-gray-500 flex items-center">
+            <span className="text-sm text-fg-secondary flex items-center">
               Active residents: <strong className="ml-1">{residentCount}</strong>
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-fg-secondary">
               Last synced: {lastSyncedAt ? lastSyncedAt.toLocaleString("en-IN") : "Not synced yet"}
             </span>
             <button
@@ -501,7 +499,7 @@ export default function MaintenanceBillingPage() {
               onClick={() =>
                 void refreshCoreData().catch(() => showToast("Could not refresh billing data", "error"))
               }
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-surface text-fg-primary border border-surface-border hover:bg-surface-background"
             >
               Refresh
             </button>
@@ -509,20 +507,26 @@ export default function MaintenanceBillingPage() {
         </div>
 
         {loading && tab === "cycles" ? (
-          <p className="text-gray-500">Loading…</p>
+          <div className="loading-state">
+            <div className="loading-spinner w-10 h-10"></div>
+            <p className="loading-state-text">Loading…</p>
+          </div>
         ) : null}
 
         {tab === "cycles" && (
           <>
-            <form
-              onSubmit={fyEditId ? handleUpdateFinancialYear : handleCreateFinancialYear}
-              className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm grid gap-4 md:grid-cols-4"
-            >
-              <h2 className="md:col-span-4 text-lg font-semibold text-gray-900">
+            <div className="card">
+            <div className="card-header">
+              <h2 className="text-lg font-semibold text-fg-primary">
                 {fyEditId ? "Edit financial year" : "Create financial year"}
               </h2>
+            </div>
+            <form
+              onSubmit={fyEditId ? handleUpdateFinancialYear : handleCreateFinancialYear}
+              className="card-body grid gap-4 md:grid-cols-4"
+            >
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-gray-600">Label</span>
+                <span className="text-fg-secondary">Label</span>
                 <input
                   className="input border rounded-lg px-3 py-2"
                   placeholder="2026-27"
@@ -532,7 +536,7 @@ export default function MaintenanceBillingPage() {
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-gray-600">Start date</span>
+                <span className="text-fg-secondary">Start date</span>
                 <input
                   type="date"
                   className="input border rounded-lg px-3 py-2"
@@ -542,7 +546,7 @@ export default function MaintenanceBillingPage() {
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-gray-600">End date</span>
+                <span className="text-fg-secondary">End date</span>
                 <input
                   type="date"
                   className="input border rounded-lg px-3 py-2"
@@ -553,13 +557,13 @@ export default function MaintenanceBillingPage() {
               </label>
               <div className="flex items-end">
                 <div className="w-full flex gap-2">
-                  <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm">
+                  <button type="submit" className="btn btn-primary flex-1 text-sm">
                     {fyEditId ? "Update financial year" : "Create financial year"}
                   </button>
                   {fyEditId && (
                     <button
                       type="button"
-                      className="px-4 py-2 rounded-lg border border-gray-300 text-sm"
+                      className="btn btn-ghost text-sm"
                       onClick={() => {
                         setFyEditId(null);
                         setFyForm({ label: "", startDate: "", endDate: "" });
@@ -571,37 +575,38 @@ export default function MaintenanceBillingPage() {
                 </div>
               </div>
             </form>
+            </div>
 
-            <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+            <div className="table-wrapper">
+              <table className="table">
+                <thead className="table-head">
                   <tr>
-                    <th className="px-4 py-3">Label</th>
-                    <th className="px-4 py-3">Start</th>
-                    <th className="px-4 py-3">End</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Actions</th>
+                    <th className="table-th">Label</th>
+                    <th className="table-th">Start</th>
+                    <th className="table-th">End</th>
+                    <th className="table-th">Status</th>
+                    <th className="table-th">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {financialYears.map((fy) => (
-                    <tr key={fy.id} className="border-t border-gray-100">
-                      <td className="px-4 py-3 font-medium text-gray-900">{fy.label}</td>
-                      <td className="px-4 py-3">{fmtDateOnly(fy.startDate)}</td>
-                      <td className="px-4 py-3">{fmtDateOnly(fy.endDate)}</td>
-                      <td className="px-4 py-3">{fy.status}</td>
-                      <td className="px-4 py-3">
+                    <tr key={fy.id} className="table-row">
+                      <td className="table-td font-medium text-fg-primary">{fy.label}</td>
+                      <td className="table-td">{fmtDateOnly(fy.startDate)}</td>
+                      <td className="table-td">{fmtDateOnly(fy.endDate)}</td>
+                      <td className="table-td">{fy.status}</td>
+                      <td className="table-td">
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
-                            className="text-blue-600 text-xs font-semibold hover:underline"
+                            className="text-brand-primary text-xs font-semibold hover:underline"
                             onClick={() => openFinancialYearEdit(fy)}
                           >
                             Edit
                           </button>
                           <button
                             type="button"
-                            className="text-red-600 text-xs font-semibold hover:underline"
+                            className="text-brand-danger text-xs font-semibold hover:underline"
                             onClick={() => void deleteFinancialYear(fy)}
                           >
                             Delete
@@ -612,7 +617,7 @@ export default function MaintenanceBillingPage() {
                   ))}
                   {financialYears.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
+                      <td colSpan={5} className="px-4 py-6 text-center text-fg-secondary">
                         No financial years created yet.
                       </td>
                     </tr>
@@ -624,7 +629,7 @@ export default function MaintenanceBillingPage() {
             <div className="flex gap-3 flex-wrap">
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700"
+                className="btn btn-primary text-sm"
                 onClick={() => {
                   const now = new Date();
                   setForm({
@@ -645,15 +650,18 @@ export default function MaintenanceBillingPage() {
             </div>
 
             {createOpen && (
+              <div className="card">
+              <div className="card-header">
+                <h2 className="text-lg font-semibold text-fg-primary">New billing cycle</h2>
+              </div>
               <form
                 onSubmit={handleCreateCycle}
-                className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm grid gap-4 md:grid-cols-2"
+                className="card-body grid gap-4 md:grid-cols-2"
               >
-                <h2 className="md:col-span-2 text-lg font-semibold text-gray-900">New billing cycle</h2>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Financial year</span>
+                  <span className="text-fg-secondary">Financial year</span>
                   <select
-                    className="input border rounded-lg px-3 py-2 bg-white"
+                    className="input border rounded-lg px-3 py-2 bg-surface"
                     required
                     value={form.financialYearId}
                     onChange={(e) =>
@@ -673,9 +681,9 @@ export default function MaintenanceBillingPage() {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Month</span>
+                  <span className="text-fg-secondary">Month</span>
                   <select
-                    className="input border rounded-lg px-3 py-2 bg-white"
+                    className="input border rounded-lg px-3 py-2 bg-surface"
                     required
                     value={form.cycleMonth}
                     onChange={(e) => setForm((s) => ({ ...s, cycleMonth: e.target.value }))}
@@ -690,7 +698,7 @@ export default function MaintenanceBillingPage() {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Title</span>
+                  <span className="text-fg-secondary">Title</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     value={form.title}
@@ -699,7 +707,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-gray-600">Amount (₹)</span>
+                  <span className="text-fg-secondary">Amount (₹)</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     required
@@ -711,7 +719,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Payment start (local → ISO)</span>
+                  <span className="text-fg-secondary">Payment start (local → ISO)</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     required
@@ -721,7 +729,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Payment end (deadline inclusive)</span>
+                  <span className="text-fg-secondary">Payment end (deadline inclusive)</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     required
@@ -731,7 +739,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Late fee (₹)</span>
+                  <span className="text-fg-secondary">Late fee (₹)</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     type="number"
@@ -742,7 +750,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Grace period (days)</span>
+                  <span className="text-fg-secondary">Grace period (days)</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     type="number"
@@ -755,63 +763,64 @@ export default function MaintenanceBillingPage() {
                   <button
                     type="submit"
                     disabled={creatingCycle}
-                    className="btn bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-60"
+                    className="btn btn-primary disabled:opacity-60"
                   >
                     {creatingCycle ? "Saving..." : "Save"}
                   </button>
                   <button
                     type="button"
-                    className="btn border border-gray-300 px-4 py-2 rounded-lg"
+                    className="btn btn-ghost"
                     onClick={() => setCreateOpen(false)}
                   >
                     Cancel
                   </button>
                 </div>
               </form>
+              </div>
             )}
 
-            <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+            <div className="table-wrapper">
+              <table className="table">
+                <thead className="table-head">
                   <tr>
-                    <th className="px-4 py-3">Month</th>
-                    <th className="px-4 py-3">Amount</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Window (UTC ISO)</th>
-                    <th className="px-4 py-3">Paid</th>
-                    <th className="px-4 py-3">Pending</th>
-                    <th className="px-4 py-3"></th>
+                    <th className="table-th">Month</th>
+                    <th className="table-th">Amount</th>
+                    <th className="table-th">Status</th>
+                    <th className="table-th">Window (UTC ISO)</th>
+                    <th className="table-th">Paid</th>
+                    <th className="table-th">Pending</th>
+                    <th className="table-th"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {cycles.map((c) => (
-                    <tr key={c.id} className="border-t border-gray-100">
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                    <tr key={c.id} className="table-row">
+                      <td className="table-td font-medium text-fg-primary">
                         <div>{c.cycleKey}</div>
-                        <div className="text-gray-500 text-xs">
+                        <div className="text-fg-secondary text-xs">
                           {c.title}
                           {c.financialYearLabel ? ` · ${c.financialYearLabel}` : ""}
                         </div>
                       </td>
-                      <td className="px-4 py-3">{c.amount}</td>
-                      <td className="px-4 py-3">{statusBadge(c.status)}</td>
-                      <td className="px-4 py-3 max-w-[280px] text-xs text-gray-600 truncate" title={c.paymentWindow}>
+                      <td className="table-td">{c.amount}</td>
+                      <td className="table-td">{statusBadge(c.status)}</td>
+                      <td className="table-td max-w-[280px] text-xs text-fg-secondary truncate" title={c.paymentWindow}>
                         {c.paymentStartDate.slice(0, 19)} → {c.paymentEndDate.slice(0, 19)}
                       </td>
-                      <td className="px-4 py-3">{c.paidUsersCount}</td>
-                      <td className="px-4 py-3">{c.pendingUsersCount}</td>
-                      <td className="px-4 py-3">
+                      <td className="table-td">{c.paidUsersCount}</td>
+                      <td className="table-td">{c.pendingUsersCount}</td>
+                      <td className="table-td">
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
-                            className="text-blue-600 text-xs font-semibold hover:underline"
+                            className="text-brand-primary text-xs font-semibold hover:underline"
                             onClick={() => openEdit(c)}
                           >
                             Edit
                           </button>
                           <button
                             type="button"
-                            className="text-red-600 text-xs font-semibold hover:underline"
+                            className="text-brand-danger text-xs font-semibold hover:underline"
                             onClick={() => setDeleteTarget(c)}
                           >
                             Delete
@@ -822,7 +831,7 @@ export default function MaintenanceBillingPage() {
                   ))}
                   {cycles.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      <td colSpan={7} className="px-4 py-8 text-center text-fg-secondary">
                         No billing cycles yet.
                       </td>
                     </tr>
@@ -832,13 +841,16 @@ export default function MaintenanceBillingPage() {
             </div>
 
             {editId && (
+              <div className="card">
+              <div className="card-header">
+                <h2 className="text-lg font-semibold text-fg-primary">Edit cycle</h2>
+              </div>
               <form
                 onSubmit={submitEdit}
-                className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm grid gap-4 md:grid-cols-2"
+                className="card-body grid gap-4 md:grid-cols-2"
               >
-                <h2 className="md:col-span-2 text-lg font-semibold text-gray-900">Edit cycle</h2>
                 <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-gray-600">Title</span>
+                  <span className="text-fg-secondary">Title</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     required
@@ -847,7 +859,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Amount</span>
+                  <span className="text-fg-secondary">Amount</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     required
@@ -857,7 +869,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Late fee</span>
+                  <span className="text-fg-secondary">Late fee</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     type="number"
@@ -866,7 +878,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Payment start</span>
+                  <span className="text-fg-secondary">Payment start</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     type="datetime-local"
@@ -875,7 +887,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Payment end</span>
+                  <span className="text-fg-secondary">Payment end</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     type="datetime-local"
@@ -884,7 +896,7 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-gray-600">Grace days</span>
+                  <span className="text-fg-secondary">Grace days</span>
                   <input
                     className="input border rounded-lg px-3 py-2"
                     type="number"
@@ -893,22 +905,24 @@ export default function MaintenanceBillingPage() {
                   />
                 </label>
                 <div className="md:col-span-2 flex gap-3">
-                  <button type="submit" className="btn bg-blue-600 text-white px-4 py-2 rounded-lg">
+                  <button type="submit" className="btn btn-primary">
                     Save changes
                   </button>
-                  <button type="button" className="btn border px-4 py-2 rounded-lg" onClick={() => setEditId(null)}>
+                  <button type="button" className="btn btn-ghost" onClick={() => setEditId(null)}>
                     Cancel
                   </button>
                 </div>
               </form>
+              </div>
             )}
 
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
-                <h3 className="font-semibold text-gray-900">Reopen cycle</h3>
-                <p className="text-xs text-gray-500">Extends payment end into the future; status is recomputed on the server (UTC).</p>
+              <div className="card">
+                <div className="card-header"><h3 className="font-semibold text-fg-primary">Reopen cycle</h3></div>
+                <div className="card-body space-y-3">
+                <p className="text-xs text-fg-secondary">Extends payment end into the future; status is recomputed on the server (UTC).</p>
                 <select
-                  className="input border rounded-lg px-3 py-2 w-full text-sm"
+                  className="input w-full text-sm"
                   value={reopenId}
                   onChange={(e) => setReopenId(e.target.value)}
                 >
@@ -921,24 +935,26 @@ export default function MaintenanceBillingPage() {
                 </select>
                 <input
                   type="datetime-local"
-                  className="input border rounded-lg px-3 py-2 w-full text-sm"
+                  className="input w-full text-sm"
                   value={reopenEnd}
                   onChange={(e) => setReopenEnd(e.target.value)}
                 />
-                <button type="button" className="w-full bg-gray-900 text-white py-2 rounded-lg text-sm" onClick={() => void doReopen()}>
+                <button type="button" className="btn btn-primary w-full text-sm" onClick={() => void doReopen()}>
                   Apply
                 </button>
+                </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
-                <h3 className="font-semibold text-gray-900">Mark cash paid</h3>
-                <select className="input border rounded-lg px-3 py-2 w-full text-sm" value={cashCycleId} onChange={(e) => setCashCycleId(e.target.value)}>
+              <div className="card">
+                <div className="card-header"><h3 className="font-semibold text-fg-primary">Mark cash paid</h3></div>
+                <div className="card-body space-y-3">
+                <select className="input w-full text-sm" value={cashCycleId} onChange={(e) => setCashCycleId(e.target.value)}>
                   <option value="">Cycle…</option>
                   {cycleOptions.map((o) => (
                     <option key={o.id} value={o.id}>{o.label}</option>
                   ))}
                 </select>
-                <select className="input border rounded-lg px-3 py-2 w-full text-sm" value={cashUserId} onChange={(e) => setCashUserId(e.target.value)}>
+                <select className="input w-full text-sm" value={cashUserId} onChange={(e) => setCashUserId(e.target.value)}>
                   <option value="">Resident (primary billing)…</option>
                   {primaryMaintenanceUsers.map((u) => (
                     <option key={u.id} value={u.id}>{u.name} · {u.villa?.villaNumber ?? "?"}</option>
@@ -947,32 +963,35 @@ export default function MaintenanceBillingPage() {
                 <input
                   type="number"
                   placeholder="Amount"
-                  className="input border rounded-lg px-3 py-2 w-full text-sm"
+                  className="input w-full text-sm"
                   value={cashAmount}
                   onChange={(e) => setCashAmount(e.target.value)}
                 />
-                <button type="button" className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm" onClick={() => void doCash()}>
+                <button type="button" className="btn btn-success w-full text-sm" onClick={() => void doCash()}>
                   Record cash
                 </button>
+                </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
-                <h3 className="font-semibold text-gray-900">Waive late fee</h3>
-                <select className="input border rounded-lg px-3 py-2 w-full text-sm" value={waiveCycleId} onChange={(e) => setWaiveCycleId(e.target.value)}>
+              <div className="card">
+                <div className="card-header"><h3 className="font-semibold text-fg-primary">Waive late fee</h3></div>
+                <div className="card-body space-y-3">
+                <select className="input w-full text-sm" value={waiveCycleId} onChange={(e) => setWaiveCycleId(e.target.value)}>
                   <option value="">Cycle…</option>
                   {cycleOptions.map((o) => (
                     <option key={o.id} value={o.id}>{o.label}</option>
                   ))}
                 </select>
-                <select className="input border rounded-lg px-3 py-2 w-full text-sm" value={waiveUserId} onChange={(e) => setWaiveUserId(e.target.value)}>
+                <select className="input w-full text-sm" value={waiveUserId} onChange={(e) => setWaiveUserId(e.target.value)}>
                   <option value="">Resident (primary billing)…</option>
                   {primaryMaintenanceUsers.map((u) => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
-                <button type="button" className="w-full bg-amber-600 text-white py-2 rounded-lg text-sm" onClick={() => void doWaive()}>
+                <button type="button" className="btn btn-primary w-full text-sm bg-pending-solid hover:bg-pending-solid hover:opacity-90" onClick={() => void doWaive()}>
                   Waive
                 </button>
+                </div>
               </div>
             </div>
           </>
@@ -981,26 +1000,26 @@ export default function MaintenanceBillingPage() {
         {tab === "residents" && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="rounded-lg border border-gray-200 bg-white p-3">
-                <div className="text-xs text-gray-500">Total expected</div>
-                <div className="text-base font-semibold text-gray-900">{fmtInr(residentTotals.totalExpected)}</div>
+              <div className="stat-card">
+                <div className="stat-card-label">Total expected</div>
+                <div className="stat-card-value text-base text-fg-primary">{fmtInr(residentTotals.totalExpected)}</div>
               </div>
-              <div className="rounded-lg border border-gray-200 bg-white p-3">
-                <div className="text-xs text-gray-500">Total collected</div>
-                <div className="text-base font-semibold text-emerald-700">{fmtInr(residentTotals.totalCollected)}</div>
+              <div className="stat-card">
+                <div className="stat-card-label">Total collected</div>
+                <div className="stat-card-value text-base text-approved-fg">{fmtInr(residentTotals.totalCollected)}</div>
               </div>
-              <div className="rounded-lg border border-gray-200 bg-white p-3">
-                <div className="text-xs text-gray-500">Total shortfall</div>
-                <div className="text-base font-semibold text-red-700">{fmtInr(residentTotals.totalShortfall)}</div>
+              <div className="stat-card">
+                <div className="stat-card-label">Total shortfall</div>
+                <div className="stat-card-value text-base text-denied-fg">{fmtInr(residentTotals.totalShortfall)}</div>
               </div>
-              <div className="rounded-lg border border-gray-200 bg-white p-3">
-                <div className="text-xs text-gray-500">Total advance credit</div>
-                <div className="text-base font-semibold text-emerald-700">{fmtInr(residentTotals.totalAdvanceCredit)}</div>
+              <div className="stat-card">
+                <div className="stat-card-label">Total advance credit</div>
+                <div className="stat-card-value text-base text-approved-fg">{fmtInr(residentTotals.totalAdvanceCredit)}</div>
               </div>
             </div>
             <div className="flex gap-3 flex-wrap">
               <select
-                className="input border rounded-lg px-3 py-2 text-sm bg-white"
+                className="input border rounded-lg px-3 py-2 text-sm bg-surface"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
               >
@@ -1012,7 +1031,7 @@ export default function MaintenanceBillingPage() {
                 ))}
               </select>
               <select
-                className="input border rounded-lg px-3 py-2 text-sm bg-white"
+                className="input border rounded-lg px-3 py-2 text-sm bg-surface"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -1024,7 +1043,7 @@ export default function MaintenanceBillingPage() {
                 <option value="SETTLED">Settled</option>
               </select>
               <select
-                className="input border rounded-lg px-3 py-2 text-sm bg-white"
+                className="input border rounded-lg px-3 py-2 text-sm bg-surface"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
@@ -1033,38 +1052,38 @@ export default function MaintenanceBillingPage() {
                 <option value="highest_credit">Highest credit first</option>
               </select>
             </div>
-            <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+            <div className="table-wrapper">
+              <table className="table">
+                <thead className="table-head">
                   <tr>
-                    <th className="px-4 py-3">Resident</th>
-                    <th className="px-4 py-3">Unit</th>
-                    <th className="px-4 py-3">Cycle</th>
-                    <th className="px-4 py-3">Pay status</th>
-                    <th className="px-4 py-3">Expected</th>
-                    <th className="px-4 py-3">Cash paid</th>
-                    <th className="px-4 py-3">Effective paid</th>
-                    <th className="px-4 py-3">Delta</th>
-                    <th className="px-4 py-3">Badge</th>
+                    <th className="table-th">Resident</th>
+                    <th className="table-th">Unit</th>
+                    <th className="table-th">Cycle</th>
+                    <th className="table-th">Pay status</th>
+                    <th className="table-th">Expected</th>
+                    <th className="table-th">Cash paid</th>
+                    <th className="table-th">Effective paid</th>
+                    <th className="table-th">Delta</th>
+                    <th className="table-th">Badge</th>
                   </tr>
                 </thead>
                 <tbody>
                   {residentRows.map((r, idx) => (
-                    <tr key={idx} className="border-t border-gray-100">
+                    <tr key={idx} className="table-row">
                       {(() => {
                         const delta = Number(r.deltaAmount ?? 0);
                         const status = String(r.statusBadge ?? "");
                         return (
                           <>
-                      <td className="px-4 py-2">{String(r.name ?? "")}</td>
-                      <td className="px-4 py-2">{String(r.flat ?? "")}</td>
-                      <td className="px-4 py-2">{String(r.cycleKey ?? "")}</td>
-                      <td className="px-4 py-2">{String(r.paymentStatus ?? "")}</td>
-                      <td className="px-4 py-2">{fmtInr(Number(r.expectedAmount ?? 0))}</td>
-                      <td className="px-4 py-2">{fmtInr(Number(r.cashPaidAmount ?? 0))}</td>
-                      <td className="px-4 py-2">{fmtInr(Number(r.effectivePaidAmount ?? r.paidAmount ?? 0))}</td>
-                      <td className={`px-4 py-2 ${paymentDeltaStyles(delta)}`}>{fmtInr(delta)}</td>
-                      <td className="px-4 py-2">
+                      <td className="table-td">{String(r.name ?? "")}</td>
+                      <td className="table-td">{String(r.flat ?? "")}</td>
+                      <td className="table-td">{String(r.cycleKey ?? "")}</td>
+                      <td className="table-td">{String(r.paymentStatus ?? "")}</td>
+                      <td className="table-td">{fmtInr(Number(r.expectedAmount ?? 0))}</td>
+                      <td className="table-td">{fmtInr(Number(r.cashPaidAmount ?? 0))}</td>
+                      <td className="table-td">{fmtInr(Number(r.effectivePaidAmount ?? r.paidAmount ?? 0))}</td>
+                      <td className={`table-td ${paymentDeltaStyles(delta)}`}>{fmtInr(delta)}</td>
+                      <td className="table-td">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${statusBadgeStyles(status)}`}>
                           {status || "—"}
                         </span>
@@ -1081,25 +1100,25 @@ export default function MaintenanceBillingPage() {
         )}
 
         {tab === "audit" && (
-          <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+          <div className="table-wrapper">
+            <table className="table">
+              <thead className="table-head">
                 <tr>
-                  <th className="px-4 py-3">When (UTC)</th>
-                  <th className="px-4 py-3">Action</th>
-                  <th className="px-4 py-3">Entity</th>
-                  <th className="px-4 py-3">Meta</th>
+                  <th className="table-th">When (UTC)</th>
+                  <th className="table-th">Action</th>
+                  <th className="table-th">Entity</th>
+                  <th className="table-th">Meta</th>
                 </tr>
               </thead>
               <tbody>
                 {auditRows.map((a) => (
-                  <tr key={a.id} className="border-t border-gray-100">
-                    <td className="px-4 py-2 whitespace-nowrap text-xs">{new Date(a.createdAt).toISOString()}</td>
-                    <td className="px-4 py-2 font-mono text-xs">{a.action}</td>
-                    <td className="px-4 py-2 text-xs">
+                  <tr key={a.id} className="table-row">
+                    <td className="table-td whitespace-nowrap text-xs">{new Date(a.createdAt).toISOString()}</td>
+                    <td className="table-td font-mono text-xs">{a.action}</td>
+                    <td className="table-td text-xs">
                       {a.entityType} {a.entityId ? `(${a.entityId.slice(0, 8)}…)` : ""}
                     </td>
-                    <td className="px-4 py-2 text-xs max-w-md truncate" title={JSON.stringify(a.metadata)}>
+                    <td className="table-td text-xs max-w-md truncate" title={JSON.stringify(a.metadata)}>
                       {JSON.stringify(a.metadata)}
                     </td>
                   </tr>
@@ -1111,34 +1130,38 @@ export default function MaintenanceBillingPage() {
       </div>
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-xl bg-white border border-gray-200 shadow-xl p-5">
-            <h3 className="text-base font-semibold text-gray-900">Delete billing cycle?</h3>
-            <p className="mt-2 text-sm text-gray-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="card w-full max-w-md">
+            <div className="card-header">
+              <h3 className="text-base font-semibold text-fg-primary">Delete billing cycle?</h3>
+            </div>
+            <div className="card-body">
+            <p className="mt-2 text-sm text-fg-secondary">
               You are about to delete{" "}
-              <span className="font-medium text-gray-900">
+              <span className="font-medium text-fg-primary">
                 {deleteTarget.cycleKey}
               </span>
               {deleteTarget.title ? ` (${deleteTarget.title})` : ""}.
             </p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-fg-secondary">
               This works only when no payments exist for the cycle.
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                className="btn btn-ghost text-sm"
                 onClick={() => setDeleteTarget(null)}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="px-3 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
+                className="btn btn-danger text-sm"
                 onClick={() => void deleteCycle(deleteTarget)}
               >
                 Delete cycle
               </button>
+            </div>
             </div>
           </div>
         </div>

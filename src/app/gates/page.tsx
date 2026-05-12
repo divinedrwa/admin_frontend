@@ -111,25 +111,28 @@ export default function GatesPage() {
   return (
     <AppShell title="Gates Management">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Manage society entry/exit gates for guard assignment</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Manage society entry/exit gates for guard assignment</p>
           <button
             onClick={() => handleOpenForm()}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Add Gate
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingGate ? "Edit Gate" : "Create New Gate"}
-            </h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">
+                {editingGate ? "Edit Gate" : "Create New Gate"}
+              </h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Gate Name *
                   </label>
                   <input
@@ -137,13 +140,13 @@ export default function GatesPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., Main Gate, Side Gate, East Entrance"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Location *
                   </label>
                   <input
@@ -151,7 +154,7 @@ export default function GatesPage() {
                     required
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., North Side, Building A Entrance"
                   />
                 </div>
@@ -165,9 +168,9 @@ export default function GatesPage() {
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm font-medium text-gray-700">Gate is Active</span>
+                  <span className="text-sm font-medium text-fg-primary">Gate is Active</span>
                 </label>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-fg-secondary mt-1">
                   Inactive gates cannot be assigned to guards
                 </p>
               </div>
@@ -176,62 +179,61 @@ export default function GatesPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Saving..." : editingGate ? "Update Gate" : "Create Gate"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="rounded bg-white border border-gray-200 p-4 overflow-x-auto">
+        <div className="table-wrapper overflow-x-auto">
           {loading ? (
-            <p className="text-gray-500">Loading gates...</p>
+            <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading gates...</p></div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Gate Name</th>
-                  <th>Location</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th">Gate Name</th>
+                  <th className="table-th">Location</th>
+                  <th className="table-th">Status</th>
+                  <th className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {gates.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-8 text-center text-gray-500">
-                      No gates found. Click "Add Gate" to create your first gate.
+                    <td colSpan={4}>
+                      <div className="empty-state">
+                        <span className="empty-state-icon">🚧</span>
+                        <p className="empty-state-title">No gates found</p>
+                        <p className="empty-state-text">Click &quot;Add Gate&quot; to create your first gate.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   gates.map((gate) => (
-                    <tr key={gate.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 font-medium">{gate.name}</td>
-                      <td>{gate.location}</td>
-                      <td>
-                        <span
-                          className={`px-2 py-1 text-xs rounded ${
-                            gate.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
+                    <tr key={gate.id} className="table-row">
+                      <td className="table-td font-medium">{gate.name}</td>
+                      <td className="table-td">{gate.location}</td>
+                      <td className="table-td">
+                        <span className={`badge ${gate.isActive ? "badge-success" : "badge-gray"}`}>
                           {gate.isActive ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td>
+                      <td className="table-td">
                         <button
                           onClick={() => handleOpenForm(gate)}
-                          className="text-blue-600 hover:text-blue-800 text-xs"
+                          className="text-brand-primary hover:text-info-fg text-xs"
                         >
                           Edit
                         </button>
@@ -245,9 +247,9 @@ export default function GatesPage() {
         </div>
 
         {gates.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded p-4">
-            <h3 className="font-medium text-blue-900 mb-1">Next Steps</h3>
-            <p className="text-sm text-blue-800">
+          <div className="bg-brand-primary-light border border-surface-border rounded p-4">
+            <h3 className="font-medium text-fg-primary mb-1">Next Steps</h3>
+            <p className="text-sm text-info-fg">
               Now you can schedule guard shifts and assign guards to these gates from the{" "}
               <strong>Guard Shifts</strong> page.
             </p>

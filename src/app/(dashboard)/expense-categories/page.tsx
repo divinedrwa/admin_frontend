@@ -71,7 +71,7 @@ export default function ExpenseCategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       if (editingCategory) {
         await api.put(`/expenses/categories/${editingCategory.id}`, formData);
@@ -89,7 +89,7 @@ export default function ExpenseCategoriesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
-    
+
     try {
       await api.delete(`/expenses/categories/${id}`);
       await fetchCategories();
@@ -139,235 +139,249 @@ export default function ExpenseCategoriesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-600">Loading...</div>
+      <div className="loading-state">
+        <div className="loading-spinner w-10 h-10"></div>
+        <p className="loading-state-text">Loading...</p>
       </div>
     );
   }
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-action-bar mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Expense Categories</h1>
-          <p className="text-gray-600 mt-1">Manage expense categories for your society</p>
+          <h1 className="text-3xl font-bold text-fg-primary">Expense Categories</h1>
+          <p className="text-fg-secondary mt-1">Manage expense categories for your society</p>
         </div>
         <button
           onClick={() => openModal()}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          className="btn btn-primary flex items-center gap-2"
         >
           <Plus size={20} />
           Add Category
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {categories.map((category) => (
-          <div
-            key={category.id}
-            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div
-                className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
-                style={{ backgroundColor: category.color + '20' }}
-              >
-                {category.icon || '📋'}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => openModal(category)}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  <Edit size={18} />
-                </button>
-                <button
-                  onClick={() => handleDelete(category.id)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 size={18} />
-                </button>
+      {categories.length === 0 ? (
+        <div className="empty-state">
+          <span className="empty-state-icon">📂</span>
+          <p className="empty-state-title">No categories found</p>
+          <p className="empty-state-text">Create your first expense category to organize your expenses.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {categories.map((category) => (
+            <div
+              key={category.id}
+              className="card hover:shadow-lg transition-shadow"
+            >
+              <div className="card-body">
+                <div className="flex items-start justify-between mb-4">
+                  <div
+                    className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                    style={{ backgroundColor: category.color + '20' }}
+                  >
+                    {category.icon || '📋'}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openModal(category)}
+                      className="text-brand-primary hover:text-brand-primary"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="text-brand-danger hover:text-brand-danger"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="font-semibold text-lg text-fg-primary mb-1">
+                  {category.name}
+                </h3>
+
+                {category.description && (
+                  <p className="text-sm text-fg-secondary mb-4">{category.description}</p>
+                )}
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-fg-secondary">
+                    {category._count.expenses} entries
+                  </span>
+                  {category.isRecurring && (
+                    <span className="badge badge-info">
+                      Recurring
+                    </span>
+                  )}
+                </div>
+
+                {category.defaultAmount && category.defaultAmount > 0 && (
+                  <div className="mt-3 pt-3 border-t text-sm text-fg-secondary">
+                    Default: ₹{category.defaultAmount.toLocaleString()}
+                  </div>
+                )}
               </div>
             </div>
-
-            <h3 className="font-semibold text-lg text-gray-900 mb-1">
-              {category.name}
-            </h3>
-            
-            {category.description && (
-              <p className="text-sm text-gray-600 mb-4">{category.description}</p>
-            )}
-
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">
-                {category._count.expenses} entries
-              </span>
-              {category.isRecurring && (
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                  Recurring
-                </span>
-              )}
-            </div>
-
-            {category.defaultAmount && category.defaultAmount > 0 && (
-              <div className="mt-3 pt-3 border-t text-sm text-gray-600">
-                Default: ₹{category.defaultAmount.toLocaleString()}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold mb-4">
-              {editingCategory ? 'Edit Category' : 'Add New Category'}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category Type *
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => {
-                    const selectedType = expenseTypes.find(t => t.value === e.target.value);
-                    setFormData({
-                      ...formData,
-                      type: e.target.value,
-                      icon: selectedType?.icon || '',
-                      color: selectedType?.color || '#3B82F6',
-                      name: formData.name || selectedType?.label || ''
-                    });
-                  }}
-                  className="w-full p-2 border rounded-lg"
-                  required
-                >
-                  {expenseTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.icon} {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+          <div className="card max-w-md w-full">
+            <div className="card-header">
+              <h2 className="text-2xl font-bold">
+                {editingCategory ? 'Edit Category' : 'Add New Category'}
+              </h2>
+            </div>
+            <div className="card-body">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Icon (emoji)
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
+                    Category Type *
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => {
+                      const selectedType = expenseTypes.find(t => t.value === e.target.value);
+                      setFormData({
+                        ...formData,
+                        type: e.target.value,
+                        icon: selectedType?.icon || '',
+                        color: selectedType?.color || '#3B82F6',
+                        name: formData.name || selectedType?.label || ''
+                      });
+                    }}
+                    className="input"
+                    required
+                  >
+                    {expenseTypes.map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.icon} {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
+                    Name *
                   </label>
                   <input
                     type="text"
-                    value={formData.icon}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full p-2 border rounded-lg"
-                    placeholder="⚡"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="input"
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Color
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
+                    Description
                   </label>
-                  <input
-                    type="color"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="w-full h-10 border rounded-lg cursor-pointer"
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="input"
+                    rows={3}
                   />
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isRecurring"
-                  checked={formData.isRecurring}
-                  onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
-                  className="rounded"
-                />
-                <label htmlFor="isRecurring" className="text-sm text-gray-700">
-                  Recurring expense (auto-create monthly)
-                </label>
-              </div>
-
-              {formData.isRecurring && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Default Amount
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500">₹</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
+                      Icon (emoji)
+                    </label>
                     <input
-                      type="number"
-                      value={
-                        Number.isFinite(formData.defaultAmount)
-                          ? String(formData.defaultAmount)
-                          : ''
-                      }
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        if (raw === '') {
-                          setFormData({ ...formData, defaultAmount: 0 });
-                          return;
-                        }
-                        const n = parseFloat(raw);
-                        setFormData({
-                          ...formData,
-                          defaultAmount: Number.isFinite(n) ? n : 0,
-                        });
-                      }}
-                      className="w-full p-2 pl-8 border rounded-lg"
-                      min="0"
-                      step="0.01"
+                      type="text"
+                      value={formData.icon}
+                      onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                      className="input"
+                      placeholder="⚡"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
+                      Color
+                    </label>
+                    <input
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="w-full h-10 border rounded-lg cursor-pointer"
                     />
                   </div>
                 </div>
-              )}
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {editingCategory ? 'Update' : 'Create'}
-                </button>
-              </div>
-            </form>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isRecurring"
+                    checked={formData.isRecurring}
+                    onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                    className="rounded"
+                  />
+                  <label htmlFor="isRecurring" className="text-sm text-fg-primary">
+                    Recurring expense (auto-create monthly)
+                  </label>
+                </div>
+
+                {formData.isRecurring && (
+                  <div>
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
+                      Default Amount
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-fg-secondary">₹</span>
+                      <input
+                        type="number"
+                        value={
+                          Number.isFinite(formData.defaultAmount)
+                            ? String(formData.defaultAmount)
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === '') {
+                            setFormData({ ...formData, defaultAmount: 0 });
+                            return;
+                          }
+                          const n = parseFloat(raw);
+                          setFormData({
+                            ...formData,
+                            defaultAmount: Number.isFinite(n) ? n : 0,
+                          });
+                        }}
+                        className="input pl-8"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="btn btn-ghost flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary flex-1"
+                  >
+                    {editingCategory ? 'Update' : 'Create'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

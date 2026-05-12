@@ -277,13 +277,13 @@ export default function GuardShiftsPage() {
   const getShiftBadgeColor = (type: string) => {
     switch (type) {
       case "MORNING":
-        return "bg-yellow-100 text-yellow-800";
+        return "badge-warning";
       case "AFTERNOON":
-        return "bg-orange-100 text-orange-800";
+        return "badge-danger";
       case "NIGHT":
-        return "bg-blue-100 text-blue-800";
+        return "badge-primary";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "badge-gray";
     }
   };
 
@@ -305,30 +305,33 @@ export default function GuardShiftsPage() {
   return (
     <AppShell title="Guard Shifts">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Schedule and manage guard shifts at gates</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Schedule and manage guard shifts at gates</p>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Schedule Shift
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">Schedule Guard Shift</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">Schedule Guard Shift</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Select Guard *
                   </label>
                   <select
                     required
                     value={formData.guardId}
                     onChange={(e) => setFormData({ ...formData, guardId: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="">Choose a guard</option>
                     {guards.map((guard) => (
@@ -338,21 +341,21 @@ export default function GuardShiftsPage() {
                     ))}
                   </select>
                   {guards.length === 0 && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-brand-danger mt-1">
                       No guards available. Please create guard users first.
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Assign to Gate *
                   </label>
                   <select
                     required
                     value={formData.gateId}
                     onChange={(e) => setFormData({ ...formData, gateId: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="">Choose a gate</option>
                     {gates.map((gate) => (
@@ -362,7 +365,7 @@ export default function GuardShiftsPage() {
                     ))}
                   </select>
                   {gates.length === 0 && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-brand-danger mt-1">
                       No active gates available. Please create gates first.
                     </p>
                   )}
@@ -371,7 +374,7 @@ export default function GuardShiftsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Shift Type *
                   </label>
                   <select
@@ -380,7 +383,7 @@ export default function GuardShiftsPage() {
                     onChange={(e) =>
                       handleShiftTypeChange(e.target.value as "MORNING" | "AFTERNOON" | "NIGHT")
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="MORNING">Morning (8 AM - 4 PM)</option>
                     <option value="AFTERNOON">Afternoon (4 PM - 12 AM)</option>
@@ -389,7 +392,7 @@ export default function GuardShiftsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Date {formData.repeatDaily ? "(not used)" : "*"}
                   </label>
                   <input
@@ -398,14 +401,14 @@ export default function GuardShiftsPage() {
                     disabled={formData.repeatDaily}
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className={`w-full border border-gray-300 rounded px-3 py-2 ${
-                      formData.repeatDaily ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+                    className={`input ${
+                      formData.repeatDaily ? "bg-surface-elevated text-fg-secondary cursor-not-allowed" : ""
                     }`}
                   />
                 </div>
 
                 <div className="md:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Time Range (clock times)
                   </label>
                   <div className="flex gap-2 items-center">
@@ -414,21 +417,21 @@ export default function GuardShiftsPage() {
                       required
                       value={formData.startTime}
                       onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input"
                     />
-                    <span className="text-gray-500">to</span>
+                    <span className="text-fg-secondary">to</span>
                     <input
                       type="time"
                       required
                       value={formData.endTime}
                       onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-blue-100 bg-blue-50/80 px-4 py-3 space-y-2">
+              <div className="rounded-lg border border-surface-border bg-brand-primary-light/80 px-4 py-3 space-y-2">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -436,11 +439,11 @@ export default function GuardShiftsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, repeatDaily: e.target.checked })
                     }
-                    className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600"
+                    className="mt-1 w-4 h-4 rounded border-surface-border text-brand-primary"
                   />
                   <span>
-                    <span className="font-medium text-gray-900">Repeat every day</span>
-                    <span className="block text-sm text-gray-600 mt-0.5">
+                    <span className="font-medium text-fg-primary">Repeat every day</span>
+                    <span className="block text-sm text-fg-secondary mt-0.5">
                       Same gate and guard on this time window every calendar day (including overnight
                       shifts). No single-date assignment — use the option above when you need one
                       specific day only.
@@ -453,54 +456,62 @@ export default function GuardShiftsPage() {
                 <button
                   type="submit"
                   disabled={submitting || guards.length === 0 || gates.length === 0}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Scheduling..." : "Schedule Shift"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="rounded bg-white border border-gray-200 p-4 overflow-x-auto">
+        <div className="table-wrapper">
           {loading ? (
-            <p className="text-gray-500">Loading shifts...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading shifts...</p>
+            </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Date</th>
-                  <th>Shift Type</th>
-                  <th>Time</th>
-                  <th>Guard</th>
-                  <th>Gate</th>
-                  <th>Actions</th>
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th">Date</th>
+                  <th className="table-th">Shift Type</th>
+                  <th className="table-th">Time</th>
+                  <th className="table-th">Guard</th>
+                  <th className="table-th">Gate</th>
+                  <th className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {shifts.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
-                      No shifts scheduled. Click "Schedule Shift" to create your first shift.
+                    <td colSpan={6}>
+                      <div className="empty-state">
+                        <span className="empty-state-icon">📅</span>
+                        <p className="empty-state-title">No Shifts Scheduled</p>
+                        <p className="empty-state-text">Click &quot;Schedule Shift&quot; to create your first shift.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   shifts.map((shift) => (
-                    <tr key={shift.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3">
+                    <tr key={shift.id} className="table-row">
+                      <td className="table-td">
                         {shift.recurringDaily ? (
                           <span className="inline-flex items-center gap-1">
-                            <span className="font-medium text-blue-800">Every day</span>
+                            <span className="font-medium text-info-fg">Every day</span>
                             {shift.recurringStartMinutes != null &&
                               shift.recurringEndMinutes != null && (
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-fg-secondary">
                                   (
                                   {formatMinutesAsClock(shift.recurringStartMinutes)}–
                                   {formatMinutesAsClock(shift.recurringEndMinutes)})
@@ -511,16 +522,16 @@ export default function GuardShiftsPage() {
                           formatDate(shift.startTime)
                         )}
                       </td>
-                      <td>
+                      <td className="table-td">
                         <span
-                          className={`px-2 py-1 text-xs rounded ${getShiftBadgeColor(
+                          className={`badge ${getShiftBadgeColor(
                             shift.shiftType
                           )}`}
                         >
                           {shift.shiftType}
                         </span>
                       </td>
-                      <td className="text-xs">
+                      <td className="table-td text-xs">
                         {shift.recurringDaily &&
                         shift.recurringStartMinutes != null &&
                         shift.recurringEndMinutes != null ? (
@@ -534,22 +545,22 @@ export default function GuardShiftsPage() {
                           </>
                         )}
                       </td>
-                      <td>
+                      <td className="table-td">
                         <div>
                           <div className="font-medium">{shift.guard.name}</div>
-                          <div className="text-xs text-gray-500">{shift.guard.email}</div>
+                          <div className="text-xs text-fg-secondary">{shift.guard.email}</div>
                         </div>
                       </td>
-                      <td>
+                      <td className="table-td">
                         <div>
                           <div className="font-medium">{shift.gate.name}</div>
-                          <div className="text-xs text-gray-500">{shift.gate.location}</div>
+                          <div className="text-xs text-fg-secondary">{shift.gate.location}</div>
                         </div>
                       </td>
-                      <td>
+                      <td className="table-td">
                         <button
                           onClick={() => handleDelete(shift.id)}
-                          className="text-red-600 hover:text-red-800 text-xs"
+                          className="btn btn-danger !py-1 !px-3 text-xs"
                         >
                           Delete
                         </button>

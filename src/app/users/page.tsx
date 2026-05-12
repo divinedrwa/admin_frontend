@@ -449,50 +449,50 @@ export default function UsersPage() {
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeClass = (role: string) => {
     switch (role) {
       case "ADMIN":
-        return "bg-purple-100 text-purple-800";
+        return "badge badge-primary";
       case "RESIDENT":
-        return "bg-blue-100 text-blue-800";
+        return "badge badge-info";
       case "GUARD":
-        return "bg-green-100 text-green-800";
+        return "badge badge-success";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "badge badge-gray";
     }
   };
 
   return (
     <AppShell title="Users Management">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Manage admins, residents, and guards</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Manage admins, residents, and guards</p>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Add User
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 p-4 space-y-2">
+          <div className="rounded-lg border border-approved-bg bg-approved-bg/80 p-4 space-y-2">
             <div className="flex flex-wrap justify-between gap-2">
               <div>
-                <h3 className="font-semibold text-gray-900">Import / export residents (CSV)</h3>
-                <p className="text-xs text-gray-600 mt-1">
+                <h3 className="font-semibold text-fg-primary">Import / export residents (CSV)</h3>
+                <p className="text-xs text-fg-secondary mt-1">
                   Columns:{" "}
-                  <code className="bg-white px-1 rounded text-[11px]">
+                  <code className="bg-surface px-1 rounded text-[11px]">
                     username,name,email,password,phone,residentType,villaNumber,moveInDate
                   </code>
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-fg-secondary mt-1">
                   residentType: OWNER, TENANT, or FAMILY_MEMBER · if villaNumber is new for this society, a villa is
                   created automatically (owner name = resident name; maintenance 0 until you edit it) · moveInDate:
                   YYYY-MM-DD · same phone can appear on multiple rows (one login per row — use unique username/email
                   each time; mobile sign-in with phone may require username/email if numbers repeat)
                 </p>
-                <p className="text-xs text-amber-800/90 mt-1">
+                <p className="text-xs text-pending-fg/90 mt-1">
                   Exports leave the password column empty for security. Add passwords before re-importing to a new
                   system.
                 </p>
@@ -502,21 +502,21 @@ export default function UsersPage() {
                   type="button"
                   onClick={handleExportResidentsCsv}
                   disabled={exportingResidents || !users.some((u) => u.role === "RESIDENT")}
-                  className="text-sm font-medium bg-white border border-emerald-400 text-emerald-900 px-3 py-2 rounded hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed text-center"
+                  className="text-sm font-medium bg-surface border border-approved-bg text-fg-primary px-3 py-2 rounded hover:bg-approved-bg disabled:opacity-50 disabled:cursor-not-allowed text-center"
                 >
                   {exportingResidents ? "Exporting…" : "Export residents"}
                 </button>
                 <a
                   href="/samples/residents-import-sample.csv"
                   download="residents-import-sample.csv"
-                  className="text-sm font-medium text-emerald-800 hover:underline text-center"
+                  className="text-sm font-medium text-approved-fg hover:underline text-center"
                 >
                   Sample CSV
                 </a>
               </div>
             </div>
             <label className="inline-flex items-center gap-2 cursor-pointer">
-              <span className="bg-white border border-emerald-300 text-emerald-900 px-3 py-2 rounded text-sm font-medium hover:bg-emerald-100">
+              <span className="bg-surface border border-approved-bg text-fg-primary px-3 py-2 rounded text-sm font-medium hover:bg-approved-bg">
                 {importingResidents ? "Importing…" : "Choose residents CSV"}
               </span>
               <input
@@ -529,13 +529,13 @@ export default function UsersPage() {
             </label>
           </div>
 
-          <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4 space-y-2">
+          <div className="rounded-lg border border-pending-bg bg-pending-bg/80 p-4 space-y-2">
             <div className="flex flex-wrap justify-between gap-2">
               <div>
-                <h3 className="font-semibold text-gray-900">Import guards (CSV)</h3>
-                <p className="text-xs text-gray-600 mt-1">
+                <h3 className="font-semibold text-fg-primary">Import guards (CSV)</h3>
+                <p className="text-xs text-fg-secondary mt-1">
                   Columns:{" "}
-                  <code className="bg-white px-1 rounded text-[11px]">
+                  <code className="bg-surface px-1 rounded text-[11px]">
                     username,name,email,password,phone
                   </code>
                 </p>
@@ -543,13 +543,13 @@ export default function UsersPage() {
               <a
                 href="/samples/guards-import-sample.csv"
                 download="guards-import-sample.csv"
-                className="text-sm font-medium text-amber-900 hover:underline shrink-0"
+                className="text-sm font-medium text-fg-primary hover:underline shrink-0"
               >
                 Sample CSV
               </a>
             </div>
             <label className="inline-flex items-center gap-2 cursor-pointer">
-              <span className="bg-white border border-amber-300 text-amber-900 px-3 py-2 rounded text-sm font-medium hover:bg-amber-100">
+              <span className="bg-surface border border-pending-bg text-fg-primary px-3 py-2 rounded text-sm font-medium hover:bg-pending-bg">
                 {importingGuards ? "Importing…" : "Choose guards CSV"}
               </span>
               <input
@@ -564,8 +564,8 @@ export default function UsersPage() {
         </div>
 
         {selectedResidentIds.size > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/90 px-4 py-3">
-            <span className="text-sm text-gray-800">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-denied-bg bg-denied-bg/90 px-4 py-3">
+            <span className="text-sm text-fg-primary">
               {selectedResidentIds.size} resident{selectedResidentIds.size === 1 ? "" : "s"} selected
             </span>
             <div className="flex gap-2">
@@ -573,7 +573,7 @@ export default function UsersPage() {
                 type="button"
                 onClick={() => setSelectedResidentIds(new Set())}
                 disabled={bulkDeletingResidents}
-                className="text-sm px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+                className="text-sm px-3 py-1.5 rounded border border-surface-border bg-surface hover:bg-surface-background disabled:opacity-50"
               >
                 Clear
               </button>
@@ -581,7 +581,7 @@ export default function UsersPage() {
                 type="button"
                 onClick={handleBulkDeleteResidents}
                 disabled={bulkDeletingResidents}
-                className="text-sm px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                className="btn btn-danger text-sm"
               >
                 {bulkDeletingResidents ? "Deleting…" : "Delete selected residents"}
               </button>
@@ -590,19 +590,22 @@ export default function UsersPage() {
         )}
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingUser ? "Edit user" : "Create New User"}
-            </h2>
-            {editingUser && (
-              <p className="text-sm text-gray-600 mb-4">
-                Username cannot be changed. Leave password empty to keep the current password.
-              </p>
-            )}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">
+                {editingUser ? "Edit user" : "Create New User"}
+              </h2>
+              {editingUser && (
+                <p className="text-sm text-fg-secondary mt-1">
+                  Username cannot be changed. Leave password empty to keep the current password.
+                </p>
+              )}
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Username *
                   </label>
                   <input
@@ -613,14 +616,14 @@ export default function UsersPage() {
                     maxLength={50}
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 disabled:bg-gray-100 disabled:text-gray-600"
+                    className="input disabled:bg-surface-elevated disabled:text-fg-secondary"
                     placeholder="johndoe123"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Lowercase, no spaces</p>
+                  <p className="text-xs text-fg-secondary mt-1">Lowercase, no spaces</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Full Name *
                   </label>
                   <input
@@ -628,13 +631,13 @@ export default function UsersPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="John Doe"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Email *
                   </label>
                   <input
@@ -642,7 +645,7 @@ export default function UsersPage() {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -650,20 +653,20 @@ export default function UsersPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Phone
                   </label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="+91 9876543210"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     {editingUser ? "New password (optional)" : "Password *"}
                   </label>
                   <input
@@ -672,7 +675,7 @@ export default function UsersPage() {
                     minLength={editingUser ? undefined : 6}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder={editingUser ? "Leave blank to keep current" : "Min 6 characters"}
                   />
                 </div>
@@ -680,7 +683,7 @@ export default function UsersPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Role *
                   </label>
                   <select
@@ -693,14 +696,14 @@ export default function UsersPage() {
                         role: e.target.value as "ADMIN" | "RESIDENT" | "GUARD"
                       })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2 disabled:bg-gray-100 disabled:text-gray-600"
+                    className="input disabled:bg-surface-elevated disabled:text-fg-secondary"
                   >
                     <option value="ADMIN">Admin</option>
                     <option value="RESIDENT">Resident</option>
                     <option value="GUARD">Guard</option>
                   </select>
                   {editingUser && (
-                    <p className="text-xs text-gray-500 mt-1">Role cannot be changed here.</p>
+                    <p className="text-xs text-fg-secondary mt-1">Role cannot be changed here.</p>
                   )}
                 </div>
 
@@ -711,9 +714,9 @@ export default function UsersPage() {
                         type="checkbox"
                         checked={formData.isActive}
                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                        className="w-4 h-4 rounded border-gray-300"
+                        className="w-4 h-4 rounded border-surface-border"
                       />
-                      <span className="text-sm font-medium text-gray-700">Account active</span>
+                      <span className="text-sm font-medium text-fg-primary">Account active</span>
                     </label>
                   </div>
                 )}
@@ -721,26 +724,26 @@ export default function UsersPage() {
                 {formData.role === "RESIDENT" && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
                         Resident Type *
                       </label>
                       <select
                         required
                         value={formData.residentType}
                         onChange={(e) => setFormData({ ...formData, residentType: e.target.value as any })}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
+                        className="input"
                       >
                         <option value="OWNER">Owner</option>
                         <option value="TENANT">Tenant</option>
                         <option value="FAMILY_MEMBER">Family Member</option>
                       </select>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-fg-secondary mt-1">
                         Owner: Villa owner | Tenant: Renting the villa | Family: Owner's family
                       </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
                         Assign Villa *
                       </label>
                       <select
@@ -751,7 +754,7 @@ export default function UsersPage() {
                           const uid = firstUnitIdForVilla(villas, vid);
                           setFormData({ ...formData, villaId: vid, unitId: uid });
                         }}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
+                        className="input"
                       >
                         <option value="">Select a villa</option>
                         {villas.map((villa) => (
@@ -761,14 +764,14 @@ export default function UsersPage() {
                         ))}
                       </select>
                       {villas.length === 0 && (
-                        <p className="text-sm text-red-600 mt-1">
+                        <p className="text-sm text-brand-danger mt-1">
                           No villas available. Please create villas first.
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
                         Unit / floor *
                       </label>
                       <select
@@ -776,7 +779,7 @@ export default function UsersPage() {
                         disabled={!formData.villaId}
                         value={formData.unitId}
                         onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
-                        className="w-full border border-gray-300 rounded px-3 py-2 disabled:bg-gray-100"
+                        className="input disabled:bg-surface-elevated"
                       >
                         <option value="">
                           {formData.villaId ? "Select unit" : "Select a property first"}
@@ -790,7 +793,7 @@ export default function UsersPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
                         Move-in Date *
                       </label>
                       <input
@@ -798,12 +801,12 @@ export default function UsersPage() {
                         required={formData.role === "RESIDENT"}
                         value={formData.moveInDate}
                         onChange={(e) => setFormData({ ...formData, moveInDate: e.target.value })}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
+                        className="input"
                       />
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
                         Maintenance billing
                       </label>
                       <select
@@ -814,14 +817,14 @@ export default function UsersPage() {
                             maintenanceBillingRole: e.target.value as MaintenanceBillingRole,
                           })
                         }
-                        className="w-full border border-gray-300 rounded px-3 py-2"
+                        className="input"
                       >
                         <option value="PRIMARY">Primary — this account pays villa maintenance / billing</option>
                         <option value="EXCLUDED">
                           Excluded — another resident on this villa is the billing contact (tenant / family, etc.)
                         </option>
                       </select>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-fg-secondary mt-1">
                         Only one primary payer per villa. Choose &quot;Excluded&quot; only when someone else on the same
                         villa is already active and should receive dues.
                       </p>
@@ -834,30 +837,31 @@ export default function UsersPage() {
                 <button
                   type="submit"
                   disabled={submitting || (formData.role === "RESIDENT" && villas.length === 0)}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? (editingUser ? "Saving..." : "Creating...") : editingUser ? "Save changes" : "Create User"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="rounded bg-white border border-gray-200 p-4 overflow-x-auto">
+        <div className="table-wrapper overflow-x-auto">
           {loading ? (
-            <p className="text-gray-500">Loading users...</p>
+            <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading users...</p></div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2 w-10">
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th w-10">
                     {residentsList.length > 0 ? (
                       <input
                         type="checkbox"
@@ -866,100 +870,96 @@ export default function UsersPage() {
                           residentsList.every((r) => selectedResidentIds.has(r.id))
                         }
                         onChange={toggleSelectAllResidents}
-                        className="rounded border-gray-300"
+                        className="rounded border-surface-border"
                         title="Select all residents"
                       />
                     ) : null}
                   </th>
-                  <th className="py-2">Username</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Role</th>
-                  <th>Property</th>
-                  <th>Unit</th>
-                  <th>Maint. billing</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th className="table-th">Username</th>
+                  <th className="table-th">Name</th>
+                  <th className="table-th">Email</th>
+                  <th className="table-th">Phone</th>
+                  <th className="table-th">Role</th>
+                  <th className="table-th">Property</th>
+                  <th className="table-th">Unit</th>
+                  <th className="table-th">Maint. billing</th>
+                  <th className="table-th">Status</th>
+                  <th className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="py-8 text-center text-gray-500">
-                      No users found. Click "Add User" to create your first user.
+                    <td colSpan={11}>
+                      <div className="empty-state">
+                        <span className="empty-state-icon">👥</span>
+                        <p className="empty-state-title">No users found</p>
+                        <p className="empty-state-text">Click &quot;Add User&quot; to create your first user.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   users.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 align-middle">
+                    <tr key={user.id} className="table-row">
+                      <td className="table-td align-middle">
                         {user.role === "RESIDENT" ? (
                           <input
                             type="checkbox"
                             checked={selectedResidentIds.has(user.id)}
                             onChange={() => toggleResidentSelected(user.id)}
-                            className="rounded border-gray-300"
+                            className="rounded border-surface-border"
                             aria-label={`Select resident ${user.username}`}
                           />
                         ) : (
                           <span className="inline-block w-4" aria-hidden />
                         )}
                       </td>
-                      <td className="py-3">
-                        <span className="font-mono text-sm text-gray-900">
+                      <td className="table-td">
+                        <span className="font-mono text-sm text-fg-primary">
                           {user.username || "-"}
                         </span>
                       </td>
-                      <td className="py-3">{user.name}</td>
-                      <td>{user.email}</td>
-                      <td>{user.phone || "-"}</td>
-                      <td>
-                        <span
-                          className={`px-2 py-1 text-xs rounded ${getRoleBadgeColor(user.role)}`}
-                        >
+                      <td className="table-td">{user.name}</td>
+                      <td className="table-td">{user.email}</td>
+                      <td className="table-td">{user.phone || "-"}</td>
+                      <td className="table-td">
+                        <span className={getRoleBadgeClass(user.role)}>
                           {user.role}
                         </span>
                       </td>
-                      <td>
+                      <td className="table-td">
                         {user.villa ? `${user.villa.villaNumber}` : "-"}
                       </td>
-                      <td className="text-gray-700 text-xs">
+                      <td className="table-td text-xs">
                         {user.role === "RESIDENT"
                           ? user.unit?.label ?? (user.unitId || user.linkedUnitId ? "—" : "—")
                           : "—"}
                       </td>
-                      <td className="text-gray-700">
+                      <td className="table-td">
                         {user.role === "RESIDENT"
                           ? user.maintenanceBillingRole === "EXCLUDED"
                             ? "Excluded"
                             : "Primary"
                           : "—"}
                       </td>
-                      <td>
-                        <span
-                          className={`px-2 py-1 text-xs rounded ${
-                            user.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
+                      <td className="table-td">
+                        <span className={`badge ${user.isActive ? "badge-success" : "badge-gray"}`}>
                           {user.isActive ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td>
+                      <td className="table-td">
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => handleEdit(user)}
-                            className="text-blue-600 hover:text-blue-800 text-xs"
+                            className="text-brand-primary hover:text-info-fg text-xs"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(user.id)}
-                            className="text-red-600 hover:text-red-800 text-xs"
+                            className="text-brand-danger hover:text-denied-fg text-xs"
                           >
                             Delete
                           </button>

@@ -37,10 +37,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-surface-background">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="w-16 h-16 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-fg-secondary">Loading...</p>
         </div>
       </div>
     );
@@ -48,22 +48,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-surface-background">
         <div className="text-center space-y-3">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-gray-600">Redirecting to login…</p>
+          <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-fg-secondary">Redirecting to login…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen flex bg-surface-background">
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <section className="flex-1 flex flex-col min-w-0">
         {platformView ? (
-          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 print:hidden">
-            <p className="text-sm text-amber-950">
+          <div className="bg-pending-bg border-b border-pending-solid/30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 print:hidden">
+            <p className="text-sm text-pending-fg">
               <span className="font-semibold">Platform view:</span> you are signed in as the society
               admin for <span className="font-medium">{platformView.societyName}</span> (full tenant
               access).
@@ -71,18 +71,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <button
               type="button"
               onClick={exitToSuperAdmin}
-              className="shrink-0 text-sm font-semibold px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700"
+              className="shrink-0 text-sm font-semibold px-3 py-1.5 rounded-lg bg-pending-solid text-fg-inverse hover:opacity-90"
             >
               Back to platform console
             </button>
           </div>
         ) : null}
         {/* Mobile hamburger for dashboard pages */}
-        <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
+        <div className="md:hidden bg-surface border-b border-surface-border px-4 py-3">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
-            className="p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            className="p-2 -ml-2 rounded-lg text-fg-secondary hover:bg-surface-elevated"
             aria-label="Open menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

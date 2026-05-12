@@ -115,16 +115,16 @@ function InviteAcceptContent() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-800 to-slate-900">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-6">
+    <main className="min-h-screen flex items-center justify-center p-6" style={{ background: `linear-gradient(to bottom right, var(--gp-login-from), var(--gp-login-via), var(--gp-login-to))` }}>
+      <div className="w-full max-w-md rounded-2xl shadow-2xl p-8 space-y-6 border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)' }}>
         <div className="text-center">
           <div className="text-3xl mb-2">✉️</div>
-          <h1 className="text-2xl font-bold text-gray-900">Accept invitation</h1>
-          <p className="text-sm text-gray-600 mt-1">Create your account for the society linked to this invite.</p>
+          <h1 className="text-2xl font-bold text-fg-primary">Accept invitation</h1>
+          <p className="text-sm text-fg-secondary mt-1">Create your account for the society linked to this invite.</p>
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Invite token</label>
+          <label className="block text-sm font-medium text-fg-primary">Invite token</label>
           <div className="flex gap-2">
             <input
               className="input flex-1 text-sm"
@@ -136,7 +136,7 @@ function InviteAcceptContent() {
               type="button"
               onClick={() => void checkToken(token)}
               disabled={checking}
-              className="px-3 py-2 bg-slate-700 text-white rounded-lg text-sm shrink-0"
+              className="btn btn-primary text-sm shrink-0"
             >
               {checking ? "…" : "Verify"}
             </button>
@@ -146,7 +146,7 @@ function InviteAcceptContent() {
         {verified && (
           <div
             className={`rounded-lg p-3 text-sm ${
-              verified.valid ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"
+              verified.valid ? "bg-approved-bg text-fg-primary" : "bg-pending-bg text-fg-primary"
             }`}
           >
             <p className="font-semibold">{verified.invitation.society.name}</p>
@@ -168,32 +168,32 @@ function InviteAcceptContent() {
 
         <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
+            <label className="block text-sm font-medium text-fg-primary">Username</label>
             <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Full name</label>
+            <label className="block text-sm font-medium text-fg-primary">Full name</label>
             <input className="input" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-fg-primary">Email</label>
             <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required />
             {verified?.invitation.email && (
-              <p className="text-xs text-gray-500 mt-1">Must match the invited email.</p>
+              <p className="text-xs text-fg-secondary mt-1">Must match the invited email.</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone (optional)</label>
+            <label className="block text-sm font-medium text-fg-primary">Phone (optional)</label>
             <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
             {verified?.invitation.phone && (
-              <p className="text-xs text-gray-500 mt-1">Required and must match the invited phone.</p>
+              <p className="text-xs text-fg-secondary mt-1">Required and must match the invited phone.</p>
             )}
           </div>
           {verified?.invitation.role === "RESIDENT" &&
             !verified.invitation.villaId &&
             !verified.invitation.villa?.id && (
             <div>
-              <label className="block text-sm font-medium text-gray-700">Villa ID (optional)</label>
+              <label className="block text-sm font-medium text-fg-primary">Villa ID (optional)</label>
               <input
                 className="input font-mono text-sm"
                 value={villaId}
@@ -203,7 +203,7 @@ function InviteAcceptContent() {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-medium text-fg-primary">Password</label>
             <input
               type="password"
               className="input"
@@ -217,15 +217,15 @@ function InviteAcceptContent() {
           <button
             type="submit"
             disabled={submitting || !verified?.valid}
-            className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold disabled:opacity-50"
+            className="btn btn-primary w-full py-3"
           >
             {submitting ? "Creating account…" : "Create account & sign in"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-fg-secondary">
           Already have an account?{" "}
-          <Link href="/login" className="text-blue-600 font-medium">
+          <Link href="/login" className="text-brand-primary font-medium">
             Sign in
           </Link>
         </p>
@@ -238,7 +238,7 @@ export default function InviteAcceptPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen flex items-center justify-center bg-slate-900 text-white">Loading…</main>
+        <main className="min-h-screen flex items-center justify-center text-fg-inverse" style={{ background: `linear-gradient(to bottom right, var(--gp-login-from), var(--gp-login-to))` }}>Loading…</main>
       }
     >
       <InviteAcceptContent />

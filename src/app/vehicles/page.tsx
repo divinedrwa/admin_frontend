@@ -151,30 +151,33 @@ export default function VehiclesPage() {
   return (
     <AppShell title="Vehicle Management">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Register and manage resident vehicles</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Register and manage resident vehicles</p>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Register Vehicle
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">Register New Vehicle</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">Register New Vehicle</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Villa *
                   </label>
                   <select
                     required
                     value={formData.villaId}
                     onChange={(e) => setFormData({ ...formData, villaId: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="">Select villa</option>
                     {villas.map((villa) => (
@@ -186,7 +189,7 @@ export default function VehiclesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Vehicle Type *
                   </label>
                   <select
@@ -195,7 +198,7 @@ export default function VehiclesPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, vehicleType: e.target.value as VehicleForm["vehicleType"] })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="TWO_WHEELER">Two Wheeler</option>
                     <option value="FOUR_WHEELER">Four Wheeler</option>
@@ -205,7 +208,7 @@ export default function VehiclesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Vehicle Number *
                   </label>
                   <input
@@ -213,46 +216,46 @@ export default function VehiclesPage() {
                     required
                     value={formData.vehicleNumber}
                     onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="MH12AB1234"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Model
                   </label>
                   <input
                     type="text"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="Honda City"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Color
                   </label>
                   <input
                     type="text"
                     value={formData.color}
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="White"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Parking Slot
                   </label>
                   <input
                     type="text"
                     value={formData.parkingSlot}
                     onChange={(e) => setFormData({ ...formData, parkingSlot: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="P-12"
                   />
                 </div>
@@ -262,63 +265,68 @@ export default function VehiclesPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Registering..." : "Register Vehicle"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="rounded bg-white border border-gray-200 p-4">
+        <div className="table-wrapper overflow-x-auto">
           {loading ? (
-            <p className="text-gray-500">Loading vehicles...</p>
+            <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading vehicles...</p></div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Vehicle No.</th>
-                  <th>Type</th>
-                  <th>Model</th>
-                  <th>Color</th>
-                  <th>Villa</th>
-                  <th>Parking</th>
-                  <th>Actions</th>
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th">Vehicle No.</th>
+                  <th className="table-th">Type</th>
+                  <th className="table-th">Model</th>
+                  <th className="table-th">Color</th>
+                  <th className="table-th">Villa</th>
+                  <th className="table-th">Parking</th>
+                  <th className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {vehicles.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-500">
-                      No vehicles registered. Click "Register Vehicle" to add one.
+                    <td colSpan={7}>
+                      <div className="empty-state">
+                        <span className="empty-state-icon">🚗</span>
+                        <p className="empty-state-title">No vehicles registered</p>
+                        <p className="empty-state-text">Click &quot;Register Vehicle&quot; to add one.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   vehicles.map((vehicle) => (
-                    <tr key={vehicle.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 font-medium">{vehicle.vehicleNumber}</td>
-                      <td>
+                    <tr key={vehicle.id} className="table-row">
+                      <td className="table-td font-medium">{vehicle.vehicleNumber}</td>
+                      <td className="table-td">
                         {formatVehicleType(vehicle.vehicleType)}
                       </td>
-                      <td>{vehicle.model || "-"}</td>
-                      <td>{vehicle.color || "-"}</td>
-                      <td>
+                      <td className="table-td">{vehicle.model || "-"}</td>
+                      <td className="table-td">{vehicle.color || "-"}</td>
+                      <td className="table-td">
                         {vehicle.villa.villaNumber}
                         {vehicle.villa.block ? ` (${vehicle.villa.block})` : ""}
                       </td>
-                      <td>{vehicle.parkingSlot || "-"}</td>
-                      <td>
+                      <td className="table-td">{vehicle.parkingSlot || "-"}</td>
+                      <td className="table-td">
                         <button
                           onClick={() => handleDelete(vehicle.id)}
-                          className="text-red-600 hover:text-red-800 text-xs"
+                          className="text-brand-danger hover:text-denied-fg text-xs"
                         >
                           Delete
                         </button>

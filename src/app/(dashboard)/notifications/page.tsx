@@ -92,144 +92,157 @@ export default function NotificationsAdminPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <Bell className="text-blue-600" />
+        <h1 className="text-3xl font-bold text-fg-primary flex items-center gap-2">
+          <Bell className="text-brand-primary" />
           Push & notifications
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-fg-secondary mt-1">
           Society-wide messages create rows for each recipient&apos;s in-app inbox and optionally deliver via Firebase Cloud Messaging.
         </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl shadow border border-gray-100 p-5">
-          <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <Radio size={18} /> Registration snapshot
-          </h2>
-          {loadingDiag ? (
-            <p className="text-gray-500 text-sm">Loading…</p>
-          ) : diagnostics ? (
-            <ul className="text-sm space-y-2 text-gray-700">
-              <li>
-                <strong>Firebase env on API:</strong>{" "}
-                {diagnostics.firebaseConfigured ? (
-                  <span className="text-green-700">configured</span>
-                ) : (
-                  <span className="text-amber-700">not set — inbox rows still created</span>
-                )}
-              </li>
-              <li>
-                <strong>Registered device tokens:</strong> {diagnostics.registeredDevices}
-              </li>
-              <li>
-                <strong>Users with ≥1 device:</strong> {diagnostics.usersWithAtLeastOneDevice}
-              </li>
-              <li>
-                <strong>Notifications (24h):</strong> {diagnostics.notificationsCreatedLast24h}
-              </li>
-            </ul>
-          ) : (
-            <p className="text-red-600 text-sm">Could not load diagnostics.</p>
-          )}
-          <button
-            type="button"
-            onClick={loadDiagnostics}
-            className="mt-3 text-sm text-blue-600 hover:underline"
-          >
-            Refresh
-          </button>
+        <div className="card">
+          <div className="card-body">
+            <h2 className="font-semibold text-fg-primary mb-3 flex items-center gap-2">
+              <Radio size={18} /> Registration snapshot
+            </h2>
+            {loadingDiag ? (
+              <div className="loading-state">
+                <div className="loading-spinner w-6 h-6"></div>
+                <p className="loading-state-text text-sm">Loading...</p>
+              </div>
+            ) : diagnostics ? (
+              <ul className="text-sm space-y-2 text-fg-primary">
+                <li>
+                  <strong>Firebase env on API:</strong>{" "}
+                  {diagnostics.firebaseConfigured ? (
+                    <span className="text-approved-fg">configured</span>
+                  ) : (
+                    <span className="text-pending-fg">not set — inbox rows still created</span>
+                  )}
+                </li>
+                <li>
+                  <strong>Registered device tokens:</strong> {diagnostics.registeredDevices}
+                </li>
+                <li>
+                  <strong>Users with ≥1 device:</strong> {diagnostics.usersWithAtLeastOneDevice}
+                </li>
+                <li>
+                  <strong>Notifications (24h):</strong> {diagnostics.notificationsCreatedLast24h}
+                </li>
+              </ul>
+            ) : (
+              <p className="text-brand-danger text-sm">Could not load diagnostics.</p>
+            )}
+            <button
+              type="button"
+              onClick={loadDiagnostics}
+              className="mt-3 text-sm text-brand-primary hover:underline"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
-        <div className="bg-blue-50 rounded-xl border border-blue-100 p-5 text-sm text-blue-900">
-          <p className="font-medium mb-2">Backend setup</p>
-          <p className="mb-2">
-            Add <code className="bg-blue-100 px-1 rounded">FIREBASE_SERVICE_ACCOUNT_JSON</code> to{" "}
-            <code className="bg-blue-100 px-1 rounded">backend/.env</code> with your Firebase service account JSON (single line).
-          </p>
-          <p>
-            Automatic pushes fire on: <strong>SOS</strong> (guards + admins),{" "}
-            <strong>new notices</strong> (residents), <strong>garbage entry</strong> &{" "}
-            <strong>water toggle</strong> (residents). Mobile apps must register tokens via{" "}
-            <code className="bg-blue-100 px-1 rounded">POST /api/notifications/devices</code>.
-          </p>
+        <div className="card bg-brand-primary-light">
+          <div className="card-body text-sm text-info-fg">
+            <p className="font-medium mb-2">Backend setup</p>
+            <p className="mb-2">
+              Add <code className="bg-info-bg px-1 rounded">FIREBASE_SERVICE_ACCOUNT_JSON</code> to{" "}
+              <code className="bg-info-bg px-1 rounded">backend/.env</code> with your Firebase service account JSON (single line).
+            </p>
+            <p>
+              Automatic pushes fire on: <strong>SOS</strong> (guards + admins),{" "}
+              <strong>new notices</strong> (residents), <strong>garbage entry</strong> &{" "}
+              <strong>water toggle</strong> (residents). Mobile apps must register tokens via{" "}
+              <code className="bg-info-bg px-1 rounded">POST /api/notifications/devices</code>.
+            </p>
+          </div>
         </div>
       </div>
 
-      <form onSubmit={sendBroadcast} className="bg-white rounded-xl shadow border border-gray-100 p-6 space-y-4">
-        <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Send size={18} /> Broadcast (common notification)
-        </h2>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2"
-            placeholder="e.g. Annual general meeting"
-            required
-            maxLength={120}
-          />
+      <form onSubmit={sendBroadcast} className="card">
+        <div className="card-header">
+          <h2 className="font-semibold text-fg-primary flex items-center gap-2">
+            <Send size={18} /> Broadcast (common notification)
+          </h2>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 min-h-[100px]"
-            placeholder="Message body shown in inbox + push"
-            required
-            maxLength={500}
-          />
-        </div>
-        <div>
-          <span className="block text-sm font-medium text-gray-700 mb-2">Deliver to roles</span>
-          <div className="flex flex-wrap gap-3">
-            {ROLE_OPTIONS.map((r) => (
-              <label key={r.id} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={roles.includes(r.id)}
-                  onChange={() => toggleRole(r.id)}
-                />
-                {r.label}
-              </label>
-            ))}
+        <div className="card-body space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-fg-primary mb-1">Title</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="input"
+              placeholder="e.g. Annual general meeting"
+              required
+              maxLength={120}
+            />
           </div>
-          {roles.length === 0 && (
-            <p className="text-red-600 text-xs mt-1">Select at least one role.</p>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-fg-primary mb-1">Message</label>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              className="input min-h-[100px]"
+              placeholder="Message body shown in inbox + push"
+              required
+              maxLength={500}
+            />
+          </div>
+          <div>
+            <span className="block text-sm font-medium text-fg-primary mb-2">Deliver to roles</span>
+            <div className="flex flex-wrap gap-3">
+              {ROLE_OPTIONS.map((r) => (
+                <label key={r.id} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={roles.includes(r.id)}
+                    onChange={() => toggleRole(r.id)}
+                  />
+                  {r.label}
+                </label>
+              ))}
+            </div>
+            {roles.length === 0 && (
+              <p className="text-brand-danger text-xs mt-1">Select at least one role.</p>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={sending || roles.length === 0}
+            className="btn btn-primary inline-flex items-center gap-2"
+          >
+            <Send size={18} />
+            {sending ? "Sending..." : "Send broadcast"}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={sending || roles.length === 0}
-          className="btn btn-primary inline-flex items-center gap-2"
-        >
-          <Send size={18} />
-          {sending ? "Sending…" : "Send broadcast"}
-        </button>
       </form>
 
-      <div className="bg-white rounded-xl shadow border border-gray-100 p-6 flex flex-wrap items-center gap-4">
-        <div>
-          <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-1">
-            <TestTube size={18} /> Send test to yourself
-          </h2>
-          <p className="text-sm text-gray-600">
-            Creates one notification for the logged-in admin and attempts FCM if your device token is registered.
-          </p>
+      <div className="card">
+        <div className="card-body flex flex-wrap items-center gap-4">
+          <div>
+            <h2 className="font-semibold text-fg-primary flex items-center gap-2 mb-1">
+              <TestTube size={18} /> Send test to yourself
+            </h2>
+            <p className="text-sm text-fg-secondary">
+              Creates one notification for the logged-in admin and attempts FCM if your device token is registered.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={sendTest}
+            disabled={testing}
+            className="btn btn-secondary"
+          >
+            {testing ? "Sending..." : "Send test"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={sendTest}
-          disabled={testing}
-          className="btn btn-secondary"
-        >
-          {testing ? "Sending…" : "Send test"}
-        </button>
       </div>
 
       {lastResult && (
-        <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-sm text-gray-800">
+        <div className="rounded-lg bg-surface-background border border-surface-border px-4 py-3 text-sm text-fg-primary">
           {lastResult}
         </div>
       )}

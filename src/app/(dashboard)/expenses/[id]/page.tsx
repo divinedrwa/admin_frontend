@@ -67,8 +67,9 @@ export default function ExpenseDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh] text-gray-600">
-        Loading expense…
+      <div className="loading-state">
+        <div className="loading-spinner w-10 h-10"></div>
+        <p className="loading-state-text">Loading expense...</p>
       </div>
     );
   }
@@ -76,12 +77,14 @@ export default function ExpenseDetailPage() {
   if (error || !expense) {
     return (
       <div className="p-6 max-w-lg mx-auto">
-        <Link href="/expenses" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4">
+        <Link href="/expenses" className="inline-flex items-center gap-2 text-brand-primary hover:text-info-fg mb-4">
           <ArrowLeft size={18} /> Back to expenses
         </Link>
-        <div className="bg-white rounded-xl shadow p-6 border border-gray-100">
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">{error ?? "Not found"}</h1>
-          <p className="text-gray-600 text-sm">Check the URL or return to the expense list.</p>
+        <div className="card">
+          <div className="card-body">
+            <h1 className="text-xl font-semibold text-fg-primary mb-2">{error ?? "Not found"}</h1>
+            <p className="text-fg-secondary text-sm">Check the URL or return to the expense list.</p>
+          </div>
         </div>
       </div>
     );
@@ -93,18 +96,18 @@ export default function ExpenseDetailPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="page-action-bar mb-6">
         <div>
-          <Link href="/expenses" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3">
+          <Link href="/expenses" className="inline-flex items-center gap-2 text-fg-secondary hover:text-fg-primary mb-3">
             <ArrowLeft size={20} />
             Back to expenses
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">{(expense.title as string) || "Expense"}</h1>
-          <p className="text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
+          <h1 className="text-3xl font-bold text-fg-primary">{(expense.title as string) || "Expense"}</h1>
+          <p className="text-fg-secondary mt-1 flex items-center gap-2 flex-wrap">
             <Calendar size={16} className="inline shrink-0" />
             {paymentDate ? new Date(paymentDate).toLocaleDateString() : "—"}
             {typeof expense.month === "number" && typeof expense.year === "number" && (
-              <span className="text-gray-500">
+              <span className="text-fg-secondary">
                 · {MONTHS[(expense.month as number) - 1]} {expense.year as number}
               </span>
             )}
@@ -113,7 +116,7 @@ export default function ExpenseDetailPage() {
         <div className="flex gap-2">
           <Link
             href={`/expenses/edit/${id}`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium"
+            className="btn btn-primary inline-flex items-center gap-2 text-sm font-medium"
           >
             <Edit size={18} />
             Edit
@@ -121,7 +124,7 @@ export default function ExpenseDetailPage() {
           <button
             type="button"
             onClick={handleDelete}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 text-sm font-medium"
+            className="btn btn-danger inline-flex items-center gap-2 text-sm font-medium"
           >
             <Trash2 size={18} />
             Delete
@@ -130,133 +133,157 @@ export default function ExpenseDetailPage() {
       </div>
 
       <div className="grid gap-6">
-        <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Summary</h2>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium"
-              style={{
-                backgroundColor: cat?.color ? `${cat.color}20` : "#eff6ff",
-                color: "#111827",
-              }}
-            >
-              <span>{cat?.icon || "📋"}</span>
-              {cat?.name || "Category"}
-            </span>
-            <span className="text-2xl font-bold text-gray-900">
-              ₹{Number(expense.amount).toLocaleString()}
-            </span>
-            {typeof expense.netAmount === "number" && expense.netAmount !== expense.amount && (
-              <span className="text-sm text-gray-600">
-                Net: ₹{Number(expense.netAmount).toLocaleString()}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="text-sm font-semibold text-fg-secondary uppercase tracking-wide">Summary</h2>
+          </div>
+          <div className="card-body">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium"
+                style={{
+                  backgroundColor: cat?.color ? `${cat.color}20` : "#eff6ff",
+                  color: "#111827",
+                }}
+              >
+                <span>{cat?.icon || "📋"}</span>
+                {cat?.name || "Category"}
               </span>
+              <span className="text-2xl font-bold text-fg-primary">
+                ₹{Number(expense.amount).toLocaleString()}
+              </span>
+              {typeof expense.netAmount === "number" && expense.netAmount !== expense.amount && (
+                <span className="text-sm text-fg-secondary">
+                  Net: ₹{Number(expense.netAmount).toLocaleString()}
+                </span>
+              )}
+            </div>
+            {(expense.description as string) && (
+              <p className="text-fg-primary whitespace-pre-wrap">{expense.description as string}</p>
             )}
           </div>
-          {(expense.description as string) && (
-            <p className="text-gray-700 whitespace-pre-wrap">{expense.description as string}</p>
-          )}
         </div>
 
-        <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Payment</h2>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-            <div>
-              <dt className="text-gray-500">Paid to</dt>
-              <dd className="font-medium text-gray-900">{(expense.paidTo as string) || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Mode</dt>
-              <dd className="font-medium text-gray-900">{(expense.paymentMode as string) || "—"}</dd>
-            </div>
-            {(expense.paymentRef as string) && (
+        <div className="card">
+          <div className="card-header">
+            <h2 className="text-sm font-semibold text-fg-secondary uppercase tracking-wide">Payment</h2>
+          </div>
+          <div className="card-body">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
               <div>
-                <dt className="text-gray-500">Reference</dt>
-                <dd className="font-medium text-gray-900">{expense.paymentRef as string}</dd>
+                <dt className="text-fg-secondary">Paid to</dt>
+                <dd className="font-medium text-fg-primary">{(expense.paidTo as string) || "—"}</dd>
               </div>
-            )}
-            {(expense.paidToContact as string) && (
               <div>
-                <dt className="text-gray-500">Contact</dt>
-                <dd className="font-medium text-gray-900">{expense.paidToContact as string}</dd>
+                <dt className="text-fg-secondary">Mode</dt>
+                <dd className="font-medium text-fg-primary">{(expense.paymentMode as string) || "—"}</dd>
               </div>
-            )}
-            {(expense.receiptNumber as string) && (
-              <div>
-                <dt className="text-gray-500">Receipt #</dt>
-                <dd className="font-medium text-gray-900">{expense.receiptNumber as string}</dd>
-              </div>
-            )}
-            {(expense.invoiceNumber as string) && (
-              <div>
-                <dt className="text-gray-500">Invoice #</dt>
-                <dd className="font-medium text-gray-900">{expense.invoiceNumber as string}</dd>
-              </div>
-            )}
-          </dl>
+              {(expense.paymentRef as string) && (
+                <div>
+                  <dt className="text-fg-secondary">Reference</dt>
+                  <dd className="font-medium text-fg-primary">{expense.paymentRef as string}</dd>
+                </div>
+              )}
+              {(expense.paidToContact as string) && (
+                <div>
+                  <dt className="text-fg-secondary">Contact</dt>
+                  <dd className="font-medium text-fg-primary">{expense.paidToContact as string}</dd>
+                </div>
+              )}
+              {(expense.receiptNumber as string) && (
+                <div>
+                  <dt className="text-fg-secondary">Receipt #</dt>
+                  <dd className="font-medium text-fg-primary">{expense.receiptNumber as string}</dd>
+                </div>
+              )}
+              {(expense.invoiceNumber as string) && (
+                <div>
+                  <dt className="text-fg-secondary">Invoice #</dt>
+                  <dd className="font-medium text-fg-primary">{expense.invoiceNumber as string}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
         </div>
 
         {(Number(expense.gstAmount) > 0 || Number(expense.tdsAmount) > 0) && (
-          <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Tax</h2>
-            <dl className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <dt className="text-gray-500">GST</dt>
-                <dd className="font-medium">
-                  ₹{Number(expense.gstAmount || 0).toLocaleString()}
-                  {typeof expense.gstPercentage === "number" && expense.gstPercentage > 0 && (
-                    <span className="text-gray-500"> ({Number(expense.gstPercentage)}%)</span>
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-gray-500">TDS</dt>
-                <dd className="font-medium">
-                  ₹{Number(expense.tdsAmount || 0).toLocaleString()}
-                  {typeof expense.tdsPercentage === "number" && expense.tdsPercentage > 0 && (
-                    <span className="text-gray-500"> ({Number(expense.tdsPercentage)}%)</span>
-                  )}
-                </dd>
-              </div>
-            </dl>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-sm font-semibold text-fg-secondary uppercase tracking-wide">Tax</h2>
+            </div>
+            <div className="card-body">
+              <dl className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-fg-secondary">GST</dt>
+                  <dd className="font-medium">
+                    ₹{Number(expense.gstAmount || 0).toLocaleString()}
+                    {typeof expense.gstPercentage === "number" && expense.gstPercentage > 0 && (
+                      <span className="text-fg-secondary"> ({Number(expense.gstPercentage)}%)</span>
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-fg-secondary">TDS</dt>
+                  <dd className="font-medium">
+                    ₹{Number(expense.tdsAmount || 0).toLocaleString()}
+                    {typeof expense.tdsPercentage === "number" && expense.tdsPercentage > 0 && (
+                      <span className="text-fg-secondary"> ({Number(expense.tdsPercentage)}%)</span>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </div>
         )}
 
         {(expense.notes as string) && (
-          <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Notes</h2>
-            <p className="text-gray-700 whitespace-pre-wrap">{expense.notes as string}</p>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-sm font-semibold text-fg-secondary uppercase tracking-wide">Notes</h2>
+            </div>
+            <div className="card-body">
+              <p className="text-fg-primary whitespace-pre-wrap">{expense.notes as string}</p>
+            </div>
           </div>
         )}
 
         {tags.length > 0 && (
-          <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Tags</h2>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((t) => (
-                <span key={t} className="px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-sm">
-                  {t}
-                </span>
-              ))}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-sm font-semibold text-fg-secondary uppercase tracking-wide">Tags</h2>
+            </div>
+            <div className="card-body">
+              <div className="flex flex-wrap gap-2">
+                {tags.map((t) => (
+                  <span key={t} className="badge badge-gray">
+                    {t}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {Array.isArray(expense.attachments) && (expense.attachments as { id: string; fileName: string }[]).length > 0 && (
-          <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Attachments</h2>
-            <ul className="text-sm text-blue-700 space-y-1">
-              {(expense.attachments as { id: string; fileName: string; fileUrl?: string }[]).map((a) => (
-                <li key={a.id}>
-                  {a.fileUrl ? (
-                    <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                      {a.fileName}
-                    </a>
-                  ) : (
-                    a.fileName
-                  )}
-                </li>
-              ))}
-            </ul>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-sm font-semibold text-fg-secondary uppercase tracking-wide">Attachments</h2>
+            </div>
+            <div className="card-body">
+              <ul className="text-sm text-brand-primary space-y-1">
+                {(expense.attachments as { id: string; fileName: string; fileUrl?: string }[]).map((a) => (
+                  <li key={a.id}>
+                    {a.fileUrl ? (
+                      <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        {a.fileName}
+                      </a>
+                    ) : (
+                      a.fileName
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
       </div>

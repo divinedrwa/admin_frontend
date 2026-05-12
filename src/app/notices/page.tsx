@@ -189,65 +189,68 @@ export default function NoticesPage() {
   return (
     <AppShell title="Notice Board">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Post important announcements and notices</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Post important announcements and notices</p>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Post Notice
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">Post New Notice</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-bold text-fg-primary">Post New Notice</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Title *</label>
                 <input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="e.g., Water Supply Maintenance on Sunday"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content *</label>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Content *</label>
                 <textarea
                   required
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   rows={5}
                   placeholder="Describe the notice in detail..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Attachment URL (optional)
                 </label>
                 <input
                   type="url"
                   value={formData.fileUrl}
                   onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="https://example.com/document.pdf"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Category (resident app filters)
                 </label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white"
+                  className="input"
                 >
                   {NOTICE_CATEGORIES.map((c) => (
                     <option key={c.value} value={c.value}>
@@ -255,18 +258,18 @@ export default function NoticesPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-fg-secondary mt-1">
                   Maps to the chips on the resident app Notices tab (General, Maintenance, Events,
                   etc.).
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Priority</label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white"
+                  className="input"
                 >
                   {NOTICE_PRIORITIES.map((p) => (
                     <option key={p.value} value={p.value}>
@@ -282,24 +285,24 @@ export default function NoticesPage() {
                   type="checkbox"
                   checked={formData.isUrgent}
                   onChange={(e) => setFormData({ ...formData, isUrgent: e.target.checked })}
-                  className="rounded border-gray-300"
+                  className="rounded border-surface-border"
                 />
-                <label htmlFor="notice-urgent" className="text-sm text-gray-700">
+                <label htmlFor="notice-urgent" className="text-sm text-fg-primary">
                   Mark as urgent (highlighted on resident app)
                 </label>
               </div>
 
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="border border-surface-border rounded-lg p-4 bg-surface-background">
+                <label className="block text-sm font-medium text-fg-primary mb-2">
                   Who should see this notice?
                 </label>
-                <p className="text-xs text-gray-600 mb-3">
+                <p className="text-xs text-fg-secondary mb-3">
                   Leave nobody checked to send to <strong>all residents</strong>. Select one or more
                   accounts for a <strong>private</strong> notice (e.g. maintenance update for one unit).
                 </p>
-                <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 rounded bg-white p-2">
+                <div className="max-h-48 overflow-y-auto space-y-2 border border-surface-border rounded bg-surface p-2">
                   {residentOptions.length === 0 ? (
-                    <p className="text-sm text-gray-500">Loading residents…</p>
+                    <p className="text-sm text-fg-secondary">Loading residents…</p>
                   ) : (
                     residentOptions.map((r) => {
                       const checked = formData.recipientUserIds.includes(r.id);
@@ -323,12 +326,12 @@ export default function NoticesPage() {
                                 return { ...prev, recipientUserIds: [...set] };
                               });
                             }}
-                            className="mt-0.5 rounded border-gray-300"
+                            className="mt-0.5 rounded border-surface-border"
                           />
                           <span>
-                            <span className="font-medium text-gray-900">{r.name}</span>
-                            <span className="text-gray-600">{unit}</span>
-                            <span className="text-gray-400 text-xs block">{r.email}</span>
+                            <span className="font-medium text-fg-primary">{r.name}</span>
+                            <span className="text-fg-secondary">{unit}</span>
+                            <span className="text-fg-tertiary text-xs block">{r.email}</span>
                           </span>
                         </label>
                       );
@@ -336,79 +339,87 @@ export default function NoticesPage() {
                   )}
                 </div>
                 {formData.recipientUserIds.length > 0 ? (
-                  <p className="text-xs text-blue-700 mt-2 font-medium">
+                  <p className="text-xs text-brand-primary mt-2 font-medium">
                     Only {formData.recipientUserIds.length} selected resident(s) will see this notice
                     and get a push notification.
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-600 mt-2">All active residents will be notified.</p>
+                  <p className="text-xs text-fg-secondary mt-2">All active residents will be notified.</p>
                 )}
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Posting..." : "Post Notice"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
         <div className="space-y-4">
           {loading ? (
-            <p className="text-gray-500">Loading notices...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading notices...</p>
+            </div>
           ) : notices.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded p-8 text-center text-gray-500">
-              No notices posted yet. Click "Post Notice" to create your first notice.
+            <div className="card">
+              <div className="empty-state">
+                <span className="empty-state-icon">📌</span>
+                <p className="empty-state-title">No notices posted yet</p>
+                <p className="empty-state-text">Click &quot;Post Notice&quot; to publish your first announcement to residents.</p>
+              </div>
             </div>
           ) : (
             notices.map((notice) => (
-              <div key={notice.id} className="bg-white border border-gray-200 rounded p-6">
+              <div key={notice.id} className="card p-6">
                 <div className="flex justify-between items-start mb-2 gap-2">
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
                     <h3 className="text-lg font-semibold">{notice.title}</h3>
                     {notice.category && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase shrink-0">
+                      <span className="badge badge-gray uppercase shrink-0">
                         {notice.category}
                       </span>
                     )}
                     {notice.isUrgent ? (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700 shrink-0">
+                      <span className="badge badge-danger shrink-0">
                         Urgent
                       </span>
                     ) : null}
                     {notice.recipients && notice.recipients.length > 0 ? (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 shrink-0">
+                      <span className="badge badge-primary shrink-0">
                         Targeted ({notice.recipients.length})
                       </span>
                     ) : (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 shrink-0">
+                      <span className="badge badge-success shrink-0">
                         All residents
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => handleDelete(notice.id)}
-                    className="text-red-600 hover:text-red-800 text-sm"
+                    className="text-brand-danger hover:text-denied-fg text-sm"
                   >
                     Delete
                   </button>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">{formatDate(notice.createdAt)}</p>
-                <p className="text-gray-700 whitespace-pre-wrap">{notice.content}</p>
+                <p className="text-sm text-fg-secondary mb-3">{formatDate(notice.createdAt)}</p>
+                <p className="text-fg-primary whitespace-pre-wrap">{notice.content}</p>
                 {notice.recipients && notice.recipients.length > 0 ? (
-                  <p className="text-sm text-indigo-900 mt-2">
+                  <p className="text-sm text-fg-primary mt-2">
                     <span className="font-semibold">Recipients: </span>
                     {notice.recipients.map((r) => r.user?.name ?? r.userId).join(", ")}
                   </p>
@@ -418,7 +429,7 @@ export default function NoticesPage() {
                     href={notice.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-3 text-blue-600 hover:text-blue-800 text-sm"
+                    className="inline-block mt-3 text-brand-primary hover:text-info-fg text-sm"
                   >
                     View Attachment →
                   </a>

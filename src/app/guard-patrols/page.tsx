@@ -184,42 +184,45 @@ export default function GuardPatrolsPage() {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, string> = {
-      SCHEDULED: "bg-blue-100 text-blue-800",
-      IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-      COMPLETED: "bg-green-100 text-green-800",
-      MISSED: "bg-red-100 text-red-800",
+      SCHEDULED: "badge-primary",
+      IN_PROGRESS: "badge-warning",
+      COMPLETED: "badge-success",
+      MISSED: "badge-danger",
     };
-    return badges[status] || "bg-gray-100 text-gray-800";
+    return badges[status] || "badge-gray";
   };
 
   return (
     <AppShell title="Guard Patrols">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Monitor and schedule guard patrol activities</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Monitor and schedule guard patrol activities</p>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Schedule Patrol
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">{editingPatrol ? "Edit Patrol" : "Schedule New Patrol"}</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">{editingPatrol ? "Edit Patrol" : "Schedule New Patrol"}</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               {!editingPatrol ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
                       Guard *
                     </label>
                     <select
                       required
                       value={formData.guardId}
                       onChange={(e) => setFormData({ ...formData, guardId: e.target.value })}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input"
                     >
                       <option value="">Select guard</option>
                       {guards.map((guard) => (
@@ -230,14 +233,14 @@ export default function GuardPatrolsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
                       Gate *
                     </label>
                     <select
                       required
                       value={formData.gateId}
                       onChange={(e) => setFormData({ ...formData, gateId: e.target.value })}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input"
                     >
                       <option value="">Select gate</option>
                       {gates.map((gate) => (
@@ -249,8 +252,8 @@ export default function GuardPatrolsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-50 p-3 rounded">
-                  <p className="text-sm text-gray-600">
+                <div className="bg-surface-background p-3 rounded">
+                  <p className="text-sm text-fg-secondary">
                     <span className="font-medium">Guard:</span> {editingPatrol.guard.name} | 
                     <span className="font-medium ml-2">Gate:</span> {editingPatrol.gate.name}
                   </p>
@@ -258,7 +261,7 @@ export default function GuardPatrolsPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Checkpoint Name *
                 </label>
                 <input
@@ -266,26 +269,26 @@ export default function GuardPatrolsPage() {
                   required
                   value={formData.checkpointName}
                   onChange={(e) => setFormData({ ...formData, checkpointName: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="e.g., Main Gate Area, Block A Perimeter"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Checkpoint Location (Optional)
                 </label>
                 <input
                   type="text"
                   value={formData.checkpointLocation}
                   onChange={(e) => setFormData({ ...formData, checkpointLocation: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="Detailed location description"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Scheduled Time *
                 </label>
                 <input
@@ -293,18 +296,18 @@ export default function GuardPatrolsPage() {
                   required
                   value={formData.scheduledTime}
                   onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Notes (Optional)
                 </label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="Additional instructions or notes..."
                   rows={3}
                 />
@@ -314,66 +317,69 @@ export default function GuardPatrolsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? (editingPatrol ? "Updating..." : "Scheduling...") : (editingPatrol ? "Update Patrol" : "Schedule Patrol")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="bg-white border border-gray-200 rounded overflow-hidden">
+        <div className="table-wrapper">
           {loading ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500">Loading patrols...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading patrols...</p>
             </div>
           ) : patrols.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500">No patrols recorded yet. Click "Schedule Patrol" to add one.</p>
+            <div className="empty-state">
+              <span className="empty-state-icon">🛡️</span>
+              <p className="empty-state-title">No Patrols Recorded</p>
+              <p className="empty-state-text">Click &quot;Schedule Patrol&quot; to add one.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+              <table className="table">
+                <thead className="table-head">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Checkpoint</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Guard</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gate</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scheduled</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actual</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="table-th">Checkpoint</th>
+                    <th className="table-th">Guard</th>
+                    <th className="table-th">Gate</th>
+                    <th className="table-th">Scheduled</th>
+                    <th className="table-th">Actual</th>
+                    <th className="table-th">Status</th>
+                    <th className="table-th">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody>
                   {patrols.map((patrol) => (
-                    <tr key={patrol.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
+                    <tr key={patrol.id} className="table-row">
+                      <td className="table-td">
                         <div className="font-medium">{patrol.checkpointName}</div>
-                        <div className="text-xs text-gray-500">{patrol.checkpointLocation}</div>
+                        <div className="text-xs text-fg-secondary">{patrol.checkpointLocation}</div>
                       </td>
-                      <td className="px-4 py-3">{patrol.guard?.name || "N/A"}</td>
-                      <td className="px-4 py-3">{patrol.gate?.name || "N/A"}</td>
-                      <td className="px-4 py-3 text-xs">{formatDateTime(patrol.scheduledTime)}</td>
-                      <td className="px-4 py-3 text-xs">{patrol.actualTime ? formatDateTime(patrol.actualTime) : "-"}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(patrol.status)}`}>
+                      <td className="table-td">{patrol.guard?.name || "N/A"}</td>
+                      <td className="table-td">{patrol.gate?.name || "N/A"}</td>
+                      <td className="table-td text-xs">{formatDateTime(patrol.scheduledTime)}</td>
+                      <td className="table-td text-xs">{patrol.actualTime ? formatDateTime(patrol.actualTime) : "-"}</td>
+                      <td className="table-td">
+                        <span className={`badge ${getStatusBadge(patrol.status)}`}>
                           {patrol.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="table-td">
                         <div className="flex gap-1">
                           <button
                             onClick={() => handleEdit(patrol)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            className="p-1 text-brand-primary hover:bg-brand-primary-light rounded"
                             title="Edit patrol"
                           >
                             ✏️
@@ -381,7 +387,7 @@ export default function GuardPatrolsPage() {
                           <button
                             onClick={() => handleDelete(patrol.id)}
                             disabled={deletingPatrolId === patrol.id}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                            className="p-1 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
                             title="Delete patrol"
                           >
                             🗑️
@@ -392,7 +398,6 @@ export default function GuardPatrolsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
           )}
         </div>
       </div>

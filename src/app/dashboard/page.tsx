@@ -11,13 +11,13 @@ const fmtInr = (n: number) =>
   );
 
 const STAT_ACCENTS = {
-  blue: { iconBg: "bg-blue-100", badge: "bg-blue-100 text-blue-800" },
-  green: { iconBg: "bg-emerald-100", badge: "bg-emerald-100 text-emerald-800" },
-  purple: { iconBg: "bg-violet-100", badge: "bg-violet-100 text-violet-800" },
-  red: { iconBg: "bg-red-100", badge: "bg-red-100 text-red-800" },
+  blue: { iconBg: "bg-info-bg", badge: "bg-info-bg text-info-fg" },
+  green: { iconBg: "bg-approved-bg", badge: "bg-approved-bg text-approved-fg" },
+  purple: { iconBg: "bg-info-bg", badge: "bg-info-bg text-info-fg" },
+  red: { iconBg: "bg-denied-bg", badge: "bg-denied-bg text-denied-fg" },
   cyan: { iconBg: "bg-cyan-100", badge: "bg-cyan-100 text-cyan-800" },
   orange: { iconBg: "bg-orange-100", badge: "bg-orange-100 text-orange-800" },
-  yellow: { iconBg: "bg-amber-100", badge: "bg-amber-100 text-amber-800" },
+  yellow: { iconBg: "bg-pending-bg", badge: "bg-pending-bg text-pending-fg" },
   pink: { iconBg: "bg-pink-100", badge: "bg-pink-100 text-pink-800" },
 } as const;
 
@@ -96,7 +96,7 @@ function ClockDisplay() {
   return (
     <div className="text-right shrink-0">
       <div className="text-3xl md:text-4xl font-mono tabular-nums">{clock.toLocaleTimeString()}</div>
-      <div className="text-blue-100 mt-2 text-sm">
+      <div className="text-surface-border mt-2 text-sm">
         {clock.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
       </div>
     </div>
@@ -476,14 +476,14 @@ export default function DashboardPage() {
   ]);
 
   const quickActions = [
-    { icon: "👥", label: "Residents", href: "/resident-management", box: "hover:bg-blue-50 border-blue-100 text-blue-700" },
-    { icon: "👋", label: "Visitors", href: "/visitors", box: "hover:bg-emerald-50 border-emerald-100 text-emerald-700" },
-    { icon: "🆘", label: "SOS alerts", href: "/sos-alerts", box: "hover:bg-red-50 border-red-100 text-red-700" },
-    { icon: "📢", label: "Notices", href: "/notices", box: "hover:bg-purple-50 border-purple-100 text-purple-700" },
-    { icon: "💰", label: "Maintenance", href: "/maintenance-management", box: "hover:bg-amber-50 border-amber-100 text-amber-700" },
-    { icon: "🧾", label: "Billing cycles", href: "/maintenance-billing", box: "hover:bg-indigo-50 border-indigo-100 text-indigo-700" },
+    { icon: "👥", label: "Residents", href: "/resident-management", box: "hover:bg-brand-primary-light border-surface-border text-brand-primary" },
+    { icon: "👋", label: "Visitors", href: "/visitors", box: "hover:bg-approved-bg border-surface-border text-approved-fg" },
+    { icon: "🆘", label: "SOS alerts", href: "/sos-alerts", box: "hover:bg-denied-bg border-surface-border text-denied-fg" },
+    { icon: "📢", label: "Notices", href: "/notices", box: "hover:bg-brand-primary-light border-surface-border text-brand-primary" },
+    { icon: "💰", label: "Maintenance", href: "/maintenance-management", box: "hover:bg-pending-bg border-surface-border text-pending-fg" },
+    { icon: "🧾", label: "Billing cycles", href: "/maintenance-billing", box: "hover:bg-brand-primary-light border-surface-border text-brand-primary" },
     { icon: "⚠️", label: "Complaints", href: "/complaints", box: "hover:bg-orange-50 border-orange-100 text-orange-700" },
-    { icon: "🚪", label: "Gates", href: "/gates", box: "hover:bg-gray-50 border-gray-200 text-gray-800" },
+    { icon: "🚪", label: "Gates", href: "/gates", box: "hover:bg-surface-background border-surface-border text-fg-primary" },
   ] as const;
 
   function relTime(ms: number) {
@@ -500,25 +500,25 @@ export default function DashboardPage() {
     <AppShell title="Dashboard">
       <div className="space-y-8">
         {loadError ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{loadError}</div>
+          <div className="rounded-xl border border-pending-bg bg-pending-bg px-4 py-3 text-sm text-amber-900">{loadError}</div>
         ) : null}
 
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-brand-primary to-brand-primary-hover rounded-2xl p-8 text-white shadow-lg">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Society overview</h1>
-              <p className="text-blue-100 mt-2 text-base max-w-xl">
+              <p className="text-surface-border mt-2 text-base max-w-xl">
                 Live totals from your API — refresh counts with the Reload button below.
               </p>
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => void load()}
-                className="mt-4 text-sm px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 disabled:opacity-50 transition-colors"
+                className="mt-4 text-sm px-4 py-2 rounded-lg bg-surface/15 hover:bg-surface/25 disabled:opacity-50 transition-colors"
               >
                 {loading ? "Loading…" : "Reload dashboard"}
               </button>
-              <p className="mt-2 text-xs text-blue-100/90">
+              <p className="mt-2 text-xs text-surface-border/90">
                 Last synced: {lastSyncedAt ? lastSyncedAt.toLocaleString("en-IN") : "Not synced yet"}
               </p>
             </div>
@@ -530,26 +530,26 @@ export default function DashboardPage() {
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="stat-card bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow"
+              className="stat-card bg-surface rounded-xl border border-surface-border shadow-sm p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className={`rounded-xl p-3 text-2xl ${stat.accent.iconBg}`}>{stat.icon}</div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stat.accent.badge}`}>{stat.sub}</span>
               </div>
-              <div className="mt-4 text-2xl font-bold text-gray-900 leading-tight break-words">{stat.value}</div>
-              <div className="mt-1 text-sm text-gray-500">{stat.label}</div>
+              <div className="mt-4 text-2xl font-bold text-fg-primary leading-tight break-words">{stat.value}</div>
+              <div className="mt-1 text-sm text-fg-secondary">{stat.label}</div>
               {"trend" in stat && Array.isArray(stat.trend) && stat.trend.length > 0 ? (
                 <div className="mt-3">
-                  <div className="flex items-center justify-between text-[11px] text-gray-500 mb-1">
+                  <div className="flex items-center justify-between text-[11px] text-fg-secondary mb-1">
                     <span>6-month net trend</span>
-                    <span className={stat.trend[stat.trend.length - 1].net >= 0 ? "text-emerald-700" : "text-red-700"}>
+                    <span className={stat.trend[stat.trend.length - 1].net >= 0 ? "text-approved-fg" : "text-denied-fg"}>
                       {fmtInr(stat.trend[stat.trend.length - 1].net)}
                     </span>
                   </div>
                   <svg viewBox="0 0 100 28" className="h-8 w-full">
-                    <path d={buildFundSparklinePath(stat.trend)} fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-600" />
+                    <path d={buildFundSparklinePath(stat.trend)} fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-primary" />
                   </svg>
-                  <div className="mt-1 flex justify-between text-[10px] text-gray-400">
+                  <div className="mt-1 flex justify-between text-[10px] text-fg-tertiary">
                     <span>{stat.trend[0].label}</span>
                     <span>{stat.trend[stat.trend.length - 1].label}</span>
                   </div>
@@ -562,25 +562,25 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 card">
             <div className="card-header flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Recent activity</h2>
+              <h2 className="text-xl font-bold text-fg-primary">Recent activity</h2>
               <span className="badge badge-primary">Latest first</span>
             </div>
             <div className="card-body pt-4">
               {loading && timeline.length === 0 ? (
-                <p className="text-gray-500 text-sm">Fetching events…</p>
+                <p className="text-fg-secondary text-sm">Fetching events…</p>
               ) : timeline.length === 0 ? (
-                <p className="text-gray-500 text-sm">No recent events yet. Data will appear as visitors, parcels, and notices are recorded.</p>
+                <p className="text-fg-secondary text-sm">No recent events yet. Data will appear as visitors, parcels, and notices are recorded.</p>
               ) : (
                 <div className="space-y-2">
                   {timeline.map((a) => (
                     <div
                       key={a.id}
-                      className="flex items-start gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                      className="flex items-start gap-4 p-4 rounded-xl border border-surface-border bg-surface-background/50 hover:bg-surface-background transition-colors"
                     >
                       <div className="text-2xl shrink-0">{a.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{a.text}</p>
-                        <p className="text-xs text-gray-500 mt-1">{relTime(a.at)}</p>
+                        <p className="text-sm font-medium text-fg-primary">{a.text}</p>
+                        <p className="text-xs text-fg-secondary mt-1">{relTime(a.at)}</p>
                       </div>
                       <span className={`badge ${a.tagClass} shrink-0 capitalize`}>{a.tag}</span>
                     </div>
@@ -593,7 +593,7 @@ export default function DashboardPage() {
           <div className="space-y-6">
             <div className="card">
               <div className="card-header">
-                <h2 className="text-lg font-bold text-gray-900">Quick links</h2>
+                <h2 className="text-lg font-bold text-fg-primary">Quick links</h2>
               </div>
               <div className="card-body">
                 <div className="grid grid-cols-2 gap-2">
@@ -613,17 +613,17 @@ export default function DashboardPage() {
 
             <div className="card">
               <div className="card-header">
-                <h3 className="text-lg font-bold text-gray-900">Gate status</h3>
+                <h3 className="text-lg font-bold text-fg-primary">Gate status</h3>
               </div>
               <div className="card-body space-y-3">
                 {gates.length === 0 ? (
-                  <p className="text-sm text-gray-500">No gates configured.</p>
+                  <p className="text-sm text-fg-secondary">No gates configured.</p>
                 ) : (
                   gates.slice(0, 6).map((gate) => (
-                    <div key={gate.id} className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div key={gate.id} className="flex items-center justify-between gap-3 p-3 bg-surface-background rounded-lg border border-surface-border">
                       <div className="min-w-0">
-                        <p className="font-medium text-sm text-gray-900 truncate">{gate.name}</p>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="font-medium text-sm text-fg-primary truncate">{gate.name}</p>
+                        <p className="text-xs text-fg-secondary truncate">
                           Guard: {gate.assignedGuard?.name ?? "Unassigned"}
                         </p>
                       </div>
@@ -634,7 +634,7 @@ export default function DashboardPage() {
                   ))
                 )}
                 {gates.length > 6 ? (
-                  <Link href="/gates" className="text-sm text-blue-600 font-medium hover:underline block text-center pt-2">
+                  <Link href="/gates" className="text-sm text-brand-primary font-medium hover:underline block text-center pt-2">
                     View all gates
                   </Link>
                 ) : null}
@@ -643,38 +643,38 @@ export default function DashboardPage() {
 
             <div className="card">
               <div className="card-header flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900">Maintenance · this month</h3>
-                <Link href="/maintenance-management" className="text-xs text-blue-600 font-semibold hover:underline">
+                <h3 className="text-lg font-bold text-fg-primary">Maintenance · this month</h3>
+                <Link href="/maintenance-management" className="text-xs text-brand-primary font-semibold hover:underline">
                   Open
                 </Link>
               </div>
               <div className="card-body space-y-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Expected</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="text-fg-secondary">Expected</span>
+                  <span className="font-semibold text-fg-primary">
                     {fmtInr((billingMaint ?? maint)?.totalExpected ?? 0)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Collected</span>
-                  <span className="font-semibold text-emerald-700">
+                  <span className="text-fg-secondary">Collected</span>
+                  <span className="font-semibold text-approved-fg">
                     {fmtInr((billingMaint ?? maint)?.totalCollected ?? 0)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Pending</span>
-                  <span className="font-semibold text-amber-700">
+                  <span className="text-fg-secondary">Pending</span>
+                  <span className="font-semibold text-pending-fg">
                     {fmtInr((billingMaint ?? maint)?.totalPending ?? 0)}
                   </span>
                 </div>
                 <div>
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <div className="flex justify-between text-xs text-fg-secondary mb-1">
                     <span>Collection rate</span>
                     <span>{(billingMaint ?? maint)?.collectionRate ?? 0}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-surface-elevated rounded-full h-2.5 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-600 transition-[width]"
+                      className="h-full rounded-full bg-gradient-to-r from-approved-solid to-brand-primary transition-[width]"
                       style={{
                         width: `${Math.min(100, Math.max(0, (billingMaint ?? maint)?.collectionRate ?? 0))}%`,
                       }}
@@ -683,23 +683,23 @@ export default function DashboardPage() {
                 </div>
 
                 {billingSnippet ? (
-                  <div className="pt-2 border-t border-gray-100">
+                  <div className="pt-2 border-t border-surface-border">
                     <div className="flex justify-between items-center mb-2 gap-2">
                       <div className="min-w-0">
-                        <span className="text-sm font-semibold text-gray-800 block truncate">
+                        <span className="text-sm font-semibold text-fg-primary block truncate">
                           Billing cycle {billingSnippet.cycleKey}
                         </span>
-                        <span className="text-[11px] text-gray-500">
+                        <span className="text-[11px] text-fg-secondary">
                           Source: Billing v1 cycle ledger
                         </span>
                       </div>
-                      <span className="text-xs uppercase font-medium text-blue-700 whitespace-nowrap">
+                      <span className="text-xs uppercase font-medium text-brand-primary whitespace-nowrap">
                         {billingSnippet.status ?? ""}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-fg-secondary">
                       Paid {billingSnippet.paidUsersCount ?? 0} · Pending {billingSnippet.pendingUsersCount ?? 0}{" "}
-                      <Link href="/maintenance-billing" className="text-blue-600 hover:underline ml-1 font-medium">
+                      <Link href="/maintenance-billing" className="text-brand-primary hover:underline ml-1 font-medium">
                         Manage
                       </Link>
                     </p>

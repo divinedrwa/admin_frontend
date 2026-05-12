@@ -56,60 +56,62 @@ export default function BankAccountsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-surface-background p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="page-action-bar">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">💳 Bank Accounts</h1>
-            <p className="text-gray-600">Manage society bank accounts</p>
+            <h1 className="text-3xl font-bold text-fg-primary">Bank Accounts</h1>
+            <p className="text-fg-secondary">Manage society bank accounts</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Add Account
           </button>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-denied-bg border border-brand-danger text-denied-fg px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading accounts...</p>
+          <div className="loading-state">
+            <div className="loading-spinner w-10 h-10"></div>
+            <p className="loading-state-text">Loading accounts...</p>
           </div>
         ) : accounts.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-500">No bank accounts found. Add one to get started.</p>
+          <div className="empty-state">
+            <span className="empty-state-icon">🏦</span>
+            <p className="empty-state-title">No bank accounts found</p>
+            <p className="empty-state-text">Add one to get started.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {accounts.map((account) => (
-              <div key={account.id} className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-600">
+              <div key={account.id} className="card card-body">
                 <div className="mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">{account.bankName}</h3>
-                  <p className="text-sm text-gray-600">{account.branch}</p>
+                  <h3 className="text-xl font-bold text-fg-primary">{account.bankName}</h3>
+                  <p className="text-sm text-fg-secondary">{account.branch}</p>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div>
-                    <span className="text-gray-500">Account Holder:</span>
+                    <span className="text-fg-secondary">Account Holder:</span>
                     <p className="font-medium">{account.accountHolderName}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Account Number:</span>
+                    <span className="text-fg-secondary">Account Number:</span>
                     <p className="font-mono font-medium">{account.accountNumber}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">IFSC Code:</span>
+                    <span className="text-fg-secondary">IFSC Code:</span>
                     <p className="font-mono">{account.ifscCode}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Type:</span>
-                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                    <span className="text-fg-secondary">Type:</span>
+                    <span className="badge badge-primary ml-2">
                       {account.accountType}
                     </span>
                   </div>
@@ -121,80 +123,80 @@ export default function BankAccountsPage() {
 
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="bg-surface rounded-lg p-6 w-full max-w-md">
               <h2 className="text-xl font-bold mb-4">Add Bank Account</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Bank Name</label>
                   <input
                     type="text"
                     required
                     value={form.bankName}
                     onChange={(e) => setForm({ ...form, bankName: e.target.value })}
-                    className="w-full px-3 py-2 border rounded"
+                    className="input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Account Holder Name</label>
                   <input
                     type="text"
                     required
                     value={form.accountHolderName}
                     onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })}
-                    className="w-full px-3 py-2 border rounded"
+                    className="input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Account Number</label>
                   <input
                     type="text"
                     required
                     value={form.accountNumber}
                     onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
-                    className="w-full px-3 py-2 border rounded"
+                    className="input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">IFSC Code</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">IFSC Code</label>
                   <input
                     type="text"
                     required
                     value={form.ifscCode}
                     onChange={(e) => setForm({ ...form, ifscCode: e.target.value })}
-                    className="w-full px-3 py-2 border rounded"
+                    className="input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Account Type</label>
                   <select
                     value={form.accountType}
                     onChange={(e) => setForm({ ...form, accountType: e.target.value })}
-                    className="w-full px-3 py-2 border rounded"
+                    className="input"
                   >
                     <option value="SAVINGS">Savings</option>
                     <option value="CURRENT">Current</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Branch</label>
                   <input
                     type="text"
                     value={form.branch}
                     onChange={(e) => setForm({ ...form, branch: e.target.value })}
-                    className="w-full px-3 py-2 border rounded"
+                    className="input"
                   />
                 </div>
                 <div className="flex justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                    className="btn btn-ghost"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="btn btn-primary"
                   >
                     Create Account
                   </button>

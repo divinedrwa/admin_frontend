@@ -153,37 +153,40 @@ export default function VendorsPage() {
   return (
     <AppShell title="Vendors Management">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Manage approved vendors and service providers</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Manage approved vendors and service providers</p>
           <button
             onClick={() => handleOpenForm()}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Add Vendor
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingVendor ? "Edit Vendor" : "Add New Vendor"}
-            </h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">
+                {editingVendor ? "Edit Vendor" : "Add New Vendor"}
+              </h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Name *</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="Vendor name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Category *
                   </label>
                   <select
@@ -195,7 +198,7 @@ export default function VendorsPage() {
                         category: e.target.value as VendorCategoryId,
                       })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="PLUMBER">Plumber</option>
                     <option value="ELECTRICIAN">Electrician</option>
@@ -210,37 +213,37 @@ export default function VendorsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Phone *</label>
                   <input
                     type="tel"
                     required
                     maxLength={24}
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="+91 9876543210"
                   />
-                  <p className="text-xs text-gray-500 mt-1">8–24 characters (digits / + / spaces).</p>
+                  <p className="text-xs text-fg-secondary mt-1">8–24 characters (digits / + / spaces).</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-fg-primary mb-1">Email</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="email@example.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   rows={3}
                   placeholder="Services offered, experience, etc."
                 />
@@ -254,7 +257,7 @@ export default function VendorsPage() {
                     onChange={(e) => setFormData({ ...formData, isApproved: e.target.checked })}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm font-medium text-gray-700">Approved Vendor</span>
+                  <span className="text-sm font-medium text-fg-primary">Approved Vendor</span>
                 </label>
               </div>
 
@@ -262,81 +265,83 @@ export default function VendorsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Saving..." : editingVendor ? "Update" : "Add Vendor"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="rounded bg-white border border-gray-200 p-4 overflow-x-auto">
+        <div className="table-wrapper">
           {loading ? (
-            <p className="text-gray-500">Loading vendors...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading vendors...</p>
+            </div>
+          ) : vendors.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-state-icon">🔧</span>
+              <p className="empty-state-title">No vendors found</p>
+              <p className="empty-state-text">Click &quot;Add Vendor&quot; to add your first vendor.</p>
+            </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Name</th>
-                  <th>Category</th>
-                  <th>Phone</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th">Name</th>
+                  <th className="table-th">Category</th>
+                  <th className="table-th">Phone</th>
+                  <th className="table-th">Email</th>
+                  <th className="table-th">Status</th>
+                  <th className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {vendors.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
-                      No vendors found. Click "Add Vendor" to add your first vendor.
-                    </td>
-                  </tr>
-                ) : (
-                  vendors.map((vendor) => (
-                    <tr key={vendor.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 font-medium">{vendor.name}</td>
-                      <td>{vendor.category}</td>
-                      <td>{vendor.phone}</td>
-                      <td>{vendor.email || "-"}</td>
-                      <td>
+                  {vendors.map((vendor) => (
+                    <tr key={vendor.id} className="table-row">
+                      <td className="table-td font-medium">{vendor.name}</td>
+                      <td className="table-td">{vendor.category}</td>
+                      <td className="table-td">{vendor.phone}</td>
+                      <td className="table-td">{vendor.email || "-"}</td>
+                      <td className="table-td">
                         <span
-                          className={`px-2 py-1 text-xs rounded ${
+                          className={`badge ${
                             vendor.isApproved === true
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
+                              ? "badge-success"
+                              : "badge-warning"
                           }`}
                         >
                           {vendor.isApproved === true ? "Approved" : "Pending"}
                         </span>
                       </td>
-                      <td>
+                      <td className="table-td">
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleOpenForm(vendor)}
-                            className="text-blue-600 hover:text-blue-800 text-xs"
+                            className="text-brand-primary hover:text-info-fg text-xs"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(vendor.id)}
-                            className="text-red-600 hover:text-red-800 text-xs"
+                            className="text-brand-danger hover:text-denied-fg text-xs"
                           >
                             Delete
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
+                  ))}
               </tbody>
             </table>
           )}

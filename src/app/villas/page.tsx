@@ -344,33 +344,33 @@ export default function VillasPage() {
   return (
     <AppShell title="Villas Management">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="page-action-bar">
           <div>
-            <p className="text-gray-600">Manage society villas and residents</p>
-            <p className="text-sm text-gray-500">Total: {villas.length} villas</p>
+            <p className="text-fg-secondary">Manage society villas and residents</p>
+            <p className="text-sm text-fg-tertiary mt-1">{villas.length} properties registered</p>
           </div>
           <button
             onClick={() => handleOpenForm()}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Add Villa
           </button>
         </div>
 
-        <div className="rounded-lg border border-indigo-200 bg-indigo-50/80 p-4 space-y-3">
+        <div className="card p-5 space-y-3 bg-brand-primary-light/50">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="font-semibold text-gray-900">Import / export villas (CSV)</h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <h3 className="font-semibold text-fg-primary">Import / export villas (CSV)</h3>
+              <p className="text-sm text-fg-secondary mt-1">
                 Header row required:{" "}
-                <code className="text-xs bg-white px-1 rounded">
+                <code className="text-xs bg-surface px-1 rounded">
                   villaNumber,floors,area,block,ownerName,ownerEmail,ownerPhone,monthlyMaintenance
                 </code>
                 . Optional:{" "}
-                <code className="text-xs bg-white px-1 rounded">ownerUsername,ownerPassword</code> — when{" "}
-                <code className="text-xs bg-white px-1 rounded">ownerEmail</code> is set, an owner resident account is
+                <code className="text-xs bg-surface px-1 rounded">ownerUsername,ownerPassword</code> — when{" "}
+                <code className="text-xs bg-surface px-1 rounded">ownerEmail</code> is set, an owner resident account is
                 created for this society (username from email if omitted; password generated unless{" "}
-                <code className="text-xs bg-white px-1 rounded">ownerPassword</code> is at least 6 characters).
+                <code className="text-xs bg-surface px-1 rounded">ownerPassword</code> is at least 6 characters).
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 justify-end">
@@ -378,21 +378,21 @@ export default function VillasPage() {
                 type="button"
                 onClick={handleExportVillasCsv}
                 disabled={exportingCsv || villas.length === 0}
-                className="text-sm font-medium bg-white border border-indigo-300 text-indigo-900 px-3 py-2 rounded hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="text-sm font-medium bg-surface border border-surface-border text-fg-primary px-3 py-2 rounded hover:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 {exportingCsv ? "Exporting…" : "Export villas CSV"}
               </button>
               <a
                 href="/samples/villas-import-sample.csv"
                 download="villas-import-sample.csv"
-                className="text-sm font-medium text-indigo-700 hover:underline whitespace-nowrap"
+                className="text-sm font-medium text-brand-primary hover:underline whitespace-nowrap"
               >
                 Sample CSV
               </a>
             </div>
           </div>
           <label className="inline-flex items-center gap-2 cursor-pointer">
-            <span className="bg-white border border-indigo-300 text-indigo-800 px-3 py-2 rounded text-sm font-medium hover:bg-indigo-100">
+            <span className="bg-surface border border-surface-border text-info-fg px-3 py-2 rounded text-sm font-medium hover:bg-surface-elevated">
               {importingCsv ? "Importing…" : "Choose CSV file"}
             </span>
             <input
@@ -406,14 +406,17 @@ export default function VillasPage() {
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingVilla ? "Edit Villa" : "Create New Villa"}
-            </h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-bold text-fg-primary">
+                {editingVilla ? "Edit Villa" : "Create New Villa"}
+              </h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Villa Number *
                   </label>
                   <input
@@ -421,14 +424,14 @@ export default function VillasPage() {
                     required
                     value={formData.villaNumber}
                     onChange={(e) => setFormData({ ...formData, villaNumber: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., V-001, V-002"
                     disabled={!!editingVilla}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Floors *
                   </label>
                   <input
@@ -438,19 +441,19 @@ export default function VillasPage() {
                     max="10"
                     value={formData.floors}
                     onChange={(e) => setFormData({ ...formData, floors: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Block
                   </label>
                   <input
                     type="text"
                     value={formData.block}
                     onChange={(e) => setFormData({ ...formData, block: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., A, B, C"
                   />
                 </div>
@@ -458,7 +461,7 @@ export default function VillasPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Area (sq. ft.) *
                   </label>
                   <input
@@ -468,13 +471,13 @@ export default function VillasPage() {
                     step="0.01"
                     value={formData.area}
                     onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., 1500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Monthly Maintenance (₹) *
                   </label>
                   <input
@@ -484,7 +487,7 @@ export default function VillasPage() {
                     step="0.01"
                     value={formData.monthlyMaintenance}
                     onChange={(e) => setFormData({ ...formData, monthlyMaintenance: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., 5000"
                   />
                 </div>
@@ -494,7 +497,7 @@ export default function VillasPage() {
                 <h3 className="text-lg font-medium mb-3">Owner Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
                       Owner Name *
                     </label>
                     <input
@@ -502,33 +505,33 @@ export default function VillasPage() {
                       required
                       value={formData.ownerName}
                       onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
                       Owner Email
                     </label>
                     <input
                       type="email"
                       value={formData.ownerEmail}
                       onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="input"
                       placeholder="owner@example.com"
                     />
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Owner Phone
                   </label>
                   <input
                     type="tel"
                     value={formData.ownerPhone}
                     onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="+91 9876543210"
                   />
                 </div>
@@ -536,20 +539,20 @@ export default function VillasPage() {
 
               <div className="border-t pt-4 space-y-3">
                 <h3 className="text-lg font-medium">Occupant units / floors</h3>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-fg-secondary">
                   A default unit is created automatically for billing and legacy data. Add rows for each floor or flat
-                  (e.g. code <code className="bg-gray-100 px-1 rounded">V12_GF</code>, label{" "}
-                  <code className="bg-gray-100 px-1 rounded">Ground Floor</code>). Residents are assigned to a unit in
+                  (e.g. code <code className="bg-surface-elevated px-1 rounded">V12_GF</code>, label{" "}
+                  <code className="bg-surface-elevated px-1 rounded">Ground Floor</code>). Residents are assigned to a unit in
                   Users.
                 </p>
                 <div className="space-y-2">
                   {extraUnits.map((row, idx) => (
                     <div key={idx} className="flex flex-wrap gap-2 items-end">
                       <div className="flex-1 min-w-[120px]">
-                        <label className="block text-xs text-gray-600 mb-0.5">Unit code</label>
+                        <label className="block text-xs text-fg-secondary mb-0.5">Unit code</label>
                         <input
                           type="text"
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                          className="w-full border border-surface-border rounded px-2 py-1.5 text-sm"
                           value={row.unitCode}
                           onChange={(e) => {
                             const next = [...extraUnits];
@@ -560,10 +563,10 @@ export default function VillasPage() {
                         />
                       </div>
                       <div className="flex-[2] min-w-[160px]">
-                        <label className="block text-xs text-gray-600 mb-0.5">Label</label>
+                        <label className="block text-xs text-fg-secondary mb-0.5">Label</label>
                         <input
                           type="text"
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
+                          className="w-full border border-surface-border rounded px-2 py-1.5 text-sm"
                           value={row.label}
                           onChange={(e) => {
                             const next = [...extraUnits];
@@ -575,7 +578,7 @@ export default function VillasPage() {
                       </div>
                       <button
                         type="button"
-                        className="text-sm text-red-600 hover:underline px-2"
+                        className="text-sm text-brand-danger hover:underline px-2"
                         onClick={() => setExtraUnits(extraUnits.filter((_, i) => i !== idx))}
                       >
                         Remove
@@ -585,36 +588,37 @@ export default function VillasPage() {
                 </div>
                 <button
                   type="button"
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-brand-primary hover:underline"
                   onClick={() => setExtraUnits([...extraUnits, { unitCode: "", label: "" }])}
                 >
                   + Add unit
                 </button>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Saving..." : editingVilla ? "Update property" : "Create property"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
         {selectedVillaIds.size > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/90 px-4 py-3">
-            <span className="text-sm text-gray-800">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-denied-bg bg-denied-bg/90 px-4 py-3">
+            <span className="text-sm text-fg-primary">
               {selectedVillaIds.size} villa{selectedVillaIds.size === 1 ? "" : "s"} selected
             </span>
             <div className="flex gap-2">
@@ -622,7 +626,7 @@ export default function VillasPage() {
                 type="button"
                 onClick={() => setSelectedVillaIds(new Set())}
                 disabled={bulkDeletingVillas}
-                className="text-sm px-3 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+                className="text-sm px-3 py-1.5 rounded border border-surface-border bg-surface hover:bg-surface-background disabled:opacity-50"
               >
                 Clear
               </button>
@@ -630,7 +634,7 @@ export default function VillasPage() {
                 type="button"
                 onClick={handleBulkDeleteVillas}
                 disabled={bulkDeletingVillas}
-                className="text-sm px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                className="text-sm px-3 py-1.5 rounded bg-brand-danger text-white hover:bg-brand-danger hover:opacity-90 disabled:opacity-50"
               >
                 {bulkDeletingVillas ? "Deleting…" : "Delete selected"}
               </button>
@@ -638,14 +642,17 @@ export default function VillasPage() {
           </div>
         )}
 
-        <div className="rounded bg-white border border-gray-200 p-4 overflow-x-auto">
+        <div className="table-wrapper">
           {loading ? (
-            <p className="text-gray-500">Loading villas...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading villas...</p>
+            </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2 w-10">
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th w-10">
                     {villas.length > 0 ? (
                       <input
                         type="checkbox"
@@ -654,71 +661,75 @@ export default function VillasPage() {
                           villas.every((v) => selectedVillaIds.has(v.id))
                         }
                         onChange={toggleSelectAllVillas}
-                        className="rounded border-gray-300"
+                        className="rounded border-surface-border"
                         title="Select all villas"
                       />
                     ) : null}
                   </th>
-                  <th className="py-2">Villa No.</th>
-                  <th>Block</th>
-                  <th>Floors</th>
-                  <th>Area (sq.ft.)</th>
-                  <th>Owner</th>
-                  <th>Maintenance</th>
-                  <th>Units</th>
-                  <th>Residents</th>
-                  <th>Actions</th>
+                  <th className="table-th">Villa No.</th>
+                  <th className="table-th">Block</th>
+                  <th className="table-th">Floors</th>
+                  <th className="table-th">Area (sq.ft.)</th>
+                  <th className="table-th">Owner</th>
+                  <th className="table-th">Maintenance</th>
+                  <th className="table-th">Units</th>
+                  <th className="table-th">Residents</th>
+                  <th className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {villas.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-8 text-center text-gray-500">
-                      No villas found. Click "Add Villa" to create your first villa.
+                    <td colSpan={10} className="table-td">
+                      <div className="empty-state">
+                        <span className="empty-state-icon">🏘️</span>
+                        <p className="empty-state-title">No villas yet</p>
+                        <p className="empty-state-text">Click &quot;Add Villa&quot; above to register your first property.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   villas.map((villa) => (
-                    <tr key={villa.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 align-middle">
+                    <tr key={villa.id} className="table-row">
+                      <td className="table-td align-middle">
                         <input
                           type="checkbox"
                           checked={selectedVillaIds.has(villa.id)}
                           onChange={() => toggleVillaSelected(villa.id)}
-                          className="rounded border-gray-300"
+                          className="rounded border-surface-border"
                           aria-label={`Select villa ${villa.villaNumber}`}
                         />
                       </td>
-                      <td className="py-3 font-medium">{villa.villaNumber}</td>
-                      <td>{villa.block || "-"}</td>
-                      <td>{villa.floors}</td>
-                      <td>{villa.area}</td>
-                      <td>
+                      <td className="table-td font-semibold">{villa.villaNumber}</td>
+                      <td className="table-td">{villa.block || "-"}</td>
+                      <td className="table-td">{villa.floors}</td>
+                      <td className="table-td">{villa.area}</td>
+                      <td className="table-td">
                         <div>
                           <div className="font-medium">{villa.ownerName}</div>
                           {villa.ownerPhone && (
-                            <div className="text-xs text-gray-500">{villa.ownerPhone}</div>
+                            <div className="text-xs text-fg-secondary mt-0.5">{villa.ownerPhone}</div>
                           )}
                         </div>
                       </td>
-                      <td className="font-medium text-green-600">₹{villa.monthlyMaintenance}</td>
-                      <td>{villa.units?.length ?? "—"}</td>
-                      <td>
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                      <td className="table-td font-semibold text-approved-solid">₹{villa.monthlyMaintenance}</td>
+                      <td className="table-td">{villa.units?.length ?? "—"}</td>
+                      <td className="table-td">
+                        <span className="badge badge-primary">
                           {villa._count.users} active
                         </span>
                       </td>
-                      <td>
+                      <td className="table-td">
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleOpenForm(villa)}
-                            className="text-blue-600 hover:text-blue-800 text-xs"
+                            className="btn btn-ghost text-xs px-2 py-1"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(villa.id)}
-                            className="text-red-600 hover:text-red-800 text-xs"
+                            className="btn btn-ghost text-brand-danger text-xs px-2 py-1"
                           >
                             Delete
                           </button>

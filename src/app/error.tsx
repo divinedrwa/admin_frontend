@@ -16,11 +16,11 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface-background px-4">
       <div className="max-w-md w-full text-center space-y-6">
-        <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+        <div className="mx-auto w-16 h-16 rounded-full bg-denied-bg flex items-center justify-center">
           <svg
-            className="w-8 h-8 text-red-600"
+            className="w-8 h-8 text-brand-danger"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -35,10 +35,10 @@ export default function GlobalError({
         </div>
 
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-fg-primary">
             Something went wrong
           </h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-fg-secondary">
             {error.message || "An unexpected error occurred."}
           </p>
         </div>
@@ -47,13 +47,13 @@ export default function GlobalError({
           <button
             type="button"
             onClick={reset}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-brand-primary text-fg-inverse text-sm font-medium hover:bg-brand-primary-hover transition-colors"
           >
             Try again
           </button>
           <Link
             href="/dashboard"
-            className="w-full sm:w-auto px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg border border-surface-border bg-surface text-sm font-medium text-fg-primary hover:bg-surface-background transition-colors"
           >
             Go to Dashboard
           </Link>

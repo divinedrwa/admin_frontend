@@ -167,29 +167,29 @@ export default function IncidentsPage() {
 
   const getSeverityBadge = (severity: string) => {
     const badges: Record<string, string> = {
-      LOW: "bg-green-100 text-green-800",
-      MEDIUM: "bg-yellow-100 text-yellow-800",
-      HIGH: "bg-orange-100 text-orange-800",
-      CRITICAL: "bg-red-100 text-red-800",
+      LOW: "badge-success",
+      MEDIUM: "badge-warning",
+      HIGH: "badge-info",
+      CRITICAL: "badge-danger",
     };
-    return badges[severity] || "bg-gray-100 text-gray-800";
+    return badges[severity] || "badge-gray";
   };
 
   return (
     <AppShell title="Security Incidents">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-gray-600">Track and manage security incidents</p>
+        <div className="page-action-bar">
+          <p className="text-fg-secondary">Track and manage security incidents</p>
           <button
             onClick={handleOpenForm}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            className="btn btn-danger"
           >
             + Report Incident
           </button>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white border border-gray-200 rounded p-4">
+        <div className="filter-bar">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <input
@@ -197,14 +197,14 @@ export default function IncidentsPage() {
                 placeholder="Search by title or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               />
             </div>
             <div>
               <select
                 value={severityFilter}
                 onChange={(e) => setSeverityFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               >
                 <option value="all">All Severities</option>
                 <option value="LOW">Low ({severityCounts.LOW})</option>
@@ -214,17 +214,20 @@ export default function IncidentsPage() {
               </select>
             </div>
           </div>
-          <div className="mt-3 text-sm text-gray-600">
+          <div className="mt-3 text-sm text-fg-secondary">
             Showing {filteredIncidents.length} of {incidents.length} incidents
           </div>
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">{editingIncident ? "Edit Incident" : "Report New Incident"}</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-semibold">{editingIncident ? "Edit Incident" : "Report New Incident"}</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Incident Title *
                 </label>
                 <input
@@ -232,21 +235,21 @@ export default function IncidentsPage() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="e.g., Suspicious activity near gate"
                   maxLength={200}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Description *
                 </label>
                 <textarea
                   required
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="Provide detailed description of the incident..."
                   rows={4}
                   minLength={10}
@@ -255,13 +258,13 @@ export default function IncidentsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Severity *
                   </label>
                   <select
                     value={formData.severity}
                     onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium</option>
@@ -270,28 +273,28 @@ export default function IncidentsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Location (Optional)
                   </label>
                   <input
                     type="text"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="e.g., Main Gate, Block A"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Photo URL (Optional)
                 </label>
                 <input
                   type="url"
                   value={formData.photoUrl}
                   onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="https://..."
                 />
               </div>
@@ -300,56 +303,64 @@ export default function IncidentsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+                  className="btn btn-danger"
                 >
                   {submitting ? (editingIncident ? "Updating..." : "Reporting...") : (editingIncident ? "Update Incident" : "Report Incident")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
         <div className="space-y-4">
           {loading ? (
-            <p className="text-gray-500">Loading incidents...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading incidents...</p>
+            </div>
           ) : filteredIncidents.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded p-8 text-center">
-              <p className="text-gray-500">
-                {searchQuery || severityFilter !== "all" ? "No incidents match your search criteria." : "No incidents reported. Click \"Report Incident\" to add one."}
-              </p>
+            <div className="card">
+              <div className="empty-state">
+                <span className="empty-state-icon">🔒</span>
+                <p className="empty-state-title">{searchQuery || severityFilter !== "all" ? "No Matching Incidents" : "No Incidents Reported"}</p>
+                <p className="empty-state-text">
+                  {searchQuery || severityFilter !== "all" ? "No incidents match your search criteria." : "Click \"Report Incident\" to add one."}
+                </p>
+              </div>
             </div>
           ) : (
             filteredIncidents.map((incident) => (
               <div
                 key={incident.id}
-                className="bg-white border border-gray-200 rounded p-6 border-l-4 border-red-600"
+                className="card !rounded-2xl p-6 border-l-4 !border-l-brand-danger"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">{incident.title}</h3>
-                      <span className={`px-2 py-1 text-xs rounded ${getSeverityBadge(incident.severity)}`}>
+                      <h3 className="text-xl font-bold text-fg-primary">{incident.title}</h3>
+                      <span className={`badge ${getSeverityBadge(incident.severity)}`}>
                         {incident.severity}
                       </span>
                       {incident.resolvedAt && (
-                        <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-800">
+                        <span className="badge badge-success">
                           RESOLVED
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-600 mb-3">{incident.description}</p>
+                    <p className="text-fg-secondary mb-3">{incident.description}</p>
                   </div>
                   <div className="flex gap-2 ml-4">
                     <button
                       onClick={() => handleEdit(incident)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                      className="p-2 text-brand-primary hover:bg-brand-primary-light rounded"
                       title="Edit incident"
                     >
                       ✏️
@@ -357,7 +368,7 @@ export default function IncidentsPage() {
                     <button
                       onClick={() => handleDelete(incident.id)}
                       disabled={deletingIncidentId === incident.id}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                      className="p-2 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
                       title="Delete incident"
                     >
                       🗑️
@@ -367,22 +378,22 @@ export default function IncidentsPage() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-t pt-3">
                   <div>
-                    <span className="text-gray-500">Reported By:</span>
+                    <span className="text-fg-secondary">Reported By:</span>
                     <p className="font-medium">{incident.guard?.name || "Admin"}</p>
                   </div>
                   {incident.location && (
                     <div>
-                      <span className="text-gray-500">Location:</span>
+                      <span className="text-fg-secondary">Location:</span>
                       <p className="font-medium">{incident.location}</p>
                     </div>
                   )}
                   <div>
-                    <span className="text-gray-500">Reported:</span>
+                    <span className="text-fg-secondary">Reported:</span>
                     <p className="font-medium">{formatDateTime(incident.createdAt)}</p>
                   </div>
                   {incident.resolvedAt && (
                     <div>
-                      <span className="text-gray-500">Resolved:</span>
+                      <span className="text-fg-secondary">Resolved:</span>
                       <p className="font-medium">{formatDateTime(incident.resolvedAt)}</p>
                     </div>
                   )}

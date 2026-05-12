@@ -202,10 +202,10 @@ export default function StaffAssignmentOverviewPage() {
   };
 
   const getWorkloadColor = (count: number) => {
-    if (count === 0) return "bg-gray-100 text-gray-800";
-    if (count === 1) return "bg-yellow-100 text-yellow-800";
-    if (count <= 5) return "bg-green-100 text-green-800";
-    return "bg-red-100 text-red-800";
+    if (count === 0) return "bg-surface-elevated text-fg-primary";
+    if (count === 1) return "bg-pending-bg text-pending-fg";
+    if (count <= 5) return "bg-approved-bg text-approved-fg";
+    return "bg-denied-bg text-denied-fg";
   };
 
   const formatDate = (dateString: string | null) => {
@@ -218,76 +218,58 @@ export default function StaffAssignmentOverviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-surface-background p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-fg-primary mb-2">
             👷 Staff Assignment Overview
           </h1>
-          <p className="text-gray-600">
+          <p className="text-fg-secondary">
             Manage staff assignments, monitor workload, and optimize coverage
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="flex border-b">
+        <div className="tabs mb-6">
             <button
               onClick={() => setActiveTab("staff")}
-              className={`px-6 py-3 font-medium ${
-                activeTab === "staff"
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={activeTab === "staff" ? "tab tab-active" : "tab tab-inactive"}
             >
               👤 Staff Overview
             </button>
             <button
               onClick={() => setActiveTab("villas")}
-              className={`px-6 py-3 font-medium ${
-                activeTab === "villas"
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={activeTab === "villas" ? "tab tab-active" : "tab tab-inactive"}
             >
               🏘️ Villa Coverage
             </button>
             <button
               onClick={() => setActiveTab("workload")}
-              className={`px-6 py-3 font-medium ${
-                activeTab === "workload"
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={activeTab === "workload" ? "tab tab-active" : "tab tab-inactive"}
             >
               📊 Workload
             </button>
             <button
               onClick={() => setActiveTab("unassigned")}
-              className={`px-6 py-3 font-medium ${
-                activeTab === "unassigned"
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={activeTab === "unassigned" ? "tab tab-active" : "tab tab-inactive"}
             >
               ⚠️ Unassigned
             </button>
-          </div>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-denied-bg border border-red-400 text-denied-fg px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
 
         {/* Loading State */}
         {loading && (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading data...</p>
+          <div className="loading-state">
+            <div className="loading-spinner w-10 h-10"></div>
+            <p className="loading-state-text">Loading data...</p>
           </div>
         )}
 
@@ -297,27 +279,27 @@ export default function StaffAssignmentOverviewPage() {
             {/* Summary Cards */}
             {staffSummary && (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Total Staff</p>
-                  <p className="text-3xl font-bold text-blue-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Total Staff</p>
+                  <p className="stat-card-value text-brand-primary">
                     {staffSummary.totalStaff}
                   </p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Active Staff</p>
-                  <p className="text-3xl font-bold text-green-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Active Staff</p>
+                  <p className="stat-card-value text-approved-solid">
                     {staffSummary.activeStaff}
                   </p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Assigned Staff</p>
-                  <p className="text-3xl font-bold text-purple-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Assigned Staff</p>
+                  <p className="stat-card-value text-brand-primary">
                     {staffSummary.assignedStaff}
                   </p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Unassigned</p>
-                  <p className="text-3xl font-bold text-orange-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Unassigned</p>
+                  <p className="stat-card-value text-orange-600">
                     {staffSummary.unassignedStaff}
                   </p>
                 </div>
@@ -326,29 +308,31 @@ export default function StaffAssignmentOverviewPage() {
 
             {/* Staff Grid */}
             {staffOverview.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-500">No staff found</p>
+              <div className="empty-state">
+                <span className="empty-state-icon">👷</span>
+                <p className="empty-state-title">No staff found</p>
+                <p className="empty-state-text">Staff members will appear here once added.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {staffOverview.map((staff) => (
                   <div
                     key={staff.id}
-                    className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-600"
+                    className="bg-surface rounded-lg shadow-lg p-6 border-l-4 border-brand-primary"
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-bold text-gray-900">
+                        <h3 className="text-lg font-bold text-fg-primary">
                           {staff.name}
                         </h3>
-                        <p className="text-sm text-gray-600">{staff.type}</p>
-                        <p className="text-xs text-gray-500">📞 {staff.phone}</p>
+                        <p className="text-sm text-fg-secondary">{staff.type}</p>
+                        <p className="text-xs text-fg-secondary">📞 {staff.phone}</p>
                       </div>
                       <span
-                        className={`px-3 py-1 text-xs rounded-full ${
+                        className={`badge ${
                           staff.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
+                            ? "badge-success"
+                            : "badge-gray"
                         }`}
                       >
                         {staff.isActive ? "✅ Active" : "⛔ Inactive"}
@@ -357,14 +341,14 @@ export default function StaffAssignmentOverviewPage() {
 
                     <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
                       <div>
-                        <p className="text-xs text-gray-500">Total Assignments</p>
-                        <p className="text-2xl font-bold text-gray-900">
+                        <p className="text-xs text-fg-secondary">Total Assignments</p>
+                        <p className="text-2xl font-bold text-fg-primary">
                           {staff.totalAssignments}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Active Now</p>
-                        <p className="text-2xl font-bold text-blue-600">
+                        <p className="text-xs text-fg-secondary">Active Now</p>
+                        <p className="text-2xl font-bold text-brand-primary">
                           {staff.activeAssignments}
                         </p>
                       </div>
@@ -373,23 +357,23 @@ export default function StaffAssignmentOverviewPage() {
                     {/* Assigned Villas */}
                     {staff.villas.length > 0 ? (
                       <div>
-                        <p className="text-xs font-semibold text-gray-600 mb-2">
+                        <p className="text-xs font-semibold text-fg-secondary mb-2">
                           ASSIGNED VILLAS:
                         </p>
                         <div className="space-y-2">
                           {staff.villas.map((villa) => (
                             <div
                               key={villa.villaId}
-                              className="bg-gray-50 p-2 rounded text-sm"
+                              className="bg-surface-background p-2 rounded text-sm"
                             >
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-fg-primary">
                                 Villa {villa.villaNumber}
                                 {villa.block && ` (Block ${villa.block})`}
                               </p>
-                              <p className="text-xs text-gray-600">
+                              <p className="text-xs text-fg-secondary">
                                 {villa.ownerName}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-fg-secondary">
                                 Since: {formatDate(villa.startDate)}
                               </p>
                             </div>
@@ -397,7 +381,7 @@ export default function StaffAssignmentOverviewPage() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-gray-400 italic text-sm">
+                      <p className="text-fg-tertiary italic text-sm">
                         No active assignments
                       </p>
                     )}
@@ -414,27 +398,27 @@ export default function StaffAssignmentOverviewPage() {
             {/* Summary Cards */}
             {villaSummary && (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Total Villas</p>
-                  <p className="text-3xl font-bold text-blue-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Total Villas</p>
+                  <p className="stat-card-value text-brand-primary">
                     {villaSummary.totalVillas}
                   </p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">With Staff</p>
-                  <p className="text-3xl font-bold text-green-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">With Staff</p>
+                  <p className="stat-card-value text-approved-solid">
                     {villaSummary.villasWithStaff}
                   </p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Without Staff</p>
-                  <p className="text-3xl font-bold text-red-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Without Staff</p>
+                  <p className="stat-card-value text-brand-danger">
                     {villaSummary.villasWithoutStaff}
                   </p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Coverage</p>
-                  <p className="text-3xl font-bold text-purple-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Coverage</p>
+                  <p className="stat-card-value text-brand-primary">
                     {villaSummary.coveragePercentage}%
                   </p>
                 </div>
@@ -443,35 +427,37 @@ export default function StaffAssignmentOverviewPage() {
 
             {/* Villa Grid */}
             {villaCoverage.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-500">No villas found</p>
+              <div className="empty-state">
+                <span className="empty-state-icon">🏘️</span>
+                <p className="empty-state-title">No villas found</p>
+                <p className="empty-state-text">Villas will appear here once configured.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {villaCoverage.map((villa) => (
                   <div
                     key={villa.id}
-                    className={`bg-white rounded-lg shadow-lg p-6 border-l-4 ${
+                    className={`bg-surface rounded-lg shadow-lg p-6 border-l-4 ${
                       villa.staffCount > 0
-                        ? "border-green-600"
+                        ? "border-approved-solid"
                         : villa.hasActiveResident
-                        ? "border-red-600"
-                        : "border-gray-400"
+                        ? "border-brand-danger"
+                        : "border-fg-tertiary"
                     }`}
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-bold text-gray-900">
+                        <h3 className="text-lg font-bold text-fg-primary">
                           Villa {villa.villaNumber}
                           {villa.block && ` (Block ${villa.block})`}
                         </h3>
-                        <p className="text-sm text-gray-600">{villa.ownerName}</p>
+                        <p className="text-sm text-fg-secondary">{villa.ownerName}</p>
                       </div>
                       <span
-                        className={`px-3 py-1 text-xs rounded-full ${
+                        className={`badge ${
                           villa.hasActiveResident
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
+                            ? "badge-success"
+                            : "badge-gray"
                         }`}
                       >
                         {villa.hasActiveResident ? "Occupied" : "Vacant"}
@@ -480,14 +466,14 @@ export default function StaffAssignmentOverviewPage() {
 
                     <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
                       <div>
-                        <p className="text-xs text-gray-500">Residents</p>
-                        <p className="text-2xl font-bold text-gray-900">
+                        <p className="text-xs text-fg-secondary">Residents</p>
+                        <p className="text-2xl font-bold text-fg-primary">
                           {villa.residentCount}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Staff Assigned</p>
-                        <p className="text-2xl font-bold text-blue-600">
+                        <p className="text-xs text-fg-secondary">Staff Assigned</p>
+                        <p className="text-2xl font-bold text-brand-primary">
                           {villa.staffCount}
                         </p>
                       </div>
@@ -496,20 +482,20 @@ export default function StaffAssignmentOverviewPage() {
                     {/* Assigned Staff */}
                     {villa.staff.length > 0 ? (
                       <div>
-                        <p className="text-xs font-semibold text-gray-600 mb-2">
+                        <p className="text-xs font-semibold text-fg-secondary mb-2">
                           ASSIGNED STAFF:
                         </p>
                         <div className="space-y-2">
                           {villa.staff.map((staff) => (
                             <div
                               key={staff.staffId}
-                              className="bg-gray-50 p-2 rounded text-sm"
+                              className="bg-surface-background p-2 rounded text-sm"
                             >
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-fg-primary">
                                 {staff.name}
                               </p>
-                              <p className="text-xs text-gray-600">{staff.type}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-fg-secondary">{staff.type}</p>
+                              <p className="text-xs text-fg-secondary">
                                 📞 {staff.phone}
                               </p>
                             </div>
@@ -518,11 +504,11 @@ export default function StaffAssignmentOverviewPage() {
                       </div>
                     ) : (
                       <div>
-                        <p className="text-red-600 font-medium text-sm mb-2">
+                        <p className="text-brand-danger font-medium text-sm mb-2">
                           ⚠️ No staff assigned
                         </p>
                         {villa.hasActiveResident && (
-                          <p className="text-xs text-red-500">
+                          <p className="text-xs text-brand-danger">
                             Action Required: Villa is occupied
                           </p>
                         )}
@@ -541,94 +527,102 @@ export default function StaffAssignmentOverviewPage() {
             {/* Summary Cards */}
             {workloadSummary && (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Avg Workload</p>
-                  <p className="text-3xl font-bold text-blue-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Avg Workload</p>
+                  <p className="stat-card-value text-brand-primary">
                     {workloadSummary.avgWorkload}
                   </p>
-                  <p className="text-xs text-gray-500">villas/staff</p>
+                  <p className="text-xs text-fg-secondary">villas/staff</p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Overloaded</p>
-                  <p className="text-3xl font-bold text-red-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Overloaded</p>
+                  <p className="stat-card-value text-brand-danger">
                     {workloadSummary.overloaded}
                   </p>
-                  <p className="text-xs text-gray-500">&gt; 5 villas</p>
+                  <p className="text-xs text-fg-secondary">&gt; 5 villas</p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Balanced</p>
-                  <p className="text-3xl font-bold text-green-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Balanced</p>
+                  <p className="stat-card-value text-approved-solid">
                     {workloadSummary.balanced}
                   </p>
-                  <p className="text-xs text-gray-500">2-5 villas</p>
+                  <p className="text-xs text-fg-secondary">2-5 villas</p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Underutilized</p>
-                  <p className="text-3xl font-bold text-yellow-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Underutilized</p>
+                  <p className="stat-card-value text-pending-solid">
                     {workloadSummary.underutilized}
                   </p>
-                  <p className="text-xs text-gray-500">1 villa</p>
+                  <p className="text-xs text-fg-secondary">1 villa</p>
                 </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-sm text-gray-600 mb-1">Unassigned</p>
-                  <p className="text-3xl font-bold text-gray-600">
+                <div className="stat-card">
+                  <p className="stat-card-label">Unassigned</p>
+                  <p className="stat-card-value text-fg-secondary">
                     {workloadSummary.unassigned}
                   </p>
-                  <p className="text-xs text-gray-500">0 villas</p>
+                  <p className="text-xs text-fg-secondary">0 villas</p>
                 </div>
               </div>
             )}
 
             {/* Workload List */}
             {workload.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-500">No workload data</p>
+              <div className="empty-state">
+                <span className="empty-state-icon">📊</span>
+                <p className="empty-state-title">No workload data</p>
+                <p className="empty-state-text">Workload distribution will appear once staff are assigned.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+              <div className="table-wrapper">
+                <table className="table">
+                  <thead className="table-head">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="table-th">
                         Staff Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="table-th">
                         Type
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="table-th">
                         Villa Count
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="table-th">
                         Workload Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th className="table-th">
                         Visual
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody>
                     {workload.map((item) => (
-                      <tr key={item.staffId} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">
+                      <tr key={item.staffId} className="table-row">
+                        <td className="table-td">
+                          <div className="font-medium text-fg-primary">
                             {item.name}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-600">
+                        <td className="table-td">
+                          <span className="text-sm text-fg-secondary">
                             {item.type}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-2xl font-bold text-blue-600">
+                        <td className="table-td">
+                          <span className="text-2xl font-bold text-brand-primary">
                             {item.villaCount}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="table-td">
                           <span
-                            className={`px-3 py-1 text-xs rounded-full ${getWorkloadColor(
-                              item.villaCount
-                            )}`}
+                            className={`badge ${
+                              item.villaCount === 0
+                                ? "badge-gray"
+                                : item.villaCount === 1
+                                ? "badge-warning"
+                                : item.villaCount <= 5
+                                ? "badge-success"
+                                : "badge-danger"
+                            }`}
                           >
                             {item.villaCount === 0
                               ? "Unassigned"
@@ -639,17 +633,17 @@ export default function StaffAssignmentOverviewPage() {
                               : "Overloaded"}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="w-full bg-gray-200 rounded h-4">
+                        <td className="table-td">
+                          <div className="w-full bg-surface-elevated rounded h-4">
                             <div
                               className={`h-4 rounded ${
                                 item.villaCount === 0
-                                  ? "bg-gray-400"
+                                  ? "bg-fg-tertiary"
                                   : item.villaCount === 1
-                                  ? "bg-yellow-500"
+                                  ? "bg-pending-solid"
                                   : item.villaCount <= 5
-                                  ? "bg-green-500"
-                                  : "bg-red-500"
+                                  ? "bg-approved-solid"
+                                  : "bg-brand-danger"
                               }`}
                               style={{
                                 width: `${Math.min((item.villaCount / 10) * 100, 100)}%`,
@@ -671,25 +665,25 @@ export default function StaffAssignmentOverviewPage() {
           <div>
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-sm text-gray-600 mb-1">Unassigned Staff</p>
-                <p className="text-3xl font-bold text-orange-600">
+              <div className="stat-card">
+                <p className="stat-card-label">Unassigned Staff</p>
+                <p className="stat-card-value text-orange-600">
                   {unassignedResources.summary.unassignedStaffCount}
                 </p>
               </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-sm text-gray-600 mb-1">
+              <div className="stat-card">
+                <p className="stat-card-label">
                   Occupied Villas (No Staff)
                 </p>
-                <p className="text-3xl font-bold text-red-600">
+                <p className="stat-card-value text-brand-danger">
                   {unassignedResources.summary.occupiedVillasWithoutStaff}
                 </p>
               </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-sm text-gray-600 mb-1">
+              <div className="stat-card">
+                <p className="stat-card-label">
                   Vacant Villas (No Staff)
                 </p>
-                <p className="text-3xl font-bold text-gray-600">
+                <p className="stat-card-value text-fg-secondary">
                   {unassignedResources.summary.vacantVillasWithoutStaff}
                 </p>
               </div>
@@ -698,12 +692,15 @@ export default function StaffAssignmentOverviewPage() {
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Unassigned Staff */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold mb-4">
-                  👤 Unassigned Staff ({unassignedResources.unassignedStaff.length})
-                </h2>
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="text-lg font-semibold">
+                    👤 Unassigned Staff ({unassignedResources.unassignedStaff.length})
+                  </h2>
+                </div>
+                <div className="card-body">
                 {unassignedResources.unassignedStaff.length === 0 ? (
-                  <p className="text-gray-500 italic">All staff are assigned</p>
+                  <p className="text-fg-secondary italic">All staff are assigned</p>
                 ) : (
                   <div className="space-y-3">
                     {unassignedResources.unassignedStaff.map((staff) => (
@@ -713,14 +710,14 @@ export default function StaffAssignmentOverviewPage() {
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-fg-primary">
                               {staff.name}
                             </p>
-                            <p className="text-sm text-gray-600">{staff.type}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-sm text-fg-secondary">{staff.type}</p>
+                            <p className="text-xs text-fg-secondary">
                               📞 {staff.phone}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-fg-secondary mt-1">
                               Added {staff.daysSinceCreation} days ago
                             </p>
                           </div>
@@ -730,7 +727,7 @@ export default function StaffAssignmentOverviewPage() {
                               setAssignmentAction("assign");
                               setShowAssignModal(true);
                             }}
-                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                            className="btn btn-primary text-sm"
                           >
                             Assign
                           </button>
@@ -740,15 +737,16 @@ export default function StaffAssignmentOverviewPage() {
                   </div>
                 )}
               </div>
+              </div>
 
               {/* Villas Without Staff (Occupied - Priority) */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="card p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   🏘️ Occupied Villas Without Staff (
                   {unassignedResources.villasWithoutStaff.occupied.length})
                 </h2>
                 {unassignedResources.villasWithoutStaff.occupied.length === 0 ? (
-                  <p className="text-gray-500 italic">
+                  <p className="text-fg-secondary italic">
                     All occupied villas have staff
                   </p>
                 ) : (
@@ -757,22 +755,22 @@ export default function StaffAssignmentOverviewPage() {
                       (villa) => (
                         <div
                           key={villa.id}
-                          className="bg-red-50 border border-red-200 rounded p-4"
+                          className="bg-denied-bg border border-denied-bg rounded p-4"
                         >
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-fg-primary">
                                 Villa {villa.villaNumber}
                                 {villa.block && ` (Block ${villa.block})`}
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-fg-secondary">
                                 {villa.ownerName}
                               </p>
-                              <p className="text-xs text-green-600 mt-1">
+                              <p className="text-xs text-approved-solid mt-1">
                                 ✅ {villa.residentCount} resident(s)
                               </p>
                               {villa.residents.length > 0 && (
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-fg-secondary">
                                   {villa.residents
                                     .map((r) => r.name)
                                     .join(", ")}
@@ -785,7 +783,7 @@ export default function StaffAssignmentOverviewPage() {
                                 setAssignmentAction("assign");
                                 setShowAssignModal(true);
                               }}
-                              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                              className="btn btn-primary text-sm"
                             >
                               Assign Staff
                             </button>
@@ -803,38 +801,39 @@ export default function StaffAssignmentOverviewPage() {
 
       {/* Assignment Modal */}
       {showAssignModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Quick Assignment</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="card w-full max-w-md">
+            <div className="card-header"><h3 className="text-lg font-semibold">Quick Assignment</h3></div>
+            <div className="card-body">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Staff
                 </label>
                 {selectedStaff ? (
-                  <div className="bg-gray-50 p-3 rounded">
+                  <div className="bg-surface-background p-3 rounded">
                     <p className="font-medium">{selectedStaff.name}</p>
-                    <p className="text-sm text-gray-600">{selectedStaff.type}</p>
+                    <p className="text-sm text-fg-secondary">{selectedStaff.type}</p>
                   </div>
                 ) : (
-                  <p className="text-gray-500 italic">Select staff from list</p>
+                  <p className="text-fg-secondary italic">Select staff from list</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Villa
                 </label>
                 {selectedVilla ? (
-                  <div className="bg-gray-50 p-3 rounded">
+                  <div className="bg-surface-background p-3 rounded">
                     <p className="font-medium">
                       Villa {selectedVilla.villaNumber}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-fg-secondary">
                       {selectedVilla.ownerName}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-gray-500 italic">Select villa from list</p>
+                  <p className="text-fg-secondary italic">Select villa from list</p>
                 )}
               </div>
             </div>
@@ -845,16 +844,17 @@ export default function StaffAssignmentOverviewPage() {
                   setSelectedStaff(null);
                   setSelectedVilla(null);
                 }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                className="btn btn-ghost"
               >
                 Cancel
               </button>
               <button
                 onClick={handleQuickAssign}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="btn btn-primary"
               >
                 Assign
               </button>
+            </div>
             </div>
           </div>
         </div>

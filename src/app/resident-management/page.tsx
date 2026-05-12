@@ -157,27 +157,27 @@ export default function ResidentManagementPage() {
       {/* Summary Statistics */}
       {statistics && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 border border-blue-200 rounded p-4">
-            <div className="text-sm text-blue-600">Total Residents</div>
-            <div className="text-2xl font-bold text-blue-900">{statistics.totalResidents}</div>
+          <div className="bg-brand-primary-light border border-surface-border rounded p-4">
+            <div className="text-sm text-brand-primary">Total Residents</div>
+            <div className="text-2xl font-bold text-fg-primary">{statistics.totalResidents}</div>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded p-4">
-            <div className="text-sm text-green-600">Active</div>
-            <div className="text-2xl font-bold text-green-900">{statistics.activeResidents}</div>
-            <div className="text-xs text-green-700">{statistics.occupancyRate}% occupancy</div>
+          <div className="bg-approved-bg border border-approved-bg rounded p-4">
+            <div className="text-sm text-approved-solid">Active</div>
+            <div className="text-2xl font-bold text-fg-primary">{statistics.activeResidents}</div>
+            <div className="text-xs text-approved-fg">{statistics.occupancyRate}% occupancy</div>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded p-4">
-            <div className="text-sm text-gray-600">Inactive</div>
-            <div className="text-2xl font-bold text-gray-900">{statistics.inactiveResidents}</div>
+          <div className="bg-surface-background border border-surface-border rounded p-4">
+            <div className="text-sm text-fg-secondary">Inactive</div>
+            <div className="text-2xl font-bold text-fg-primary">{statistics.inactiveResidents}</div>
           </div>
-          <div className="bg-purple-50 border border-purple-200 rounded p-4">
-            <div className="text-sm text-purple-600">New This Month</div>
-            <div className="text-2xl font-bold text-purple-900">{statistics.newThisMonth}</div>
+          <div className="bg-brand-primary-light border border-surface-border rounded p-4">
+            <div className="text-sm text-brand-primary">New This Month</div>
+            <div className="text-2xl font-bold text-fg-primary">{statistics.newThisMonth}</div>
           </div>
           
-          <div className="bg-indigo-50 border border-indigo-200 rounded p-4">
-            <div className="text-sm text-indigo-600">Owners</div>
-            <div className="text-2xl font-bold text-indigo-900">{statistics.owners}</div>
+          <div className="bg-brand-primary-light border border-surface-border rounded p-4">
+            <div className="text-sm text-brand-primary">Owners</div>
+            <div className="text-2xl font-bold text-fg-primary">{statistics.owners}</div>
           </div>
           <div className="bg-cyan-50 border border-cyan-200 rounded p-4">
             <div className="text-sm text-cyan-600">Tenants</div>
@@ -195,12 +195,12 @@ export default function ResidentManagementPage() {
       )}
 
       {/* Filters */}
-      <div className="mb-4 space-y-4">
-        <div className="flex flex-wrap gap-4">
+      <div className="filter-bar mb-4">
+        <div className="flex flex-wrap gap-4 mb-3">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="border border-gray-300 rounded px-3 py-2"
+            className="input max-w-[10rem]"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -210,7 +210,7 @@ export default function ResidentManagementPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="border border-gray-300 rounded px-3 py-2"
+            className="input max-w-[10rem]"
           >
             <option value="all">All Types</option>
             <option value="owner">Owners</option>
@@ -222,116 +222,104 @@ export default function ResidentManagementPage() {
             placeholder="Search by name, email, username, or villa..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 border border-gray-300 rounded px-3 py-2"
+            className="input flex-1"
           />
         </div>
 
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-fg-secondary">
           Showing {filteredResidents.length} of {residents.length} residents
         </div>
       </div>
 
       {/* Residents Table */}
-      <div className="bg-white border border-gray-200 rounded overflow-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="table-wrapper overflow-auto">
+        <table className="table">
+          <thead className="table-head">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Resident
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Villa
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Move-in Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Actions
-              </th>
+              <th className="table-th">Resident</th>
+              <th className="table-th">Villa</th>
+              <th className="table-th">Type</th>
+              <th className="table-th">Move-in Date</th>
+              <th className="table-th">Status</th>
+              <th className="table-th">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody>
             {filteredResidents.map((resident) => (
-              <tr key={resident.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
+              <tr key={resident.id} className="table-row">
+                <td className="table-td">
                   <div>
-                    <div className="font-medium text-gray-900">{resident.name}</div>
+                    <div className="font-medium text-fg-primary">{resident.name}</div>
                     {resident.username && (
-                      <div className="text-xs text-gray-500 font-mono">@{resident.username}</div>
+                      <div className="text-xs text-fg-secondary font-mono">@{resident.username}</div>
                     )}
-                    <div className="text-sm text-gray-600">{resident.email}</div>
+                    <div className="text-sm text-fg-secondary">{resident.email}</div>
                     {resident.phone && (
-                      <div className="text-xs text-gray-500">{resident.phone}</div>
+                      <div className="text-xs text-fg-secondary">{resident.phone}</div>
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="table-td whitespace-nowrap">
                   {resident.villa ? (
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-fg-primary">
                         {resident.villa.villaNumber}
                       </div>
                       {resident.villa.block && (
-                        <div className="text-xs text-gray-500">Block {resident.villa.block}</div>
+                        <div className="text-xs text-fg-secondary">Block {resident.villa.block}</div>
                       )}
                     </div>
                   ) : (
-                    <span className="text-gray-400">No villa</span>
+                    <span className="text-fg-tertiary">No villa</span>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="table-td whitespace-nowrap">
                   <span
-                    className={`px-2 py-1 text-xs rounded ${
+                    className={`badge ${
                       resident.type === "Owner"
-                        ? "bg-indigo-100 text-indigo-800"
+                        ? "badge-primary"
                         : resident.type === "Family"
-                          ? "bg-amber-100 text-amber-900"
-                          : "bg-cyan-100 text-cyan-800"
+                          ? "badge-warning"
+                          : "badge-info"
                     }`}
                   >
                     {resident.type}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{formatDate(resident.moveInDate)}</div>
+                <td className="table-td whitespace-nowrap">
+                  <div className="text-sm text-fg-primary">{formatDate(resident.moveInDate)}</div>
                   {resident.isActive && resident.daysSinceMove > 0 && (
-                    <div className="text-xs text-gray-500">{resident.daysSinceMove} days ago</div>
+                    <div className="text-xs text-fg-secondary">{resident.daysSinceMove} days ago</div>
                   )}
                   {resident.moveOutDate && (
-                    <div className="text-xs text-red-600">
+                    <div className="text-xs text-brand-danger">
                       Out: {formatDate(resident.moveOutDate)}
                     </div>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="table-td whitespace-nowrap">
                   <span
-                    className={`px-2 py-1 text-xs rounded ${
+                    className={`badge ${
                       resident.isActive
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                        ? "badge-success"
+                        : "badge-gray"
                     }`}
                   >
-                    {resident.isActive ? "✅ Active" : "⏸️ Inactive"}
+                    {resident.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <td className="table-td whitespace-nowrap text-sm">
                   {resident.isActive ? (
                     <button
                       onClick={() => handleMoveOut(resident)}
-                      className="text-red-600 hover:text-red-800 font-medium"
+                      className="text-brand-danger hover:text-denied-fg font-medium"
                     >
                       Process Move-out
                     </button>
                   ) : (
                     <button
                       onClick={() => handleReactivate(resident.id)}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-brand-primary hover:text-info-fg font-medium"
                     >
                       Reactivate
                     </button>
@@ -343,8 +331,10 @@ export default function ResidentManagementPage() {
         </table>
 
         {filteredResidents.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No residents found matching your filters
+          <div className="empty-state">
+            <span className="empty-state-icon">🏠</span>
+            <p className="empty-state-title">No residents found</p>
+            <p className="empty-state-text">No residents match your current filters.</p>
           </div>
         )}
       </div>
@@ -352,38 +342,38 @@ export default function ResidentManagementPage() {
       {/* Move-out Modal */}
       {showMoveOutModal && selectedResident && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-4">Process Move-out</h2>
-            <div className="mb-4 p-3 bg-gray-50 rounded">
-              <div className="font-medium text-gray-900">{selectedResident.name}</div>
-              <div className="text-sm text-gray-600">{selectedResident.email}</div>
+            <div className="mb-4 p-3 bg-surface-background rounded">
+              <div className="font-medium text-fg-primary">{selectedResident.name}</div>
+              <div className="text-sm text-fg-secondary">{selectedResident.email}</div>
               {selectedResident.villa && (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-fg-secondary">
                   Villa: {selectedResident.villa.villaNumber}
                 </div>
               )}
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-fg-primary mb-2">
                   Move-out Date *
                 </label>
                 <input
                   type="date"
                   value={moveOutDate}
                   onChange={(e) => setMoveOutDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-fg-primary mb-2">
                   Reason (Optional)
                 </label>
                 <textarea
                   value={moveOutReason}
                   onChange={(e) => setMoveOutReason(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="e.g., Lease ended, Moved to another property..."
                   rows={3}
                 />
@@ -392,7 +382,7 @@ export default function ResidentManagementPage() {
                 <button
                   onClick={submitMoveOut}
                   disabled={loading}
-                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+                  className="btn btn-danger flex-1"
                 >
                   {loading ? "Processing..." : "Confirm Move-out"}
                 </button>
@@ -401,7 +391,7 @@ export default function ResidentManagementPage() {
                     setShowMoveOutModal(false);
                     setMoveOutReason("");
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                  className="btn btn-ghost flex-1"
                 >
                   Cancel
                 </button>
@@ -413,9 +403,9 @@ export default function ResidentManagementPage() {
 
       {loading && !showMoveOutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="text-gray-600 mt-2">Loading...</p>
+          <div className="bg-surface rounded-lg p-6">
+            <div className="loading-spinner w-8 h-8 mx-auto"></div>
+            <p className="loading-state-text mt-2">Loading...</p>
           </div>
         </div>
       )}

@@ -6,19 +6,35 @@
 
 
 :root {
-  --gp-brand-primary: #0F172A;
+  --gp-brand-primary: #2563EB;
+  --gp-brand-primary-hover: #1D4ED8;
+  --gp-brand-primary-light: #EFF6FF;
   --gp-brand-accent: #10B981;
   --gp-brand-danger: #EF4444;
+  --gp-sidebar-from: #2D3036;
+  --gp-sidebar-via: #2D3036;
+  --gp-sidebar-to: #2D3036;
+  --gp-sidebar-active-text: #FFFFFF;
+  --gp-sidebar-active-bg: #3B82F6;
+  --gp-sidebar-hover-bg: rgba(255,255,255,0.06);
+  --gp-sidebar-muted-text: #6B7580;
+  --gp-sidebar-border: rgba(255,255,255,0.06);
+  --gp-login-from: #111827;
+  --gp-login-via: #1E3A5F;
+  --gp-login-to: #0F172A;
+  --gp-super-login-from: #111827;
+  --gp-super-login-via: #1E3A5F;
+  --gp-super-login-to: #0F172A;
   --gp-surface-background: #FFFFFF;
-  --gp-surface-default: #F8FAFC;
-  --gp-surface-elevated: #F1F5F9;
-  --gp-surface-border: #E2E8F0;
-  --gp-text-primary: #0F172A;
-  --gp-text-secondary: #475569;
-  --gp-text-tertiary: #94A3B8;
+  --gp-surface-default: #FAFAFA;
+  --gp-surface-elevated: #F3F4F6;
+  --gp-surface-border: #E5E7EB;
+  --gp-text-primary: #111827;
+  --gp-text-secondary: #6B7280;
+  --gp-text-tertiary: #9CA3AF;
   --gp-text-inverse: #FFFFFF;
   --gp-state-approved-bg: #D1FAE5;
-  --gp-state-approved-fg: #047857;
+  --gp-state-approved-fg: #065F46;
   --gp-state-approved-solid: #10B981;
   --gp-state-pending-bg: #FEF3C7;
   --gp-state-pending-fg: #92400E;
@@ -32,17 +48,33 @@
 }
 
 [data-theme="dark"] {
-  --gp-brand-primary: #F1F5F9;
-  --gp-brand-accent: #34D399;
+  --gp-brand-primary: #F9FAFB;
+  --gp-brand-primary-hover: #E5E7EB;
+  --gp-brand-primary-light: #1E3A5F;
+  --gp-brand-accent: #3B82F6;
   --gp-brand-danger: #F87171;
-  --gp-surface-background: #020617;
-  --gp-surface-default: #0F172A;
-  --gp-surface-elevated: #1E293B;
-  --gp-surface-border: #334155;
-  --gp-text-primary: #F1F5F9;
-  --gp-text-secondary: #94A3B8;
-  --gp-text-tertiary: #64748B;
-  --gp-text-inverse: #0F172A;
+  --gp-sidebar-from: #1A1D22;
+  --gp-sidebar-via: #1A1D22;
+  --gp-sidebar-to: #1A1D22;
+  --gp-sidebar-active-text: #FFFFFF;
+  --gp-sidebar-active-bg: #3B82F6;
+  --gp-sidebar-hover-bg: rgba(255,255,255,0.06);
+  --gp-sidebar-muted-text: #6B7580;
+  --gp-sidebar-border: rgba(255,255,255,0.06);
+  --gp-login-from: #1E40AF;
+  --gp-login-via: #1E3A5F;
+  --gp-login-to: #111827;
+  --gp-super-login-from: #0F172A;
+  --gp-super-login-via: #1E1E1E;
+  --gp-super-login-to: #000000;
+  --gp-surface-background: #121212;
+  --gp-surface-default: #1E1E1E;
+  --gp-surface-elevated: #2C2C2C;
+  --gp-surface-border: #374151;
+  --gp-text-primary: #FFFFFF;
+  --gp-text-secondary: #D1D5DB;
+  --gp-text-tertiary: #9CA3AF;
+  --gp-text-inverse: #111827;
   --gp-state-approved-bg: #064E3B;
   --gp-state-approved-fg: #6EE7B7;
   --gp-state-approved-solid: #34D399;

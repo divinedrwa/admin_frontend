@@ -190,17 +190,17 @@ export default function VisitorsPage() {
   const getVisitorTypeColor = (type: string) => {
     switch (type) {
       case "SERVICE_PROVIDER":
-        return "bg-purple-100 text-purple-800";
+        return "bg-info-bg text-info-fg";
       case "DELIVERY":
-        return "bg-blue-100 text-blue-800";
+        return "bg-info-bg text-info-fg";
       case "VENDOR":
         return "bg-orange-100 text-orange-800";
       case "CONTRACTOR":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-pending-bg text-pending-fg";
       case "GUEST":
-        return "bg-green-100 text-green-800";
+        return "bg-approved-bg text-approved-fg";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-surface-elevated text-fg-primary";
     }
   };
 
@@ -239,53 +239,51 @@ export default function VisitorsPage() {
   return (
     <AppShell title="Visitor Management">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="page-action-bar">
           <div>
-            <p className="text-gray-600">Track visitor entry and exit</p>
-            <p className="text-sm text-gray-500">
-              {activeCount} visitor(s) currently in society
+            <p className="text-fg-secondary">Track visitor entry and exit</p>
+            <p className="text-sm text-fg-tertiary mt-1">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-approved-solid rounded-full animate-pulse"></span>
+                {activeCount} visitor(s) currently in society
+              </span>
             </p>
           </div>
           <button
             onClick={handleOpenForm}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             + Check-In Visitor
           </button>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white border border-gray-200 rounded p-4">
+        <div className="filter-bar">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
             <div className="md:col-span-2">
               <input
                 type="text"
                 placeholder="Search by name or phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               />
             </div>
-
-            {/* Status Filter */}
             <div>
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as "all" | "active")}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active Only</option>
               </select>
             </div>
-
-            {/* Type Filter */}
             <div>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="input text-sm"
               >
                 <option value="all">All Types</option>
                 <option value="GUEST">Guest</option>
@@ -296,9 +294,8 @@ export default function VisitorsPage() {
             </div>
           </div>
 
-          {/* Results Count */}
-          <div className="mt-3 flex justify-between items-center text-sm">
-            <span className="text-gray-600">
+          <div className="mt-4 flex justify-between items-center text-sm">
+            <span className="text-fg-secondary">
               Showing {paginatedVisitors.length} of {filteredVisitors.length} visitors
             </span>
             {totalPages > 1 && (
@@ -306,17 +303,17 @@ export default function VisitorsPage() {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
+                  className="btn btn-ghost text-sm px-3 py-1.5 disabled:opacity-50"
                 >
                   Previous
                 </button>
-                <span className="text-gray-600">
-                  Page {currentPage} of {totalPages}
+                <span className="text-fg-secondary font-medium">
+                  {currentPage} / {totalPages}
                 </span>
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
+                  className="btn btn-ghost text-sm px-3 py-1.5 disabled:opacity-50"
                 >
                   Next
                 </button>
@@ -326,12 +323,15 @@ export default function VisitorsPage() {
         </div>
 
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-xl font-semibold mb-4">Check-In Visitor</h2>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-xl font-bold text-fg-primary">Check-In Visitor</h2>
+            </div>
+            <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Visitor Name *
                   </label>
                   <input
@@ -339,12 +339,12 @@ export default function VisitorsPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="Enter visitor name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Phone Number *
                   </label>
                   <input
@@ -352,14 +352,14 @@ export default function VisitorsPage() {
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                     placeholder="Enter phone number"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Visiting Villas * (Select one or more)
                 </label>
                 <select
@@ -369,7 +369,7 @@ export default function VisitorsPage() {
                     const selected = Array.from(e.target.selectedOptions, option => option.value);
                     setFormData({ ...formData, villaIds: selected });
                   }}
-                  className="w-full border border-gray-300 rounded px-3 py-2 h-32"
+                  className="w-full border border-surface-border rounded px-3 py-2 h-32"
                 >
                   {villas.map((villa) => (
                     <option key={villa.id} value={villa.id}>
@@ -377,18 +377,18 @@ export default function VisitorsPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple villas</p>
+                <p className="text-xs text-fg-secondary mt-1">Hold Ctrl/Cmd to select multiple villas</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Visitor Type *
                   </label>
                   <select
                     value={formData.visitorType}
                     onChange={(e) => setFormData({ ...formData, visitorType: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="GUEST">Guest</option>
                     <option value="DELIVERY">Delivery</option>
@@ -398,13 +398,13 @@ export default function VisitorsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
                     Gate
                   </label>
                   <select
                     value={formData.gateId}
                     onChange={(e) => setFormData({ ...formData, gateId: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="input"
                   >
                     <option value="">Select gate (optional)</option>
                     {gates.map((gate) => (
@@ -417,7 +417,7 @@ export default function VisitorsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Purpose *
                 </label>
                 <input
@@ -425,20 +425,20 @@ export default function VisitorsPage() {
                   required
                   value={formData.purpose}
                   onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="e.g., Personal visit, Delivery, Maintenance"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-fg-primary mb-1">
                   Vehicle Number (Optional)
                 </label>
                 <input
                   type="text"
                   value={formData.vehicleNumber}
                   onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="input"
                   placeholder="e.g., MH01AB1234"
                 />
               </div>
@@ -447,93 +447,105 @@ export default function VisitorsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  className="btn btn-primary"
                 >
                   {submitting ? "Checking In..." : "Check-In Visitor"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
               </div>
             </form>
+            </div>
           </div>
         )}
 
-        <div className="rounded bg-white border border-gray-200 p-4 overflow-x-auto">
+        <div className="table-wrapper">
           {loading ? (
-            <p className="text-gray-500">Loading...</p>
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading visitors...</p>
+            </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Name</th>
-                  <th>Type</th>
-                  <th>Visiting Villas</th>
-                  <th>Gate</th>
-                  <th>Vehicle</th>
-                  <th>Purpose</th>
-                  <th>Check In</th>
-                  <th>Check Out</th>
-                  <th>Actions</th>
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th">Name</th>
+                  <th className="table-th">Type</th>
+                  <th className="table-th">Visiting Villas</th>
+                  <th className="table-th">Gate</th>
+                  <th className="table-th">Vehicle</th>
+                  <th className="table-th">Purpose</th>
+                  <th className="table-th">Check In</th>
+                  <th className="table-th">Check Out</th>
+                  <th className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredVisitors.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-gray-500">
-                      {searchQuery || typeFilter !== "all" 
-                        ? "No visitors match your search criteria." 
-                        : "No visitors found. Click \"Check-In Visitor\" to add one."}
+                    <td colSpan={9} className="table-td">
+                      <div className="empty-state">
+                        <span className="empty-state-icon">👋</span>
+                        <p className="empty-state-title">
+                          {searchQuery || typeFilter !== "all" ? "No matches" : "No visitors yet"}
+                        </p>
+                        <p className="empty-state-text">
+                          {searchQuery || typeFilter !== "all"
+                            ? "Try adjusting your search or filters."
+                            : "Click \"Check-In Visitor\" to log the first entry."}
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   paginatedVisitors.map((visitor) => (
-                    <tr key={visitor.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3">
+                    <tr key={visitor.id} className="table-row">
+                      <td className="table-td">
                         <div>
                           <div className="font-medium">{visitor.name}</div>
-                          <div className="text-xs text-gray-500">{visitor.phone}</div>
+                          <div className="text-xs text-fg-secondary mt-0.5">{visitor.phone}</div>
                         </div>
                       </td>
-                      <td>
+                      <td className="table-td">
                         <span
-                          className={`px-2 py-1 text-xs rounded ${getVisitorTypeColor(
-                            visitor.visitorType
-                          )}`}
+                          className={`badge ${getVisitorTypeColor(visitor.visitorType)}`}
                         >
                           {visitor.visitorType.replace("_", " ")}
                         </span>
                       </td>
-                      <td className="text-xs">
+                      <td className="table-td text-sm">
                         {visitor.villaVisits.map((vv, idx) => (
                           <div key={idx}>
                             {vv.villa.villaNumber} {vv.villa.block && `- ${vv.villa.block}`}
                           </div>
                         ))}
                       </td>
-                      <td className="text-xs">{visitor.gate?.name || "-"}</td>
-                      <td className="text-xs">{visitor.vehicleNumber || "-"}</td>
-                      <td className="text-xs max-w-xs truncate">{visitor.purpose}</td>
-                      <td className="text-xs">{formatDateTime(visitor.checkInAt)}</td>
-                      <td className="text-xs">
+                      <td className="table-td text-fg-secondary">{visitor.gate?.name || "-"}</td>
+                      <td className="table-td text-fg-secondary">{visitor.vehicleNumber || "-"}</td>
+                      <td className="table-td text-fg-secondary max-w-xs truncate">{visitor.purpose}</td>
+                      <td className="table-td text-fg-secondary">{formatDateTime(visitor.checkInAt)}</td>
+                      <td className="table-td">
                         {visitor.checkOutAt ? (
-                          formatDateTime(visitor.checkOutAt)
+                          <span className="text-fg-secondary">{formatDateTime(visitor.checkOutAt)}</span>
                         ) : (
-                          <span className="text-green-600 font-medium">Active</span>
+                          <span className="badge badge-success">Active</span>
                         )}
                       </td>
-                      <td>
+                      <td className="table-td">
                         <button
                           onClick={() => handleDelete(visitor.id)}
                           disabled={deletingVisitorId === visitor.id}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                          className="btn btn-ghost text-brand-danger p-1.5 disabled:opacity-50"
                           title="Delete visitor record"
                         >
-                          🗑️
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </td>
                     </tr>
