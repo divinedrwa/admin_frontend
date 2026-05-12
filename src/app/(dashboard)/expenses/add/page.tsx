@@ -13,9 +13,16 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+type ExpenseCategory = {
+  id: string;
+  name: string;
+  icon?: string;
+  isActive?: boolean;
+};
+
 export default function AddExpensePage() {
   const router = useRouter();
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -68,7 +75,7 @@ export default function AddExpensePage() {
     try {
       const response = await api.get('/expenses/categories');
       const data = response.data ?? [];
-      setCategories(data.filter((cat: any) => cat.isActive));
+      setCategories((data as ExpenseCategory[]).filter((cat) => cat.isActive));
 
       // Set first category as default
       if (data.length > 0) {

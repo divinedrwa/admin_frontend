@@ -1,7 +1,9 @@
 "use client";
 
+import { BriefcaseBusiness, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -150,19 +152,19 @@ export default function StaffPage() {
 
   return (
     <AppShell title="Domestic Staff Management">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <div>
-            <p className="text-fg-secondary">Manage domestic staff for villas</p>
-            <p className="text-sm text-fg-secondary">Staff can work in multiple villas</p>
-          </div>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Register Staff
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Household operations"
+          title="Domestic staff management"
+          description="Manage maids, cooks, drivers, guards, and shared staff assignments across multiple villas with clearer operational context."
+          icon={<BriefcaseBusiness className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Register Staff
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">

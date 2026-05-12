@@ -1,6 +1,8 @@
 "use client";
 
+import { Clock3, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -304,16 +306,19 @@ export default function GuardShiftsPage() {
 
   return (
     <AppShell title="Guard Shifts">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Schedule and manage guard shifts at gates</p>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Schedule Shift
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Shift planning"
+          title="Guard shifts"
+          description="Schedule gate coverage, balance recurring or one-off shifts, and keep staffing visibility stronger for daily guard operations."
+          icon={<Clock3 className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Schedule Shift
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">

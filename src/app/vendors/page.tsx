@@ -1,6 +1,8 @@
 "use client";
 
+import { Plus, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -152,16 +154,19 @@ export default function VendorsPage() {
 
   return (
     <AppShell title="Vendors Management">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Manage approved vendors and service providers</p>
-          <button
-            onClick={() => handleOpenForm()}
-            className="btn btn-primary"
-          >
-            + Add Vendor
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Service network"
+          title="Vendors management"
+          description="Manage approved vendors and service providers so admins can maintain a cleaner, more trusted supplier directory."
+          icon={<Wrench className="h-6 w-6" />}
+          actions={
+            <button onClick={() => handleOpenForm()} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Vendor
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">

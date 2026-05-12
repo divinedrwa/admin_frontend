@@ -3,9 +3,21 @@
 import { useEffect, useState } from "react";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
+import { parseApiError } from "@/utils/errorHandler";
+
+type PreApprovedVisitor = {
+  id: string;
+  name: string;
+  phone: string;
+  purpose?: string | null;
+  validUntil?: string | null;
+  villa?: {
+    villaNumber: string;
+  } | null;
+};
 
 export default function PreApprovedVisitorsPage() {
-  const [visitors, setVisitors] = useState<any[]>([]);
+  const [visitors, setVisitors] = useState<PreApprovedVisitor[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,8 +31,8 @@ export default function PreApprovedVisitorsPage() {
       setError("");
       const response = await api.get("/pre-approved-visitors");
       setVisitors(response.data.visitors || response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch pre-approved visitors");
+    } catch (err: unknown) {
+      setError(parseApiError(err, "Failed to fetch pre-approved visitors").message);
     } finally {
       setLoading(false);
     }
@@ -32,9 +44,9 @@ export default function PreApprovedVisitorsPage() {
     try {
       await api.delete(`/pre-approved-visitors/${id}`);
       showToast("Pre-approved visitor removed", "success");
-      fetchVisitors();
-    } catch (err: any) {
-      showToast(err.response?.data?.message || "Failed to remove visitor", "error");
+      void fetchVisitors();
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to remove visitor").message, "error");
     }
   };
 

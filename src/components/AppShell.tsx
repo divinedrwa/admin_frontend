@@ -1,5 +1,6 @@
 "use client";
 
+import { Activity, CalendarDays, Menu } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
@@ -54,54 +55,72 @@ export function AppShell({ title, children }: { title: string; children: React.R
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <section className="flex-1 flex flex-col min-w-0">
         {platformView ? (
-          <div className="bg-pending-bg border-b border-pending-solid/30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 print:hidden">
-            <p className="text-sm text-pending-fg">
-              <span className="font-semibold">Platform view:</span> you are signed in as the society
-              admin for <span className="font-medium">{platformView.societyName}</span> (full tenant
-              access).
-            </p>
-            <button
-              type="button"
-              onClick={exitToSuperAdmin}
-              className="shrink-0 text-sm font-semibold px-3 py-1.5 rounded-lg bg-pending-solid text-fg-inverse hover:opacity-90"
-            >
-              Back to platform console
-            </button>
+          <div className="border-b border-pending-solid/30 bg-pending-bg/80 px-4 py-3 print:hidden md:px-8">
+            <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-pending-fg">
+                <span className="font-semibold">Platform view:</span> you are signed in as the society
+                admin for <span className="font-medium">{platformView.societyName}</span> (full tenant
+                access).
+              </p>
+              <button
+                type="button"
+                onClick={exitToSuperAdmin}
+                className="shrink-0 rounded-xl bg-pending-solid px-3.5 py-2 text-sm font-semibold text-fg-inverse transition-opacity hover:opacity-90"
+              >
+                Back to platform console
+              </button>
+            </div>
           </div>
         ) : null}
-        {/* Top Bar */}
-        <header className="bg-surface/80 backdrop-blur-md border-b border-surface-border px-4 md:px-8 py-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-20 border-b border-surface-border bg-surface/85 backdrop-blur-xl">
+          <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 px-4 py-4 md:px-8">
+            <div className="flex items-center gap-3 md:gap-4">
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="md:hidden p-2 -ml-2 rounded-lg text-fg-secondary hover:bg-brand-primary-light"
+                className="rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary md:hidden"
                 aria-label="Open menu"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <Menu className="h-5 w-5" />
               </button>
               <div>
-                <h1 className="text-xl md:text-3xl font-bold text-fg-primary tracking-tight">{title}</h1>
-                <p className="text-sm text-fg-secondary mt-1">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">
+                  Admin dashboard
                 </p>
+                <h1 className="text-2xl font-bold tracking-tight text-fg-primary md:text-3xl">{title}</h1>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-approved-bg text-approved-fg rounded-full border border-approved-solid/30">
-                <span className="w-2 h-2 bg-approved-solid rounded-full animate-pulse"></span>
-                <span className="text-sm font-medium">System Online</span>
+
+            <div className="flex items-center gap-3">
+              <div className="hidden items-center gap-2 rounded-full border border-surface-border bg-surface px-3 py-2 text-sm text-fg-secondary md:flex">
+                <CalendarDays className="h-4 w-4 text-brand-primary" />
+                <span>
+                  {new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className="hidden items-center gap-2 rounded-full border border-approved-solid/20 bg-approved-bg px-3 py-2 text-sm font-medium text-approved-fg sm:flex">
+                <Activity className="h-4 w-4" />
+                <span>System online</span>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto scrollbar-thin animate-fade-in">
-          {children}
+        <main
+          className="flex-1 overflow-y-auto scrollbar-thin"
+          style={{
+            background:
+              "radial-gradient(circle at top right, color-mix(in srgb, var(--gp-brand-primary) 6%, transparent), transparent 20%), radial-gradient(circle at bottom left, color-mix(in srgb, var(--gp-brand-accent) 5%, transparent), transparent 24%)",
+          }}
+        >
+          <div className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8 md:py-8 animate-fade-in">
+            {children}
+          </div>
         </main>
       </section>
     </div>

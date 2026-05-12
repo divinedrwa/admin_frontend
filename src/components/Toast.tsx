@@ -64,10 +64,10 @@ export function Toast() {
           key={toast.id}
           className={`rounded-xl px-6 py-4 shadow-2xl text-white min-w-80 animate-slide-in ${
             toast.type === "success"
-              ? "bg-gradient-to-r from-green-600 to-green-700"
+              ? "bg-approved-solid"
               : toast.type === "error"
-              ? "bg-gradient-to-r from-red-600 to-red-700"
-              : "bg-gradient-to-r from-blue-600 to-blue-700"
+              ? "bg-brand-danger"
+              : "bg-brand-primary"
           }`}
         >
           <div className="flex items-center space-x-3">

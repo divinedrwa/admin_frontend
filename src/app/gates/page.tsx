@@ -1,7 +1,9 @@
 "use client";
 
+import { MapPinned, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -110,16 +112,19 @@ export default function GatesPage() {
 
   return (
     <AppShell title="Gates Management">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Manage society entry/exit gates for guard assignment</p>
-          <button
-            onClick={() => handleOpenForm()}
-            className="btn btn-primary"
-          >
-            + Add Gate
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Access points"
+          title="Gates management"
+          description="Configure entry and exit gates used by guards, visitor workflows, and shift assignments across the society perimeter."
+          icon={<MapPinned className="h-6 w-6" />}
+          actions={
+            <button onClick={() => handleOpenForm()} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Gate
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">

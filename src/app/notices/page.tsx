@@ -1,7 +1,9 @@
 "use client";
 
+import { BellRing, Megaphone, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -188,21 +190,27 @@ export default function NoticesPage() {
 
   return (
     <AppShell title="Notice Board">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Post important announcements and notices</p>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Post Notice
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Resident communication"
+          title="Notice board"
+          description="Publish announcements, maintenance alerts, and targeted resident notices with clear priority and category controls."
+          icon={<Megaphone className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Post Notice
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">
             <div className="card-header">
-              <h2 className="text-xl font-bold text-fg-primary">Post New Notice</h2>
+              <div className="flex items-center gap-2">
+                <BellRing className="h-5 w-5 text-brand-primary" />
+                <h2 className="text-xl font-bold text-fg-primary">Post New Notice</h2>
+              </div>
             </div>
             <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">

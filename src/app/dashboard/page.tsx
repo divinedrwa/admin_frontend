@@ -1,5 +1,7 @@
 "use client";
 
+import { Clock3, LayoutDashboard, RefreshCw } from "lucide-react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import Link from "next/link";
@@ -15,10 +17,10 @@ const STAT_ACCENTS = {
   green: { iconBg: "bg-approved-bg", badge: "bg-approved-bg text-approved-fg" },
   purple: { iconBg: "bg-info-bg", badge: "bg-info-bg text-info-fg" },
   red: { iconBg: "bg-denied-bg", badge: "bg-denied-bg text-denied-fg" },
-  cyan: { iconBg: "bg-cyan-100", badge: "bg-cyan-100 text-cyan-800" },
-  orange: { iconBg: "bg-orange-100", badge: "bg-orange-100 text-orange-800" },
+  cyan: { iconBg: "bg-info-bg", badge: "bg-info-bg text-info-fg" },
+  orange: { iconBg: "bg-pending-bg", badge: "bg-pending-bg text-pending-fg" },
   yellow: { iconBg: "bg-pending-bg", badge: "bg-pending-bg text-pending-fg" },
-  pink: { iconBg: "bg-pink-100", badge: "bg-pink-100 text-pink-800" },
+  pink: { iconBg: "bg-denied-bg", badge: "bg-denied-bg text-denied-fg" },
 } as const;
 
 type CurrentMonthMaintenance = {
@@ -94,9 +96,15 @@ function ClockDisplay() {
   }, []);
 
   return (
-    <div className="text-right shrink-0">
-      <div className="text-3xl md:text-4xl font-mono tabular-nums">{clock.toLocaleTimeString()}</div>
-      <div className="text-surface-border mt-2 text-sm">
+    <div className="rounded-2xl border border-surface-border bg-surface px-4 py-3 text-right shadow-sm">
+      <div className="flex items-center justify-end gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-fg-tertiary">
+        <Clock3 className="h-4 w-4" />
+        Live time
+      </div>
+      <div className="mt-2 text-2xl font-semibold tabular-nums text-fg-primary md:text-3xl">
+        {clock.toLocaleTimeString()}
+      </div>
+      <div className="mt-1 text-sm text-fg-secondary">
         {clock.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
       </div>
     </div>
@@ -482,7 +490,7 @@ export default function DashboardPage() {
     { icon: "📢", label: "Notices", href: "/notices", box: "hover:bg-brand-primary-light border-surface-border text-brand-primary" },
     { icon: "💰", label: "Maintenance", href: "/maintenance-management", box: "hover:bg-pending-bg border-surface-border text-pending-fg" },
     { icon: "🧾", label: "Billing cycles", href: "/maintenance-billing", box: "hover:bg-brand-primary-light border-surface-border text-brand-primary" },
-    { icon: "⚠️", label: "Complaints", href: "/complaints", box: "hover:bg-orange-50 border-orange-100 text-orange-700" },
+    { icon: "⚠️", label: "Complaints", href: "/complaints", box: "hover:bg-pending-bg border-pending-bg text-pending-fg" },
     { icon: "🚪", label: "Gates", href: "/gates", box: "hover:bg-surface-background border-surface-border text-fg-primary" },
   ] as const;
 
@@ -500,31 +508,29 @@ export default function DashboardPage() {
     <AppShell title="Dashboard">
       <div className="space-y-8">
         {loadError ? (
-          <div className="rounded-xl border border-pending-bg bg-pending-bg px-4 py-3 text-sm text-amber-900">{loadError}</div>
+          <div className="rounded-xl border border-pending-bg bg-pending-bg px-4 py-3 text-sm text-pending-fg">{loadError}</div>
         ) : null}
 
-        <div className="bg-gradient-to-r from-brand-primary to-brand-primary-hover rounded-2xl p-8 text-white shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Society overview</h1>
-              <p className="text-surface-border mt-2 text-base max-w-xl">
-                Live totals from your API — refresh counts with the Reload button below.
-              </p>
+        <AdminPageHeader
+          eyebrow="Society overview"
+          title="Live operations dashboard"
+          description={`Monitor occupancy, maintenance, fund balance, and operational activity from one summary view.${lastSyncedAt ? ` Last synced ${lastSyncedAt.toLocaleString("en-IN")}.` : ""}`}
+          icon={<LayoutDashboard className="h-6 w-6" />}
+          actions={
+            <>
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => void load()}
-                className="mt-4 text-sm px-4 py-2 rounded-lg bg-surface/15 hover:bg-surface/25 disabled:opacity-50 transition-colors"
+                className="btn btn-primary gap-2 px-4 py-3 text-sm font-semibold"
               >
-                {loading ? "Loading…" : "Reload dashboard"}
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                {loading ? "Refreshing..." : "Refresh data"}
               </button>
-              <p className="mt-2 text-xs text-surface-border/90">
-                Last synced: {lastSyncedAt ? lastSyncedAt.toLocaleString("en-IN") : "Not synced yet"}
-              </p>
-            </div>
-            <ClockDisplay />
-          </div>
-        </div>
+              <ClockDisplay />
+            </>
+          }
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {stats.map((stat, index) => (

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { TriangleAlert } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -46,7 +48,7 @@ export default function SOSAlertsPage() {
     message: ""
   });
 
-  const loadAlerts = () => {
+  const loadAlerts = useCallback(() => {
     setLoading(true);
     const endpoint = filter === "active" ? "/sos-alerts/active" : "/sos-alerts";
     api
@@ -59,7 +61,7 @@ export default function SOSAlertsPage() {
         showToast(message, "error");
       })
       .finally(() => setLoading(false));
-  };
+  }, [filter]);
 
   const loadVillas = () => {
     api
@@ -73,7 +75,7 @@ export default function SOSAlertsPage() {
     loadVillas();
     const interval = setInterval(loadAlerts, 30000); // Refresh every 30 seconds
     return () => clearInterval(interval);
-  }, [filter]);
+  }, [loadAlerts]);
 
   const handleOpenForm = () => {
     setFormData({
@@ -165,7 +167,7 @@ export default function SOSAlertsPage() {
       case "ACKNOWLEDGED":
         return "bg-pending-bg text-pending-fg";
       case "IN_PROGRESS":
-        return "bg-orange-100 text-orange-900";
+        return "bg-pending-bg text-pending-fg";
       case "RESOLVED":
         return "bg-approved-bg text-approved-fg";
       case "CANCELLED":
@@ -213,7 +215,14 @@ export default function SOSAlertsPage() {
 
   return (
     <AppShell title="SOS Emergency Alerts">
-      <div className="space-y-4">
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Emergency response"
+          title="SOS emergency alerts"
+          description="Monitor emergency alerts, filter active incidents, and coordinate acknowledgement or resolution with stronger visibility."
+          icon={<TriangleAlert className="h-6 w-6" />}
+        />
+
         {/* Alert Banner for Active SOS */}
         {activeCount > 0 && (
           <div className="bg-denied-bg border-l-4 border-brand-danger p-5 rounded-2xl shadow-sm">

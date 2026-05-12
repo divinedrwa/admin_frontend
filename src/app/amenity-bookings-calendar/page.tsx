@@ -1,29 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
 const BOOKING_STATUSES = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"] as const;
 
+type CalendarTab = "calendar" | "amenities";
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+type CalendarOverview = {
+  summary: {
+    totalBookings: number;
+    activeBookings: number;
+    cancelledBookings: number;
+    amenityCount: number;
+  };
+  byAmenity: Array<{
+    amenityId: string;
+    amenityName: string;
+    bookingCount: number;
+  }>;
+  byDate: Array<{
+    date: string;
+    displayDate: string;
+    bookingCount: number;
+  }>;
+  bookings: Array<{
+    id: string;
+    amenityName: string;
+    amenityType: string;
+    villa?: { villaNumber: string } | null;
+    residentName: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+  }>;
+};
+
+type AmenityCalendarItem = {
+  id: string;
+  name: string;
+  type: string;
+  availability: string;
+  description?: string | null;
+  capacity?: number | null;
+  upcomingBookings: number;
+  isActive: boolean;
+};
+
 export default function AmenityBookingCalendarPage() {
-  const [activeTab, setActiveTab] = useState<"calendar" | "amenities">("calendar");
+  const [activeTab, setActiveTab] = useState<CalendarTab>("calendar");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [overview, setOverview] = useState<any>(null);
-  const [amenities, setAmenities] = useState<any[]>([]);
+  const [overview, setOverview] = useState<CalendarOverview | null>(null);
+  const [amenities, setAmenities] = useState<AmenityCalendarItem[]>([]);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   );
 
-  useEffect(() => {
-    if (activeTab === "calendar") fetchOverview();
-    else if (activeTab === "amenities") fetchAmenities();
-  }, [activeTab, startDate, endDate]);
-
-  const fetchOverview = async () => {
+  const fetchOverview = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -31,25 +76,32 @@ export default function AmenityBookingCalendarPage() {
         `/amenity-booking-calendar/overview?startDate=${startDate}&endDate=${endDate}`
       );
       setOverview(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch overview");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch overview");
     } finally {
       setLoading(false);
     }
-  };
+  }, [endDate, startDate]);
 
-  const fetchAmenities = async () => {
+  const fetchAmenities = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(`/amenity-booking-calendar/amenities`);
       setAmenities(response.data.amenities);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch amenities");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch amenities");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "calendar") void fetchOverview();
+    else if (activeTab === "amenities") void fetchAmenities();
+  }, [activeTab, fetchAmenities, fetchOverview]);
 
   const formatDateTime = (dt: string) => {
     return new Date(dt).toLocaleString("en-US", {
@@ -96,7 +148,7 @@ export default function AmenityBookingCalendarPage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as CalendarTab)}
                 className={activeTab === tab.id ? "tab tab-active" : "tab tab-inactive"}
               >
                 {tab.label}
@@ -164,7 +216,7 @@ export default function AmenityBookingCalendarPage() {
                 <div className="card-header"><h2 className="text-lg font-semibold">By Amenity</h2></div>
                 <div className="card-body">
                 <div className="space-y-3">
-                  {overview.byAmenity.map((item: any) => (
+                  {overview.byAmenity.map((item) => (
                     <div key={item.amenityId}>
                       <div className="flex justify-between mb-1">
                         <span className="font-medium">{item.amenityName}</span>
@@ -190,7 +242,7 @@ export default function AmenityBookingCalendarPage() {
                 <div className="card-header"><h2 className="text-lg font-semibold">By Date</h2></div>
                 <div className="card-body">
                 <div className="space-y-3">
-                  {overview.byDate.slice(0, 10).map((item: any) => (
+                  {overview.byDate.slice(0, 10).map((item) => (
                     <div key={item.date} className="flex justify-between items-center">
                       <span className="font-medium">{item.displayDate}</span>
                       <span className="badge badge-info">
@@ -231,7 +283,7 @@ export default function AmenityBookingCalendarPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {overview.bookings.map((booking: any) => (
+                    {overview.bookings.map((booking) => (
                       <tr key={booking.id} className="table-row">
                         <td className="table-td">
                           <div className="font-medium text-fg-primary">{booking.amenityName}</div>

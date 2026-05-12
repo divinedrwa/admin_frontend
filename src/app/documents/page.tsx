@@ -1,7 +1,9 @@
 "use client";
 
+import { FileText, FolderOpen, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -169,16 +171,19 @@ export default function DocumentsPage() {
 
   return (
     <AppShell title="Documents & Files">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Manage society documents and files</p>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Upload Document
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Knowledge base"
+          title="Documents & files"
+          description="Keep society policies, financial files, notices, and shared documents organized with searchable categories and visibility controls."
+          icon={<FolderOpen className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Upload Document
+            </button>
+          }
+        />
 
         {/* Search and Filters */}
         <div className="filter-bar">
@@ -216,7 +221,10 @@ export default function DocumentsPage() {
         {showForm && (
           <div className="card">
             <div className="card-header">
-              <h2 className="text-xl font-semibold">{editingDocument ? "Edit Document" : "Upload New Document"}</h2>
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-brand-primary" />
+                <h2 className="text-xl font-semibold">{editingDocument ? "Edit Document" : "Upload New Document"}</h2>
+              </div>
             </div>
             <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">

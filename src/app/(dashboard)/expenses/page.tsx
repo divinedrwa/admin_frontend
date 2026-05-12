@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Download, Edit, Trash2, Eye, Calendar } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Search, Filter, Download, Edit, Trash2, Eye, Calendar, ReceiptText } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { parseApiError } from "@/utils/errorHandler";
 
 interface Expense {
@@ -26,7 +27,14 @@ interface Expense {
     color?: string;
     icon?: string;
   };
-  attachments: any[];
+  attachments: unknown[];
+}
+
+interface ExpenseCategory {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
 }
 
 const MONTHS = [
@@ -36,7 +44,7 @@ const MONTHS = [
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
@@ -55,12 +63,7 @@ export default function ExpensesPage() {
     thisYear: 0
   });
 
-  useEffect(() => {
-    fetchCategories();
-    fetchExpenses();
-  }, [selectedCategory, selectedMonth, selectedYear, selectedStatus, selectedPaymentMode]);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await api.get('/expenses/categories');
       setCategories(response.data ?? []);
@@ -68,9 +71,9 @@ export default function ExpensesPage() {
       console.error('Error fetching categories:', error);
       showToast(parseApiError(error, "Failed to fetch categories").message, 'error');
     }
-  };
+  }, []);
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (selectedCategory) params.append('categoryId', selectedCategory);
@@ -107,7 +110,12 @@ export default function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, selectedCategory, selectedMonth, selectedPaymentMode, selectedStatus, selectedYear]);
+
+  useEffect(() => {
+    void fetchCategories();
+    void fetchExpenses();
+  }, [fetchCategories, fetchExpenses]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
@@ -167,30 +175,31 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="page-action-bar mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-fg-primary">Monthly Expenses</h1>
-          <p className="text-fg-secondary mt-1">Track all society operational expenses</p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={exportToExcel}
-            className="btn btn-success flex items-center gap-2"
-          >
-            <Download size={20} />
-            Export
-          </button>
-          <Link
-            href="/expenses/add"
-            className="btn btn-primary flex items-center gap-2"
-          >
-            <Plus size={20} />
-            Add Expense
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-6 p-6">
+      <AdminPageHeader
+        eyebrow="Finance operations"
+        title="Monthly expenses"
+        description="Track operational spending, export records, and review category-level expense activity from a consistent finance workspace."
+        icon={<ReceiptText className="h-6 w-6" />}
+        actions={
+          <>
+            <button
+              onClick={exportToExcel}
+              className="btn btn-success flex items-center gap-2"
+            >
+              <Download size={18} />
+              Export
+            </button>
+            <Link
+              href="/expenses/add"
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Add Expense
+            </Link>
+          </>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">

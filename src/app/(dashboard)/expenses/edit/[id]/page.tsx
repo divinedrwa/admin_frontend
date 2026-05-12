@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -32,6 +33,15 @@ type FormState = {
   tdsAmount: number;
   notes: string;
   tags: string[];
+};
+
+type ApiError = {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
 };
 
 export default function EditExpensePage() {
@@ -125,10 +135,11 @@ export default function EditExpensePage() {
         ) {
           setShowAdvanced(true);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const apiError = err as ApiError;
         if (!cancelled) {
           setLoadError(
-            err?.response?.status === 404 ? "Expense not found." : "Could not load expense."
+            apiError.response?.status === 404 ? "Expense not found." : "Could not load expense."
           );
         }
       } finally {
@@ -194,8 +205,8 @@ export default function EditExpensePage() {
       });
       showToast("Expense updated", "success");
       router.push(`/expenses/${id}`);
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || "Failed to update expense", "error");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to update expense").message, "error");
     } finally {
       setSaving(false);
     }

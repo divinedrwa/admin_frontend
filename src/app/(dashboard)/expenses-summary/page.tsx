@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, Download, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
+import { lightTheme } from "@/theme/tokens";
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -19,19 +20,30 @@ interface CategoryBreakdown {
   count: number;
 }
 
+interface MonthlySummary {
+  totalExpenses: number;
+  expenseCount: number;
+  totalGST: number;
+  totalTDS: number;
+  netAmount: number;
+}
+
+interface TrendRow {
+  month: number;
+  year: number;
+  totalExpenses: number;
+  expenseCount: number;
+}
+
 export default function MonthlySummaryPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<MonthlySummary | null>(null);
   const [categoryBreakdown, setCategoryBreakdown] = useState<CategoryBreakdown[]>([]);
-  const [trends, setTrends] = useState<any[]>([]);
+  const [trends, setTrends] = useState<TrendRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, [month, year]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -55,7 +67,11 @@ export default function MonthlySummaryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [month, year]);
+
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
   const exportReport = () => {
     const data = {
@@ -73,6 +89,7 @@ export default function MonthlySummaryPage() {
   };
 
   const maxTrendValue = Math.max(...trends.map(t => t.totalExpenses), 1);
+  const summaryTotals = summary ?? { totalExpenses: 0, expenseCount: 0, totalGST: 0, totalTDS: 0, netAmount: 0 };
 
   if (loading) {
     return (
@@ -144,7 +161,7 @@ export default function MonthlySummaryPage() {
             ₹{(summary?.totalGST || 0).toLocaleString()}
           </div>
           <div className="text-xs text-fg-secondary mt-2">
-            {summary?.totalGST > 0 ? `${((summary.totalGST / summary.totalExpenses) * 100).toFixed(1)}% of base` : '-'}
+            {summaryTotals.totalGST > 0 ? `${((summaryTotals.totalGST / Math.max(summaryTotals.totalExpenses, 1)) * 100).toFixed(1)}% of base` : '-'}
           </div>
         </div>
 
@@ -154,7 +171,7 @@ export default function MonthlySummaryPage() {
             ₹{(summary?.totalTDS || 0).toLocaleString()}
           </div>
           <div className="text-xs text-fg-secondary mt-2">
-            {summary?.totalTDS > 0 ? `${((summary.totalTDS / summary.totalExpenses) * 100).toFixed(1)}% of base` : '-'}
+            {summaryTotals.totalTDS > 0 ? `${((summaryTotals.totalTDS / Math.max(summaryTotals.totalExpenses, 1)) * 100).toFixed(1)}% of base` : '-'}
           </div>
         </div>
 
@@ -202,7 +219,7 @@ export default function MonthlySummaryPage() {
                           className="h-3 rounded-full transition-all"
                           style={{
                             width: `${percentage}%`,
-                            backgroundColor: cat.categoryColor || '#3B82F6'
+                            backgroundColor: cat.categoryColor || lightTheme.brand.primary
                           }}
                         />
                       </div>
@@ -247,7 +264,7 @@ export default function MonthlySummaryPage() {
                         </div>
                         <div
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: cat.categoryColor || '#3B82F6' }}
+                          style={{ backgroundColor: cat.categoryColor || lightTheme.brand.primary }}
                         />
                         <div>
                           <div className="font-medium text-fg-primary">
@@ -314,7 +331,7 @@ export default function MonthlySummaryPage() {
                       <div className="w-full bg-surface-elevated rounded-full h-8 relative">
                         <div
                           className={`h-8 rounded-full transition-all ${
-                            isCurrentMonth ? 'bg-brand-primary' : 'bg-blue-400'
+                            isCurrentMonth ? 'bg-brand-primary' : 'bg-info-solid'
                           }`}
                           style={{ width: `${barWidth}%` }}
                         >

@@ -1,9 +1,12 @@
 "use client";
 
+import { Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type PaymentMode = "CASH" | "UPI" | "CHEQUE" | "BANK_TRANSFER";
 type PaymentStatus = "PAID" | "PENDING" | "OVERDUE" | "PARTIAL";
@@ -57,6 +60,15 @@ type GridCycleInfo = {
   id: string;
   status: string;
   title?: string;
+};
+
+type BillingCycleApiRow = {
+  id: string;
+  financialYearId?: string | null;
+  cycleKey: string;
+  title: string;
+  paymentEndDate: string;
+  status: string;
 };
 
 const MONTHS = [
@@ -149,9 +161,9 @@ export default function MaintenanceManagementPage() {
       return;
     }
     const r = await api.get("/v1/admin/cycles");
-    const list: CycleRow[] = (r.data.cycles ?? [])
-      .filter((c: any) => c.financialYearId === fyId)
-      .map((c: any) => {
+    const list: CycleRow[] = ((r.data.cycles ?? []) as BillingCycleApiRow[])
+      .filter((c) => c.financialYearId === fyId)
+      .map((c) => {
         const m = /^(\d{4})-(\d{2})$/.exec(c.cycleKey ?? "");
         const periodYear = m ? Number(m[1]) : new Date(c.paymentEndDate).getFullYear();
         const periodMonth = m ? Number(m[2]) : new Date(c.paymentEndDate).getMonth() + 1;
@@ -222,8 +234,8 @@ export default function MaintenanceManagementPage() {
   }, [selectedFinancialYearId]);
 
   useEffect(() => {
-    void loadGrid(selectedCycleId).catch((err: any) => {
-      showToast(err.response?.data?.message || "Failed to load residents", "error");
+    void loadGrid(selectedCycleId).catch((err: unknown) => {
+      showToast(parseApiError(err, "Failed to load residents").message, "error");
       setSummary(null);
       setResidents([]);
     });
@@ -254,14 +266,14 @@ export default function MaintenanceManagementPage() {
         await api.post(
           `/maintenance-management/collection/cycles/${selectedMaintenanceCycleId}/generate-snapshots`
         );
-      } catch (genErr: any) {
-        if (genErr?.response?.status !== 409) throw genErr;
+      } catch (genErr: unknown) {
+        if ((genErr as { response?: { status?: number } })?.response?.status !== 409) throw genErr;
       }
       await loadGrid(selectedCycleId);
       showToast("Amount saved for selected month and financial year", "success");
       setCustomAmount("");
-    } catch (err: any) {
-      showToast(err.response?.data?.message || "Failed to save custom amount", "error");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to save custom amount").message, "error");
     } finally {
       setLoading(false);
     }
@@ -308,8 +320,8 @@ export default function MaintenanceManagementPage() {
       setRowEdit(null);
       await loadGrid(selectedCycleId);
       showToast("Villa row updated", "success");
-    } catch (err: any) {
-      showToast(err.response?.data?.message || "Failed to update row", "error");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to update row").message, "error");
     } finally {
       setLoading(false);
     }
@@ -351,8 +363,8 @@ export default function MaintenanceManagementPage() {
       setShowPaymentModal(false);
       await loadGrid(selectedCycleId);
       showToast("Payment marked for selected financial year and month", "success");
-    } catch (err: any) {
-      showToast(err.response?.data?.message || "Failed to mark payment", "error");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to mark payment").message, "error");
     } finally {
       setLoading(false);
     }
@@ -411,8 +423,8 @@ export default function MaintenanceManagementPage() {
 
       setShowCreditModal(false);
       await loadGrid(selectedCycleId);
-    } catch (err: any) {
-      showToast(err.response?.data?.message || "Failed", "error");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed").message, "error");
     } finally {
       setLoading(false);
     }
@@ -423,6 +435,13 @@ export default function MaintenanceManagementPage() {
   return (
     <AppShell title="Maintenance Payment Management">
       <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Resident payments"
+          title="Maintenance payment management"
+          description="Review cycle-wise collections, adjust villa-specific amounts, post payments, and manage credits from a single billing operations dashboard."
+          icon={<Wallet className="h-6 w-6" />}
+        />
+
         <div className="card">
           <div className="card-header"><h3 className="text-base font-semibold text-fg-primary">Select Financial Year and Month</h3></div>
           <div className="card-body space-y-4">
@@ -587,7 +606,7 @@ export default function MaintenanceManagementPage() {
         <div className="filter-bar flex gap-3 items-center">
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
+            onChange={(e) => setFilterStatus(e.target.value as "all" | PaymentStatus)}
             className="input"
           >
             <option value="all">All status</option>
@@ -676,7 +695,7 @@ export default function MaintenanceManagementPage() {
                           onClick={() => openRowEdit(r)}
                           disabled={!cycleEditable || loading}
                           title={!cycleEditable ? "Only OPEN periods can be edited" : "Edit expected & collected"}
-                          className="text-slate-700 hover:text-slate-900 font-medium disabled:opacity-40"
+                          className="text-fg-primary hover:text-brand-primary font-medium disabled:opacity-40"
                         >
                           Edit
                         </button>

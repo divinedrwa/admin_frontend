@@ -1,7 +1,9 @@
 "use client";
 
+import { Building, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -162,21 +164,19 @@ export default function AmenitiesPage() {
 
   return (
     <AppShell title="Amenities">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <div>
-            <p className="text-fg-secondary">Define pools, halls, courts, and other bookable facilities.</p>
-            <p className="text-sm text-fg-secondary mt-1">
-              Use <strong>Bookings</strong> in the sidebar to reserve slots; use <strong>Amenity calendar</strong> under Analytics for the schedule view.
-            </p>
-          </div>
-          <button
-            onClick={() => handleOpenForm()}
-            className="btn btn-primary"
-          >
-            + Add Amenity
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Facility catalog"
+          title="Amenities"
+          description="Define bookable facilities, configure pricing and capacity, and keep the amenity calendar aligned with what residents can reserve."
+          icon={<Building className="h-6 w-6" />}
+          actions={
+            <button onClick={() => handleOpenForm()} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Amenity
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">

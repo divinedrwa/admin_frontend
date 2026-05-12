@@ -1,7 +1,9 @@
 "use client";
 
+import { Building2, FileSpreadsheet, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -76,7 +78,7 @@ export default function VillasPage() {
       .get("/villas")
       .then((response) => setVillas(response.data.villas ?? []))
       .catch((error: unknown) => {
-        const status = (error as any)?.response?.status;
+        const status = (error as { response?: { status?: number } })?.response?.status;
         const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
         
         // Only show error toast for non-auth errors
@@ -343,24 +345,27 @@ export default function VillasPage() {
 
   return (
     <AppShell title="Villas Management">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <div>
-            <p className="text-fg-secondary">Manage society villas and residents</p>
-            <p className="text-sm text-fg-tertiary mt-1">{villas.length} properties registered</p>
-          </div>
-          <button
-            onClick={() => handleOpenForm()}
-            className="btn btn-primary"
-          >
-            + Add Villa
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Property directory"
+          title="Villas management"
+          description={`Manage society properties, owners, billing-ready unit structures, and bulk villa imports from one operational workspace.${villas.length ? ` ${villas.length} properties are currently registered.` : ""}`}
+          icon={<Building2 className="h-6 w-6" />}
+          actions={
+            <button onClick={() => handleOpenForm()} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Villa
+            </button>
+          }
+        />
 
         <div className="card p-5 space-y-3 bg-brand-primary-light/50">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="font-semibold text-fg-primary">Import / export villas (CSV)</h3>
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4 text-brand-primary" />
+                <h3 className="font-semibold text-fg-primary">Import / export villas (CSV)</h3>
+              </div>
               <p className="text-sm text-fg-secondary mt-1">
                 Header row required:{" "}
                 <code className="text-xs bg-surface px-1 rounded">

@@ -1,9 +1,20 @@
 "use client";
 
+import {
+  ArrowLeftRight,
+  Building2,
+  Home,
+  Percent,
+  UserCheck,
+  UserRoundCheck,
+  UserX,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { parseApiError } from "@/utils/errorHandler";
 
 type Resident = {
@@ -152,54 +163,104 @@ export default function ResidentManagementPage() {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const statCards = statistics
+    ? [
+        {
+          label: "Total residents",
+          value: statistics.totalResidents,
+          sub: "All profiles",
+          icon: Users,
+          tone: "bg-brand-primary-light text-brand-primary",
+        },
+        {
+          label: "Active",
+          value: statistics.activeResidents,
+          sub: `${statistics.occupancyRate}% occupancy`,
+          icon: UserCheck,
+          tone: "bg-approved-bg text-approved-fg",
+        },
+        {
+          label: "Inactive",
+          value: statistics.inactiveResidents,
+          sub: "Move-out completed",
+          icon: UserX,
+          tone: "bg-surface-elevated text-fg-primary",
+        },
+        {
+          label: "New this month",
+          value: statistics.newThisMonth,
+          sub: "Recent onboarding",
+          icon: UserRoundCheck,
+          tone: "bg-info-bg text-info-fg",
+        },
+        {
+          label: "Owners",
+          value: statistics.owners,
+          sub: "Primary occupancy",
+          icon: Home,
+          tone: "bg-brand-primary-light text-brand-primary",
+        },
+        {
+          label: "Tenants",
+          value: statistics.tenants,
+          sub: "Active tenant profiles",
+          icon: Building2,
+          tone: "bg-info-bg text-info-fg",
+        },
+        {
+          label: "Moved out",
+          value: statistics.movedOutThisMonth,
+          sub: "This month",
+          icon: ArrowLeftRight,
+          tone: "bg-pending-bg text-pending-fg",
+        },
+        {
+          label: "Occupancy rate",
+          value: `${statistics.occupancyRate}%`,
+          sub: "Across configured villas",
+          icon: Percent,
+          tone: "bg-approved-bg text-approved-fg",
+        },
+      ]
+    : [];
+
   return (
     <AppShell title="Resident Management Dashboard">
-      {/* Summary Statistics */}
-      {statistics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-brand-primary-light border border-surface-border rounded p-4">
-            <div className="text-sm text-brand-primary">Total Residents</div>
-            <div className="text-2xl font-bold text-fg-primary">{statistics.totalResidents}</div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Resident directory"
+          title="Resident management"
+          description="Review occupancy, resident status, onboarding trends, and move-out actions from one consistent control surface."
+          icon={<Users className="h-6 w-6" />}
+        />
+
+        {/* Summary Statistics */}
+        {statistics && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {statCards.map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <div key={stat.label} className="stat-card">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${stat.tone}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-medium text-fg-secondary">{stat.sub}</span>
+                  </div>
+                  <div className="mt-4 text-2xl font-bold text-fg-primary">{stat.value}</div>
+                  <div className="mt-1 text-sm text-fg-secondary">{stat.label}</div>
+                </div>
+              );
+            })}
           </div>
-          <div className="bg-approved-bg border border-approved-bg rounded p-4">
-            <div className="text-sm text-approved-solid">Active</div>
-            <div className="text-2xl font-bold text-fg-primary">{statistics.activeResidents}</div>
-            <div className="text-xs text-approved-fg">{statistics.occupancyRate}% occupancy</div>
-          </div>
-          <div className="bg-surface-background border border-surface-border rounded p-4">
-            <div className="text-sm text-fg-secondary">Inactive</div>
-            <div className="text-2xl font-bold text-fg-primary">{statistics.inactiveResidents}</div>
-          </div>
-          <div className="bg-brand-primary-light border border-surface-border rounded p-4">
-            <div className="text-sm text-brand-primary">New This Month</div>
-            <div className="text-2xl font-bold text-fg-primary">{statistics.newThisMonth}</div>
-          </div>
-          
-          <div className="bg-brand-primary-light border border-surface-border rounded p-4">
-            <div className="text-sm text-brand-primary">Owners</div>
-            <div className="text-2xl font-bold text-fg-primary">{statistics.owners}</div>
-          </div>
-          <div className="bg-cyan-50 border border-cyan-200 rounded p-4">
-            <div className="text-sm text-cyan-600">Tenants</div>
-            <div className="text-2xl font-bold text-cyan-900">{statistics.tenants}</div>
-          </div>
-          <div className="bg-orange-50 border border-orange-200 rounded p-4">
-            <div className="text-sm text-orange-600">Moved Out (Month)</div>
-            <div className="text-2xl font-bold text-orange-900">{statistics.movedOutThisMonth}</div>
-          </div>
-          <div className="bg-teal-50 border border-teal-200 rounded p-4">
-            <div className="text-sm text-teal-600">Occupancy Rate</div>
-            <div className="text-2xl font-bold text-teal-900">{statistics.occupancyRate}%</div>
-          </div>
-        </div>
-      )}
+        )}
 
       {/* Filters */}
-      <div className="filter-bar mb-4">
+      <div className="filter-bar">
         <div className="flex flex-wrap gap-4 mb-3">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
             className="input max-w-[10rem]"
           >
             <option value="all">All Status</option>
@@ -209,7 +270,7 @@ export default function ResidentManagementPage() {
 
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as any)}
+            onChange={(e) => setTypeFilter(e.target.value as "all" | "owner" | "tenant")}
             className="input max-w-[10rem]"
           >
             <option value="all">All Types</option>
@@ -399,16 +460,17 @@ export default function ResidentManagementPage() {
             </div>
           </div>
         </div>
-      )}
+        )}
 
-      {loading && !showMoveOutModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
-          <div className="bg-surface rounded-lg p-6">
-            <div className="loading-spinner w-8 h-8 mx-auto"></div>
-            <p className="loading-state-text mt-2">Loading...</p>
+        {loading && !showMoveOutModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
+            <div className="bg-surface rounded-lg p-6">
+              <div className="loading-spinner w-8 h-8 mx-auto"></div>
+              <p className="loading-state-text mt-2">Loading...</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </AppShell>
   );
 }

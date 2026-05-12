@@ -4,8 +4,26 @@ import { useEffect, useState } from "react";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+type BankAccount = {
+  id: string;
+  bankName: string;
+  branch: string;
+  accountHolderName: string;
+  accountNumber: string;
+  ifscCode: string;
+  accountType: string;
+};
+
 export default function BankAccountsPage() {
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -28,8 +46,9 @@ export default function BankAccountsPage() {
       setError("");
       const response = await api.get("/bank-accounts");
       setAccounts(response.data.accounts || response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch bank accounts");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch bank accounts");
     } finally {
       setLoading(false);
     }
@@ -50,8 +69,9 @@ export default function BankAccountsPage() {
         branch: "",
       });
       fetchAccounts();
-    } catch (err: any) {
-      showToast(err.response?.data?.message || "Failed to create account", "error");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      showToast(apiError.response?.data?.message || "Failed to create account", "error");
     }
   };
 

@@ -4,6 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell, Radio, Send, TestTube } from "lucide-react";
 import { api } from "@/lib/api";
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 type Diagnostics = {
   firebaseConfigured: boolean;
   registeredDevices: number;
@@ -59,8 +67,9 @@ export default function NotificationsAdminPage() {
       setTitle("");
       setBody("");
       loadDiagnostics();
-    } catch (err: any) {
-      setLastResult(err?.response?.data?.message || "Failed to send broadcast");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setLastResult(apiError.response?.data?.message || "Failed to send broadcast");
     } finally {
       setSending(false);
     }
@@ -76,8 +85,9 @@ export default function NotificationsAdminPage() {
         `Test queued for your user only. Rows: ${data.rowsCreated ?? 0}. Push attempted: ${data.pushAttempted ?? false}. Configure FIREBASE_SERVICE_ACCOUNT_JSON on the API server for real device delivery.`
       );
       loadDiagnostics();
-    } catch (err: any) {
-      setLastResult(err?.response?.data?.message || "Failed to send test notification");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setLastResult(apiError.response?.data?.message || "Failed to send test notification");
     } finally {
       setTesting(false);
     }

@@ -1,28 +1,46 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Download, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
+import { lightTheme } from "@/theme/tokens";
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+type YearlySummary = {
+  yearlyTotal?: {
+    totalExpenses?: number;
+    expenseCount?: number;
+  };
+  monthlySummaries?: MonthlySummaryRow[];
+};
+
+type MonthlySummaryRow = {
+  month: number;
+  totalExpenses: number;
+  expenseCount: number;
+};
+
+type TopCategoryRow = {
+  categoryName: string;
+  categoryColor?: string;
+  totalAmount: number;
+  count: number;
+};
+
 export default function YearlySummaryPage() {
   const [year, setYear] = useState(new Date().getFullYear());
-  const [summary, setSummary] = useState<any>(null);
-  const [topCategories, setTopCategories] = useState<any[]>([]);
+  const [summary, setSummary] = useState<YearlySummary | null>(null);
+  const [topCategories, setTopCategories] = useState<TopCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, [year]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -41,7 +59,11 @@ export default function YearlySummaryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [year]);
+
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
   const exportYearlyReport = () => {
     const data = {
@@ -70,16 +92,16 @@ export default function YearlySummaryPage() {
 
   const monthlySummaries = summary?.monthlySummaries || [];
   const yearlyTotal = summary?.yearlyTotal || {};
-  const maxMonthlyExpense = Math.max(...monthlySummaries.map((m: any) => m.totalExpenses), 1);
+  const maxMonthlyExpense = Math.max(...monthlySummaries.map((m) => m.totalExpenses), 1);
 
   // Calculate comparisons
-  const avgPerMonth = yearlyTotal.totalExpenses / Math.max(monthlySummaries.length, 1);
+  const avgPerMonth = (yearlyTotal.totalExpenses || 0) / Math.max(monthlySummaries.length, 1);
   const highestMonth = monthlySummaries.reduce(
-    (max: any, m: any) => (m.totalExpenses > max.totalExpenses ? m : max),
+    (max, m) => (m.totalExpenses > max.totalExpenses ? m : max),
     monthlySummaries[0] || { totalExpenses: 0, month: 1 }
   );
   const lowestMonth = monthlySummaries.reduce(
-    (min: any, m: any) => (m.totalExpenses < min.totalExpenses ? m : min),
+    (min, m) => (m.totalExpenses < min.totalExpenses ? m : min),
     monthlySummaries[0] || { totalExpenses: 0, month: 1 }
   );
 
@@ -194,8 +216,8 @@ export default function YearlySummaryPage() {
                 </thead>
                 <tbody className="divide-y divide-surface-border">
                   {MONTHS.map((monthName, index) => {
-                    const monthData = monthlySummaries.find((m: any) => m.month === index + 1);
-                    const prevMonthData = monthlySummaries.find((m: any) => m.month === index);
+                    const monthData = monthlySummaries.find((m) => m.month === index + 1);
+                    const prevMonthData = monthlySummaries.find((m) => m.month === index);
 
                     if (!monthData) {
                       return (
@@ -292,7 +314,7 @@ export default function YearlySummaryPage() {
                         </div>
                         <div
                           className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: cat.categoryColor || '#3B82F6' }}
+                          style={{ backgroundColor: cat.categoryColor || lightTheme.brand.primary }}
                         />
                         <span className="font-medium text-fg-primary">{cat.categoryName}</span>
                         <span className="text-sm text-fg-secondary">({cat.count} entries)</span>
@@ -309,7 +331,7 @@ export default function YearlySummaryPage() {
                         className="h-3 rounded-full"
                         style={{
                           width: `${percentage}%`,
-                          backgroundColor: cat.categoryColor || '#3B82F6'
+                          backgroundColor: cat.categoryColor || lightTheme.brand.primary
                         }}
                       />
                     </div>

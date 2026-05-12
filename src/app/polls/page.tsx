@@ -1,6 +1,8 @@
 "use client";
 
+import { Plus, Vote } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -209,16 +211,19 @@ export default function PollsPage() {
 
   return (
     <AppShell title="Polls & Voting">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Create and manage community polls</p>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Create Poll
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Community engagement"
+          title="Polls & voting"
+          description={`Create resident polls, track participation, and manage active or closed votes with clearer visibility.${activeCount || closedCount ? ` ${activeCount} active and ${closedCount} closed polls are currently listed.` : ""}`}
+          icon={<Vote className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create Poll
+            </button>
+          }
+        />
 
         {/* Search and Filters */}
         <div className="filter-bar">

@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { BarChart3 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { parseApiError } from "@/utils/errorHandler";
@@ -55,7 +57,7 @@ export default function ComplaintAnalyticsPage() {
   const [adminNotes, setAdminNotes] = useState("");
 
   // Fetch summary data
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(`/complaint-analytics/summary?days=${dateFilter}`);
@@ -65,33 +67,33 @@ export default function ComplaintAnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateFilter]);
 
   // Fetch category breakdown
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await api.get(`/complaint-analytics/by-category?days=${dateFilter}`);
       setCategoryStats(response.data.categoryStats);
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to load categories").message, "error");
     }
-  };
+  }, [dateFilter]);
 
   // Fetch pending complaints
-  const fetchPending = async () => {
+  const fetchPending = useCallback(async () => {
     try {
       const response = await api.get("/complaint-analytics/pending-list?limit=20");
       setPendingComplaints(response.data.pendingComplaints);
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to load pending list").message, "error");
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchSummary();
-    fetchCategories();
-    fetchPending();
-  }, [dateFilter]);
+    void fetchSummary();
+    void fetchCategories();
+    void fetchPending();
+  }, [fetchCategories, fetchPending, fetchSummary]);
 
   const handleQuickUpdate = async (complaintId: string) => {
     try {
@@ -106,9 +108,9 @@ export default function ComplaintAnalyticsPage() {
       setAdminNotes("");
       
       // Refresh data
-      fetchSummary();
-      fetchCategories();
-      fetchPending();
+      void fetchSummary();
+      void fetchCategories();
+      void fetchPending();
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to update complaint").message, "error");
     } finally {
@@ -128,57 +130,65 @@ export default function ComplaintAnalyticsPage() {
 
   const getUrgencyBadge = (level: string) => {
     const styles = {
-      critical: "bg-denied-bg text-denied-fg border-red-300",
-      high: "bg-orange-100 text-orange-800 border-orange-300",
-      normal: "bg-info-bg text-info-fg border-blue-300",
+      critical: "bg-denied-bg text-denied-fg border-denied-bg",
+      high: "bg-pending-bg text-pending-fg border-pending-bg",
+      normal: "bg-info-bg text-info-fg border-info-bg",
     };
     return styles[level as keyof typeof styles] || styles.normal;
   };
 
   return (
     <AppShell title="Complaint Analytics Dashboard">
-      {/* Date Filter */}
-      <div className="mb-6 flex items-center space-x-4">
-        <label className="text-sm font-medium text-fg-primary">Period:</label>
-        <select
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          className="input w-auto"
-        >
-          <option value="7">Last 7 Days</option>
-          <option value="30">Last 30 Days</option>
-          <option value="90">Last 90 Days</option>
-          <option value="180">Last 6 Months</option>
-        </select>
-      </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Service performance"
+          title="Complaint analytics dashboard"
+          description="Track complaint volume, category breakdowns, urgency, and pending items that need quicker operational response."
+          icon={<BarChart3 className="h-6 w-6" />}
+        />
 
-      {/* Summary Statistics */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div className="stat-card">
-            <div className="stat-card-label">Total Complaints</div>
-            <div className="stat-card-value">{summary.totalComplaints}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">Resolved</div>
-            <div className="stat-card-value text-approved-solid">{summary.resolvedCount}</div>
-            <div className="text-xs text-approved-fg mt-1">{summary.resolutionRate}% rate</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">In Progress</div>
-            <div className="stat-card-value text-info-fg">{summary.inProgressCount}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">Pending</div>
-            <div className="stat-card-value text-pending-solid">{summary.pendingCount}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-label">Avg Resolution</div>
-            <div className="stat-card-value">{summary.avgResolutionTime}</div>
-            <div className="text-xs text-fg-secondary mt-1">days</div>
-          </div>
+        {/* Date Filter */}
+        <div className="flex items-center space-x-4">
+          <label className="text-sm font-medium text-fg-primary">Period:</label>
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="input w-auto"
+          >
+            <option value="7">Last 7 Days</option>
+            <option value="30">Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="180">Last 6 Months</option>
+          </select>
         </div>
-      )}
+
+        {/* Summary Statistics */}
+        {summary && (
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="stat-card">
+              <div className="stat-card-label">Total Complaints</div>
+              <div className="stat-card-value">{summary.totalComplaints}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-label">Resolved</div>
+              <div className="stat-card-value text-approved-solid">{summary.resolvedCount}</div>
+              <div className="text-xs text-approved-fg mt-1">{summary.resolutionRate}% rate</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-label">In Progress</div>
+              <div className="stat-card-value text-info-fg">{summary.inProgressCount}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-label">Pending</div>
+              <div className="stat-card-value text-pending-solid">{summary.pendingCount}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-label">Avg Resolution</div>
+              <div className="stat-card-value">{summary.avgResolutionTime}</div>
+              <div className="text-xs text-fg-secondary mt-1">days</div>
+            </div>
+          </div>
+        )}
 
       {/* Category Breakdown */}
       <div className="mb-6">
@@ -223,8 +233,8 @@ export default function ComplaintAnalyticsPage() {
         </div>
       </div>
 
-      {/* Pending Complaints - Need Attention */}
-      <div>
+        {/* Pending Complaints - Need Attention */}
+        <div>
         <h2 className="text-lg font-semibold mb-3">
           Pending Complaints <span className="text-sm text-fg-secondary">(Need Attention)</span>
         </h2>
@@ -279,6 +289,7 @@ export default function ComplaintAnalyticsPage() {
               <p className="text-approved-solid text-sm">No pending complaints at this time.</p>
             </div>
           )}
+        </div>
         </div>
       </div>
 

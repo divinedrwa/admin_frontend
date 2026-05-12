@@ -1,77 +1,147 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Droplets } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+type WaterSupplyOverview = {
+  summary: {
+    totalEvents: number;
+    onEvents: number;
+    offEvents: number;
+    avgDurationMinutes: number;
+  };
+  currentStatus: Array<{
+    gateId: string;
+    gateName: string;
+    currentStatus: string;
+    lastUpdated?: string | null;
+  }>;
+  gateStats: Array<{
+    gateId: string;
+    gateName: string;
+    totalEvents: number;
+    onCount: number;
+    offCount: number;
+  }>;
+};
+
+type DailyUsage = {
+  usageData: Array<{
+    date: string;
+    displayDate: string;
+    totalEvents: number;
+    onCount: number;
+    offCount: number;
+  }>;
+};
+
+type HourlyPattern = {
+  peakHours: Array<{
+    hour: number;
+    label: string;
+    totalEvents: number;
+  }>;
+  pattern: Array<{
+    hour: number;
+    label: string;
+    totalEvents: number;
+  }>;
+};
+
+type RecentEvent = {
+  id: string;
+  timestamp: string;
+  action: string;
+  reason?: string | null;
+  minutesAgo: number;
+  gate?: {
+    name?: string;
+  } | null;
+};
 
 export default function WaterSupplyAnalyticsPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "daily" | "hourly" | "recent">("overview");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [overview, setOverview] = useState<any>(null);
-  const [dailyUsage, setDailyUsage] = useState<any>(null);
-  const [hourlyPattern, setHourlyPattern] = useState<any>(null);
-  const [recentEvents, setRecentEvents] = useState<any[]>([]);
+  const [overview, setOverview] = useState<WaterSupplyOverview | null>(null);
+  const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
+  const [hourlyPattern, setHourlyPattern] = useState<HourlyPattern | null>(null);
+  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
   const [period, setPeriod] = useState("7");
 
-  useEffect(() => {
-    if (activeTab === "overview") fetchOverview();
-    else if (activeTab === "daily") fetchDailyUsage();
-    else if (activeTab === "hourly") fetchHourlyPattern();
-    else if (activeTab === "recent") fetchRecentEvents();
-  }, [activeTab, period]);
-
-  const fetchOverview = async () => {
+  const fetchOverview = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(`/water-supply-analytics/overview?days=${period}`);
       setOverview(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch overview");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch overview");
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
 
-  const fetchDailyUsage = async () => {
+  const fetchDailyUsage = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(`/water-supply-analytics/daily-usage?days=${period}`);
       setDailyUsage(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch daily usage");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch daily usage");
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
 
-  const fetchHourlyPattern = async () => {
+  const fetchHourlyPattern = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(`/water-supply-analytics/hourly-pattern?days=30`);
       setHourlyPattern(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch hourly pattern");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch hourly pattern");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchRecentEvents = async () => {
+  const fetchRecentEvents = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(`/water-supply-analytics/recent-events?limit=30`);
       setRecentEvents(response.data.recentEvents);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch recent events");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch recent events");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "overview") void fetchOverview();
+    else if (activeTab === "daily") void fetchDailyUsage();
+    else if (activeTab === "hourly") void fetchHourlyPattern();
+    else if (activeTab === "recent") void fetchRecentEvents();
+  }, [activeTab, fetchDailyUsage, fetchHourlyPattern, fetchOverview, fetchRecentEvents]);
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleString("en-US", {
@@ -85,7 +155,12 @@ export default function WaterSupplyAnalyticsPage() {
   return (
     <AppShell title="Water Supply Analytics">
       <div className="space-y-6">
-        <p className="text-fg-secondary -mt-2">Monitor water supply patterns and operations</p>
+        <AdminPageHeader
+          eyebrow="Utility monitoring"
+          title="Water supply analytics"
+          description="Monitor water supply patterns, gate-wise status, daily usage trends, and recent operational events from one analytics surface."
+          icon={<Droplets className="h-6 w-6" />}
+        />
 
         <div className="tabs">
           {[
@@ -155,7 +230,7 @@ export default function WaterSupplyAnalyticsPage() {
             <div className="bg-surface rounded-lg shadow p-6 mb-6">
               <h2 className="text-lg font-semibold mb-4">Current Status by Gate</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {overview.currentStatus.map((status: any) => (
+                {overview.currentStatus.map((status) => (
                   <div key={status.gateId} className="border rounded p-4">
                     <h3 className="font-bold text-fg-primary">{status.gateName}</h3>
                     <span
@@ -182,7 +257,7 @@ export default function WaterSupplyAnalyticsPage() {
             <div className="stat-card">
               <h2 className="text-lg font-semibold mb-4">Events by Gate</h2>
               <div className="space-y-4">
-                {overview.gateStats.map((stat: any) => (
+                {overview.gateStats.map((stat) => (
                   <div key={stat.gateId}>
                     <div className="flex justify-between mb-2">
                       <span className="font-medium">{stat.gateName}</span>
@@ -224,7 +299,7 @@ export default function WaterSupplyAnalyticsPage() {
             <div className="stat-card">
               <h2 className="text-lg font-semibold mb-4">Daily Water Supply Activity</h2>
               <div className="space-y-4">
-                {dailyUsage.usageData.map((day: any) => (
+                {dailyUsage.usageData.map((day) => (
                   <div key={day.date}>
                     <div className="flex justify-between mb-2">
                       <span className="font-medium">{day.displayDate}</span>
@@ -254,8 +329,8 @@ export default function WaterSupplyAnalyticsPage() {
         {!loading && activeTab === "hourly" && hourlyPattern && (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {hourlyPattern.peakHours.map((peak: any, idx: number) => (
-                <div key={peak.hour} className="bg-surface rounded-lg shadow p-6 border-t-4 border-yellow-500">
+              {hourlyPattern.peakHours.map((peak, idx) => (
+                <div key={peak.hour} className="bg-surface rounded-lg shadow p-6 border-t-4 border-pending-solid">
                   <p className="text-sm text-fg-secondary mb-2">#{idx + 1} Peak Hour</p>
                   <p className="text-2xl font-bold text-fg-primary">{peak.label}</p>
                   <p className="text-lg text-pending-solid font-semibold">{peak.totalEvents} events</p>
@@ -266,8 +341,8 @@ export default function WaterSupplyAnalyticsPage() {
             <div className="stat-card">
               <h2 className="text-lg font-semibold mb-4">24-Hour Pattern</h2>
               <div className="space-y-2">
-                {hourlyPattern.pattern.map((hour: any) => {
-                  const maxEvents = Math.max(...hourlyPattern.pattern.map((h: any) => h.totalEvents));
+                {hourlyPattern.pattern.map((hour) => {
+                  const maxEvents = Math.max(...hourlyPattern.pattern.map((h) => h.totalEvents));
                   const widthPercent = maxEvents > 0 ? (hour.totalEvents / maxEvents) * 100 : 0;
                   return (
                     <div key={hour.hour} className="flex items-center">

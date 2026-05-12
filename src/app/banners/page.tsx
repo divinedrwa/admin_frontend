@@ -1,7 +1,10 @@
 "use client";
 
+import { ImagePlus, LayoutTemplate, Plus } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -122,7 +125,17 @@ export default function BannersPage() {
     setSubmitting(true);
 
     try {
-      const payload: any = {
+      const payload: {
+        title: string;
+        type: string;
+        priority: number;
+        isActive: boolean;
+        description?: string;
+        imageUrl?: string;
+        startDate?: string;
+        endDate?: string;
+        actionUrl?: string;
+      } = {
         title: formData.title,
         type: formData.type,
         priority: parseInt(formData.priority) || 0,
@@ -187,23 +200,29 @@ export default function BannersPage() {
 
   return (
     <AppShell title="Banners & Events">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Manage banners and events for mobile app carousel</p>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Create Banner
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Promotions & campaigns"
+          title="Banners & events"
+          description="Manage home-screen banners, society campaigns, and time-bound highlights for the resident mobile experience."
+          icon={<LayoutTemplate className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create Banner
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-semibold">
-                {editingBanner ? "Edit Banner" : "Create New Banner"}
-              </h3>
+              <div className="flex items-center gap-2">
+                <ImagePlus className="h-5 w-5 text-brand-primary" />
+                <h3 className="text-lg font-semibold">
+                  {editingBanner ? "Edit Banner" : "Create New Banner"}
+                </h3>
+              </div>
             </div>
             <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -379,12 +398,14 @@ export default function BannersPage() {
               >
                 {banner.imageUrl && (
                   <div className="h-48 bg-surface-elevated">
-                    <img
+                    <Image
                       src={banner.imageUrl}
                       alt={banner.title}
-                      className="w-full h-full object-cover"
+                      width={800}
+                      height={320}
+                      className="h-full w-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
                       }}
                     />
                   </div>

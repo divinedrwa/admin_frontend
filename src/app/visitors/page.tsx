@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { DoorOpen, UserPlus, Users } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -67,7 +69,7 @@ export default function VisitorsPage() {
     gateId: ""
   });
 
-  const loadVisitors = () => {
+  const loadVisitors = useCallback(() => {
     setLoading(true);
     const endpoint = filter === "active" ? "/visitors/active/list" : "/visitors";
     api
@@ -75,7 +77,7 @@ export default function VisitorsPage() {
       .then((response) => setVisitors(response.data.visitors ?? []))
       .catch(() => showToast("Failed to load visitors", "error"))
       .finally(() => setLoading(false));
-  };
+  }, [filter]);
 
   const loadVillas = () => {
     api
@@ -95,7 +97,7 @@ export default function VisitorsPage() {
     loadVisitors();
     loadVillas();
     loadGates();
-  }, [filter]);
+  }, [loadVisitors]);
 
   const handleOpenForm = () => {
     setFormData({
@@ -148,7 +150,15 @@ export default function VisitorsPage() {
     setSubmitting(true);
 
     try {
-      const payload: any = {
+      const payload: {
+        name: string;
+        phone: string;
+        purpose: string;
+        visitorType: string;
+        villaIds: string[];
+        vehicleNumber?: string;
+        gateId?: string;
+      } = {
         name: formData.name,
         phone: formData.phone,
         purpose: formData.purpose,
@@ -194,7 +204,7 @@ export default function VisitorsPage() {
       case "DELIVERY":
         return "bg-info-bg text-info-fg";
       case "VENDOR":
-        return "bg-orange-100 text-orange-800";
+        return "bg-pending-bg text-pending-fg";
       case "CONTRACTOR":
         return "bg-pending-bg text-pending-fg";
       case "GUEST":
@@ -238,24 +248,19 @@ export default function VisitorsPage() {
 
   return (
     <AppShell title="Visitor Management">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <div>
-            <p className="text-fg-secondary">Track visitor entry and exit</p>
-            <p className="text-sm text-fg-tertiary mt-1">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-approved-solid rounded-full animate-pulse"></span>
-                {activeCount} visitor(s) currently in society
-              </span>
-            </p>
-          </div>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Check-In Visitor
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Entry operations"
+          title="Visitor management"
+          description={`Track visitor entry and exit, filter active records, and process manual check-ins with stronger operational visibility.${activeCount ? ` ${activeCount} visitor(s) are currently inside the society.` : ""}`}
+          icon={<Users className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Check-In Visitor
+            </button>
+          }
+        />
 
         {/* Search and Filters */}
         <div className="filter-bar">
@@ -325,7 +330,10 @@ export default function VisitorsPage() {
         {showForm && (
           <div className="card">
             <div className="card-header">
-              <h2 className="text-xl font-bold text-fg-primary">Check-In Visitor</h2>
+              <div className="flex items-center gap-2">
+                <DoorOpen className="h-5 w-5 text-brand-primary" />
+                <h2 className="text-xl font-bold text-fg-primary">Check-In Visitor</h2>
+              </div>
             </div>
             <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-4">

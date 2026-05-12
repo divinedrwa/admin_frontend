@@ -1,5 +1,6 @@
 "use client";
 
+import { LayoutDashboard, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
@@ -62,35 +63,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <section className="flex-1 flex flex-col min-w-0">
         {platformView ? (
-          <div className="bg-pending-bg border-b border-pending-solid/30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 print:hidden">
-            <p className="text-sm text-pending-fg">
-              <span className="font-semibold">Platform view:</span> you are signed in as the society
-              admin for <span className="font-medium">{platformView.societyName}</span> (full tenant
-              access).
-            </p>
-            <button
-              type="button"
-              onClick={exitToSuperAdmin}
-              className="shrink-0 text-sm font-semibold px-3 py-1.5 rounded-lg bg-pending-solid text-fg-inverse hover:opacity-90"
-            >
-              Back to platform console
-            </button>
+          <div className="border-b border-pending-solid/30 bg-pending-bg/80 px-4 py-3 print:hidden md:px-8">
+            <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-pending-fg">
+                <span className="font-semibold">Platform view:</span> you are signed in as the society
+                admin for <span className="font-medium">{platformView.societyName}</span> (full tenant
+                access).
+              </p>
+              <button
+                type="button"
+                onClick={exitToSuperAdmin}
+                className="shrink-0 rounded-xl bg-pending-solid px-3.5 py-2 text-sm font-semibold text-fg-inverse transition-opacity hover:opacity-90"
+              >
+                Back to platform console
+              </button>
+            </div>
           </div>
         ) : null}
-        {/* Mobile hamburger for dashboard pages */}
-        <div className="md:hidden bg-surface border-b border-surface-border px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 -ml-2 rounded-lg text-fg-secondary hover:bg-surface-elevated"
-            aria-label="Open menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+        <div className="border-b border-surface-border bg-surface/85 backdrop-blur-xl">
+          <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-4 py-3.5 md:px-8">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary md:hidden"
+                aria-label="Open menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="hidden rounded-xl bg-brand-primary-light p-2 text-brand-primary sm:flex">
+                  <LayoutDashboard className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">
+                    Dashboard workspace
+                  </p>
+                  <p className="text-sm text-fg-secondary">Shared admin chrome for finance, analytics, and operations pages.</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <main className="flex-1 overflow-y-auto scrollbar-thin">{children}</main>
+        <main
+          className="flex-1 overflow-y-auto scrollbar-thin"
+          style={{
+            background:
+              "radial-gradient(circle at top right, color-mix(in srgb, var(--gp-brand-primary) 6%, transparent), transparent 20%), radial-gradient(circle at bottom left, color-mix(in srgb, var(--gp-brand-accent) 5%, transparent), transparent 24%)",
+          }}
+        >
+          {children}
+        </main>
       </section>
     </div>
   );

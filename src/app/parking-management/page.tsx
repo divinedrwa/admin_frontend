@@ -3,13 +3,86 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
+type ParkingTab = "overview" | "slots" | "villas";
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+type VehicleRecord = {
+  id: string;
+  type: string;
+  registrationNumber: string;
+  model?: string | null;
+  parkingSlot?: string | null;
+  villa?: {
+    villaNumber: string;
+    ownerName: string;
+  } | null;
+};
+
+type ParkingOverview = {
+  summary: {
+    totalVehicles: number;
+    occupiedSlots: number;
+    withSlots: number;
+    withoutSlots: number;
+  };
+  typeBreakdown: Record<string, number>;
+  vehicles: VehicleRecord[];
+};
+
+type SlotVehicle = {
+  id: string;
+  type: string;
+  registrationNumber: string;
+};
+
+type SlotAnalysis = {
+  summary: {
+    totalSlots: number;
+    occupiedSlots: number;
+    availableSlots: number;
+    unassignedCount: number;
+  };
+  unassignedVehicles: VehicleRecord[];
+  slots: Array<{
+    slot: string;
+    status: "OCCUPIED" | "AVAILABLE";
+    vehicles: SlotVehicle[];
+  }>;
+};
+
+type VillaVehicleGroup = {
+  villaId: string;
+  villaNumber: string;
+  block?: string | null;
+  ownerName: string;
+  vehicleCount: number;
+  vehicles: VehicleRecord[];
+};
+
+type VillaVehicles = {
+  summary: {
+    totalVillas: number;
+    villasWithVehicles: number;
+    villasWithoutVehicles: number;
+    avgVehiclesPerVilla: number;
+  };
+  villaVehicles: VillaVehicleGroup[];
+};
+
 export default function ParkingManagementPage() {
-  const [activeTab, setActiveTab] = useState<"overview" | "slots" | "villas">("overview");
+  const [activeTab, setActiveTab] = useState<ParkingTab>("overview");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [overview, setOverview] = useState<any>(null);
-  const [slotAnalysis, setSlotAnalysis] = useState<any>(null);
-  const [villaVehicles, setVillaVehicles] = useState<any>(null);
+  const [overview, setOverview] = useState<ParkingOverview | null>(null);
+  const [slotAnalysis, setSlotAnalysis] = useState<SlotAnalysis | null>(null);
+  const [villaVehicles, setVillaVehicles] = useState<VillaVehicles | null>(null);
 
   useEffect(() => {
     if (activeTab === "overview") fetchOverview();
@@ -23,8 +96,9 @@ export default function ParkingManagementPage() {
       setError("");
       const response = await api.get(`/parking-management/overview`);
       setOverview(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch overview");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch overview");
     } finally {
       setLoading(false);
     }
@@ -36,8 +110,9 @@ export default function ParkingManagementPage() {
       setError("");
       const response = await api.get(`/parking-management/slot-analysis`);
       setSlotAnalysis(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch slot analysis");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch slot analysis");
     } finally {
       setLoading(false);
     }
@@ -49,8 +124,9 @@ export default function ParkingManagementPage() {
       setError("");
       const response = await api.get(`/parking-management/villa-vehicles`);
       setVillaVehicles(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch villa vehicles");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch villa vehicles");
     } finally {
       setLoading(false);
     }
@@ -72,7 +148,7 @@ export default function ParkingManagementPage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as ParkingTab)}
                 className={activeTab === tab.id ? "tab tab-active" : "tab tab-inactive"}
               >
                 {tab.label}
@@ -81,7 +157,7 @@ export default function ParkingManagementPage() {
         </div>
 
         {error && (
-          <div className="bg-denied-bg border border-red-400 text-denied-fg px-4 py-3 rounded mb-4">
+          <div className="bg-denied-bg border border-denied-bg text-denied-fg px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
@@ -118,7 +194,7 @@ export default function ParkingManagementPage() {
               <div className="card-header"><h2 className="text-lg font-semibold">Vehicles by Type</h2></div>
               <div className="card-body">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(overview.typeBreakdown).map(([type, count]: any) => (
+                {Object.entries(overview.typeBreakdown).map(([type, count]) => (
                   <div key={type} className="text-center p-4 bg-surface-background rounded">
                     <p className="text-2xl font-bold text-brand-primary">{count}</p>
                     <p className="text-sm text-fg-secondary">{type}</p>
@@ -143,7 +219,7 @@ export default function ParkingManagementPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {overview.vehicles.map((vehicle: any) => (
+                    {overview.vehicles.map((vehicle) => (
                       <tr key={vehicle.id} className="table-row">
                         <td className="table-td">{vehicle.type}</td>
                         <td className="table-td font-mono font-semibold">{vehicle.registrationNumber}</td>
@@ -187,15 +263,15 @@ export default function ParkingManagementPage() {
               </div>
               <div className="stat-card">
                 <p className="stat-card-label">Unassigned Vehicles</p>
-                <p className="stat-card-value text-orange-600">{slotAnalysis.summary.unassignedCount}</p>
+                <p className="stat-card-value text-pending-fg">{slotAnalysis.summary.unassignedCount}</p>
               </div>
             </div>
 
             {slotAnalysis.unassignedVehicles.length > 0 && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-6">
-                <h2 className="text-lg font-semibold text-orange-800 mb-4">⚠️ Vehicles Without Parking Slots</h2>
+              <div className="bg-pending-bg border border-pending-bg rounded-lg p-6 mb-6">
+                <h2 className="text-lg font-semibold text-pending-fg mb-4">⚠️ Vehicles Without Parking Slots</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {slotAnalysis.unassignedVehicles.map((vehicle: any) => (
+                  {slotAnalysis.unassignedVehicles.map((vehicle) => (
                     <div key={vehicle.id} className="bg-surface rounded p-4">
                       <p className="font-mono font-semibold text-lg">{vehicle.registrationNumber}</p>
                       <p className="text-sm text-fg-secondary">{vehicle.type} - {vehicle.model || "Unknown Model"}</p>
@@ -212,7 +288,7 @@ export default function ParkingManagementPage() {
               <div className="card-header"><h2 className="text-lg font-semibold">Slot-by-Slot Analysis</h2></div>
               <div className="card-body">
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {slotAnalysis.slots.map((slot: any) => (
+                {slotAnalysis.slots.map((slot) => (
                   <div
                     key={slot.slot}
                     className={`border-2 rounded-lg p-4 ${
@@ -235,7 +311,7 @@ export default function ParkingManagementPage() {
                     </div>
                     {slot.vehicles.length > 0 ? (
                       <div className="space-y-2">
-                        {slot.vehicles.map((vehicle: any) => (
+                        {slot.vehicles.map((vehicle) => (
                           <div key={vehicle.id} className="text-sm">
                             <p className="font-mono font-semibold">{vehicle.registrationNumber}</p>
                             <p className="text-xs text-fg-secondary">{vehicle.type}</p>
@@ -275,7 +351,7 @@ export default function ParkingManagementPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {villaVehicles.villaVehicles.map((villa: any) => (
+              {villaVehicles.villaVehicles.map((villa) => (
                 <div key={villa.villaId} className="bg-surface rounded-lg shadow p-6 border-l-4 border-brand-primary">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -292,7 +368,7 @@ export default function ParkingManagementPage() {
 
                   {villa.vehicles.length > 0 ? (
                     <div className="space-y-3">
-                      {villa.vehicles.map((vehicle: any) => (
+                      {villa.vehicles.map((vehicle) => (
                         <div key={vehicle.id} className="bg-surface-background rounded p-3">
                           <p className="font-mono font-semibold text-fg-primary">{vehicle.registrationNumber}</p>
                           <p className="text-sm text-fg-secondary">

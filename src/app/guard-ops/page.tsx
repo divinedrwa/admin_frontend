@@ -1,6 +1,8 @@
 "use client";
 
+import { Shield } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -27,7 +29,7 @@ type GarbageEvent = {
 export default function GuardOperationsPage() {
   const [waterStatus, setWaterStatus] = useState<WaterStatus[]>([]);
   const [garbageEvent, setGarbageEvent] = useState<GarbageEvent | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
   const loadData = () => {
@@ -105,6 +107,13 @@ export default function GuardOperationsPage() {
   return (
     <AppShell title="Guard Operations">
       <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Live operations"
+          title="Guard operations"
+          description="Give guards a faster operational surface for water supply updates, garbage collection events, and linked security workflows."
+          icon={<Shield className="h-6 w-6" />}
+        />
+
         {/* Water Supply Control */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Water Supply Control</h2>

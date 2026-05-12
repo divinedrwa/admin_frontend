@@ -88,7 +88,7 @@ export default async function SupabaseExamplePage() {
               {rows.map((row, index) => (
                 <pre
                   key={String(row.id ?? index)}
-                  className="overflow-x-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100"
+                  className="overflow-x-auto rounded-lg bg-surface-background p-4 text-xs text-fg-primary"
                 >
                   {JSON.stringify(row, null, 2)}
                 </pre>

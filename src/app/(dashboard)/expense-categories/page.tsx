@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
+import { lightTheme } from "@/theme/tokens";
 
 interface ExpenseCategory {
   id: string;
@@ -21,6 +22,24 @@ interface ExpenseCategory {
   };
 }
 
+const DEFAULT_CATEGORY_COLOR = lightTheme.state.info.solid;
+
+const expenseTypes = [
+  { value: 'ELECTRICITY', label: 'Electricity', icon: '⚡', color: lightTheme.state.pending.solid },
+  { value: 'WATER', label: 'Water Bill', icon: '💧', color: lightTheme.state.info.solid },
+  { value: 'GARBAGE_COLLECTION', label: 'Garbage Collection', icon: '🚮', color: lightTheme.brand.accent },
+  { value: 'SECURITY_SALARY', label: 'Security Salary', icon: '👮', color: lightTheme.brand.primaryHover },
+  { value: 'HOUSEKEEPING_SALARY', label: 'Housekeeping Salary', icon: '🧹', color: lightTheme.text.tertiary },
+  { value: 'GARDENING', label: 'Gardening', icon: '🌺', color: lightTheme.state.approved.solid },
+  { value: 'LIFT_MAINTENANCE', label: 'Lift Maintenance', icon: '🛗', color: lightTheme.brand.danger },
+  { value: 'GENERATOR_MAINTENANCE', label: 'Generator', icon: '⚙️', color: lightTheme.state.pending.fg },
+  { value: 'PEST_CONTROL', label: 'Pest Control', icon: '🐛', color: lightTheme.sidebar.activeBg },
+  { value: 'COMMON_AREA_REPAIR', label: 'Common Area Repair', icon: '🔧', color: lightTheme.sidebar.mutedText },
+  { value: 'INSURANCE', label: 'Insurance', icon: '🛡️', color: lightTheme.text.secondary },
+  { value: 'SOFTWARE_SUBSCRIPTION', label: 'Software', icon: '💻', color: lightTheme.brand.primary },
+  { value: 'OTHER', label: 'Other', icon: '📋', color: lightTheme.text.secondary },
+];
+
 export default function ExpenseCategoriesPage() {
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,26 +51,10 @@ export default function ExpenseCategoriesPage() {
     description: '',
     type: 'OTHER',
     icon: '',
-    color: '#3B82F6',
+    color: DEFAULT_CATEGORY_COLOR,
     isRecurring: false,
     defaultAmount: 0
   });
-
-  const expenseTypes = [
-    { value: 'ELECTRICITY', label: 'Electricity', icon: '⚡', color: '#FCD34D' },
-    { value: 'WATER', label: 'Water Bill', icon: '💧', color: '#3B82F6' },
-    { value: 'GARBAGE_COLLECTION', label: 'Garbage Collection', icon: '🚮', color: '#10B981' },
-    { value: 'SECURITY_SALARY', label: 'Security Salary', icon: '👮', color: '#6366F1' },
-    { value: 'HOUSEKEEPING_SALARY', label: 'Housekeeping Salary', icon: '🧹', color: '#A855F7' },
-    { value: 'GARDENING', label: 'Gardening', icon: '🌺', color: '#22C55E' },
-    { value: 'LIFT_MAINTENANCE', label: 'Lift Maintenance', icon: '🛗', color: '#EF4444' },
-    { value: 'GENERATOR_MAINTENANCE', label: 'Generator', icon: '⚙️', color: '#F59E0B' },
-    { value: 'PEST_CONTROL', label: 'Pest Control', icon: '🐛', color: '#EC4899' },
-    { value: 'COMMON_AREA_REPAIR', label: 'Common Area Repair', icon: '🔧', color: '#8B5CF6' },
-    { value: 'INSURANCE', label: 'Insurance', icon: '🛡️', color: '#14B8A6' },
-    { value: 'SOFTWARE_SUBSCRIPTION', label: 'Software', icon: '💻', color: '#06B6D4' },
-    { value: 'OTHER', label: 'Other', icon: '📋', color: '#6B7280' },
-  ];
 
   useEffect(() => {
     fetchCategories();
@@ -113,7 +116,7 @@ export default function ExpenseCategoriesPage() {
         description: category.description || '',
         type: category.type,
         icon: category.icon || '',
-        color: category.color || '#3B82F6',
+        color: category.color || DEFAULT_CATEGORY_COLOR,
         isRecurring: category.isRecurring,
         defaultAmount: normalizeDefaultAmount(category.defaultAmount),
       });
@@ -124,7 +127,7 @@ export default function ExpenseCategoriesPage() {
         description: '',
         type: 'OTHER',
         icon: '',
-        color: '#3B82F6',
+        color: DEFAULT_CATEGORY_COLOR,
         isRecurring: false,
         defaultAmount: 0
       });
@@ -251,7 +254,7 @@ export default function ExpenseCategoriesPage() {
                         ...formData,
                         type: e.target.value,
                         icon: selectedType?.icon || '',
-                        color: selectedType?.color || '#3B82F6',
+                        color: selectedType?.color || DEFAULT_CATEGORY_COLOR,
                         name: formData.name || selectedType?.label || ''
                       });
                     }}

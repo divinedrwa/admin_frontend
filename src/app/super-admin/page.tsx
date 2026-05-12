@@ -10,6 +10,7 @@ import {
   getStoredPasswordForAdmin,
   rememberSocietyAdminPassword,
 } from "@/lib/superAdminStoredCredentials";
+import { cssVar } from "@/theme/tokens";
 
 type SocietyAdminSummary = {
   id: string;
@@ -312,21 +313,29 @@ export default function SuperAdminConsolePage() {
 
   if (booting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+      <div
+        className="min-h-screen flex items-center justify-center text-white"
+        style={{ backgroundColor: `var(${cssVar.superLogin.to})` }}
+      >
         <div className="loading-state">
           <div className="loading-spinner w-10 h-10"></div>
-          <p className="loading-state-text text-slate-300">Loading platform console…</p>
+          <p className="loading-state-text text-fg-secondary">Loading platform console…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white">
+    <div
+      className="min-h-screen text-white"
+      style={{
+        background: `linear-gradient(135deg, var(${cssVar.superLogin.to}) 0%, var(${cssVar.superLogin.via}) 55%, var(${cssVar.superLogin.from}) 100%)`,
+      }}
+    >
       <header className="border-b border-white/10 bg-black/20 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Platform administration</h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-fg-secondary mt-1">
             Societies and admins · passwords appear only for admins created in this browser session
           </p>
         </div>
@@ -359,7 +368,7 @@ export default function SuperAdminConsolePage() {
           </div>
           <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full text-sm text-left">
-              <thead className="bg-black/30 text-slate-300">
+              <thead className="bg-black/30 text-fg-secondary">
                 <tr>
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Status</th>
@@ -372,7 +381,7 @@ export default function SuperAdminConsolePage() {
               <tbody className="divide-y divide-white/10">
                 {societies.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-fg-secondary">
                       No societies yet. Create one below.
                     </td>
                   </tr>
@@ -382,7 +391,7 @@ export default function SuperAdminConsolePage() {
                       <td className="px-4 py-3">
                         <div className="font-medium text-white">{s.name}</div>
                         {s.address ? (
-                          <div className="text-slate-400 text-xs mt-0.5">{s.address}</div>
+                          <div className="text-fg-secondary text-xs mt-0.5">{s.address}</div>
                         ) : null}
                       </td>
                       <td className="px-4 py-3">
@@ -390,15 +399,15 @@ export default function SuperAdminConsolePage() {
                           <span
                             className={
                               s.status === "ACTIVE"
-                                ? "text-emerald-400 text-xs font-semibold"
-                                : "text-amber-400 text-xs font-semibold"
+                                ? "text-approved-solid text-xs font-semibold"
+                                : "text-pending-solid text-xs font-semibold"
                             }
                           >
                             {s.status}
                           </span>
                           {s.archivedAt ? (
                             <span
-                              className="text-rose-300 text-[10px] uppercase tracking-wider font-semibold"
+                              className="text-denied-fg text-[10px] uppercase tracking-wider font-semibold"
                               title={`Archived ${new Date(s.archivedAt).toLocaleString()}`}
                             >
                               Archived
@@ -406,15 +415,15 @@ export default function SuperAdminConsolePage() {
                           ) : null}
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-400 break-all max-w-[200px]">
+                      <td className="px-4 py-3 font-mono text-xs text-fg-secondary break-all max-w-[200px]">
                         {s.id}
                       </td>
-                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
+                      <td className="px-4 py-3 text-fg-secondary whitespace-nowrap">
                         {new Date(s.createdAt).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 align-top text-xs text-slate-300 max-w-[min(100vw,280px)]">
+                      <td className="px-4 py-3 align-top text-xs text-fg-secondary max-w-[min(100vw,280px)]">
                         {!s.admins?.length ? (
-                          <span className="text-slate-500 italic">No society admin</span>
+                          <span className="text-fg-tertiary italic">No society admin</span>
                         ) : (
                           <ul className="space-y-2">
                             {s.admins.map((a) => {
@@ -425,19 +434,19 @@ export default function SuperAdminConsolePage() {
                                   className="border-l-2 border-brand-primary/50 pl-2 space-y-0.5"
                                 >
                                   <div>
-                                    <span className="text-slate-500">Username</span>{" "}
+                                    <span className="text-fg-tertiary">Username</span>{" "}
                                     <span className="font-mono text-white">{a.username}</span>
                                   </div>
                                   <div className="break-all">
-                                    <span className="text-slate-500">Email</span>{" "}
+                                    <span className="text-fg-tertiary">Email</span>{" "}
                                     <span>{a.email}</span>
                                   </div>
                                   <div>
-                                    <span className="text-slate-500">Password</span>{" "}
+                                    <span className="text-fg-tertiary">Password</span>{" "}
                                     {storedPw ? (
-                                      <span className="font-mono text-amber-200">{storedPw}</span>
+                                      <span className="font-mono text-pending-fg">{storedPw}</span>
                                     ) : (
-                                      <span className="text-slate-500 italic">
+                                      <span className="text-fg-tertiary italic">
                                         Not available (server stores hash only)
                                       </span>
                                     )}
@@ -467,7 +476,7 @@ export default function SuperAdminConsolePage() {
                           <button
                             type="button"
                             disabled={archivingId === s.id}
-                            className="text-xs px-2 py-1 rounded-md bg-approved-solid/20 hover:bg-approved-solid/40 text-emerald-200 disabled:opacity-50"
+                            className="text-xs px-2 py-1 rounded-md bg-approved-solid/20 hover:bg-approved-solid/40 text-approved-fg disabled:opacity-50"
                             onClick={() => void onRestore(s)}
                           >
                             {archivingId === s.id ? "Restoring…" : "Restore"}
@@ -476,7 +485,7 @@ export default function SuperAdminConsolePage() {
                           <button
                             type="button"
                             disabled={archivingId === s.id}
-                            className="text-xs px-2 py-1 rounded-md bg-pending-solid/20 hover:bg-pending-solid/40 text-amber-200 disabled:opacity-50"
+                            className="text-xs px-2 py-1 rounded-md bg-pending-solid/20 hover:bg-pending-solid/40 text-pending-fg disabled:opacity-50"
                             onClick={() => void onArchive(s)}
                           >
                             {archivingId === s.id ? "Archiving…" : "Archive"}
@@ -484,7 +493,7 @@ export default function SuperAdminConsolePage() {
                         )}
                         <button
                           type="button"
-                          className="text-xs px-2 py-1 rounded-md bg-brand-danger/20 hover:bg-brand-danger/40 text-red-200"
+                          className="text-xs px-2 py-1 rounded-md bg-brand-danger/20 hover:bg-brand-danger/40 text-denied-fg"
                           onClick={() => {
                             setDeleteRow(s);
                             setDeleteConfirmText("");
@@ -507,7 +516,7 @@ export default function SuperAdminConsolePage() {
             <h2 className="text-lg font-semibold mb-4">Create society</h2>
             <form onSubmit={onCreateSociety} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Name</label>
+                <label className="block text-xs font-semibold text-fg-secondary mb-1">Name</label>
                 <input
                   className="input w-full bg-surface text-fg-primary"
                   value={newName}
@@ -518,7 +527,7 @@ export default function SuperAdminConsolePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-fg-secondary mb-1">
                   Address (optional)
                 </label>
                 <input
@@ -540,13 +549,13 @@ export default function SuperAdminConsolePage() {
 
           <section className="bg-white/5 border border-white/10 rounded-2xl p-6">
             <h2 className="text-lg font-semibold mb-4">Create society admin</h2>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-fg-secondary mb-4">
               Creates an ADMIN user for the selected society. They sign in at the regular Society Admin login
               with that society chosen in the dropdown.
             </p>
             <form onSubmit={onCreateAdmin} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Society</label>
+                <label className="block text-xs font-semibold text-fg-secondary mb-1">Society</label>
                 <select
                   className="input w-full bg-surface text-fg-primary"
                   value={adminSocietyId}
@@ -565,7 +574,7 @@ export default function SuperAdminConsolePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Username</label>
+                <label className="block text-xs font-semibold text-fg-secondary mb-1">Username</label>
                 <input
                   className="input w-full bg-surface text-fg-primary"
                   value={adminUsername}
@@ -576,7 +585,7 @@ export default function SuperAdminConsolePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Full name</label>
+                <label className="block text-xs font-semibold text-fg-secondary mb-1">Full name</label>
                 <input
                   className="input w-full bg-surface text-fg-primary"
                   value={adminName}
@@ -586,7 +595,7 @@ export default function SuperAdminConsolePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Email</label>
+                <label className="block text-xs font-semibold text-fg-secondary mb-1">Email</label>
                 <input
                   type="email"
                   className="input w-full bg-surface text-fg-primary"
@@ -597,7 +606,7 @@ export default function SuperAdminConsolePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-fg-secondary mb-1">
                   Temporary password
                 </label>
                 <input
@@ -611,7 +620,7 @@ export default function SuperAdminConsolePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                <label className="block text-xs font-semibold text-fg-secondary mb-1">
                   Phone (optional)
                 </label>
                 <input
@@ -636,12 +645,15 @@ export default function SuperAdminConsolePage() {
       {/* View society */}
       {(detailSociety || detailLoading) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-white/15 rounded-2xl max-w-lg w-full shadow-xl">
+          <div
+            className="border border-white/15 rounded-2xl max-w-lg w-full shadow-xl"
+            style={{ backgroundColor: `var(${cssVar.superLogin.to})` }}
+          >
             <div className="card-header flex justify-between items-start gap-4 border-b border-white/10 p-6">
               <h3 className="text-lg font-semibold text-white">Society details</h3>
               <button
                 type="button"
-                className="text-slate-400 hover:text-white text-sm"
+                className="text-fg-secondary hover:text-white text-sm"
                 onClick={() => {
                   setDetailSociety(null);
                   setDetailLoading(false);
@@ -654,41 +666,41 @@ export default function SuperAdminConsolePage() {
             {detailLoading ? (
               <div className="loading-state">
                 <div className="loading-spinner w-8 h-8"></div>
-                <p className="loading-state-text text-slate-400">Loading…</p>
+                <p className="loading-state-text text-fg-secondary">Loading…</p>
               </div>
             ) : detailSociety ? (
               <div className="space-y-3 text-sm">
                 <div>
-                  <span className="text-slate-500">Name</span>
+                  <span className="text-fg-tertiary">Name</span>
                   <p className="text-white font-medium">{detailSociety.name}</p>
                 </div>
                 <div>
-                  <span className="text-slate-500">Status</span>
+                  <span className="text-fg-tertiary">Status</span>
                   <p className="text-white">{detailSociety.status}</p>
                 </div>
                 <div>
-                  <span className="text-slate-500">Address</span>
+                  <span className="text-fg-tertiary">Address</span>
                   <p className="text-white">{detailSociety.address ?? "—"}</p>
                 </div>
                 <div>
-                  <span className="text-slate-500">Id</span>
-                  <p className="font-mono text-xs text-slate-300 break-all">{detailSociety.id}</p>
+                  <span className="text-fg-tertiary">Id</span>
+                  <p className="font-mono text-xs text-fg-secondary break-all">{detailSociety.id}</p>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
                   <div>
-                    <span className="text-slate-500 text-xs">Users</span>
+                    <span className="text-fg-tertiary text-xs">Users</span>
                     <p className="text-white font-semibold">{detailSociety.counts.users}</p>
                   </div>
                   <div>
-                    <span className="text-slate-500 text-xs">Villas</span>
+                    <span className="text-fg-tertiary text-xs">Villas</span>
                     <p className="text-white font-semibold">{detailSociety.counts.villas}</p>
                   </div>
                   <div>
-                    <span className="text-slate-500 text-xs">Gates</span>
+                    <span className="text-fg-tertiary text-xs">Gates</span>
                     <p className="text-white font-semibold">{detailSociety.counts.gates}</p>
                   </div>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-fg-tertiary">
                   Created {new Date(detailSociety.createdAt).toLocaleString()} · Updated{" "}
                   {new Date(detailSociety.updatedAt).toLocaleString()}
                 </p>
@@ -701,7 +713,7 @@ export default function SuperAdminConsolePage() {
                   >
                     {openingTenantSession ? "Opening…" : "Open society admin dashboard"}
                   </button>
-                  <p className="text-xs text-slate-500 w-full">
+                  <p className="text-xs text-fg-tertiary w-full">
                     Uses the first active society admin account for API access. Create an admin user
                     below if none exists.
                   </p>
@@ -718,17 +730,18 @@ export default function SuperAdminConsolePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form
             onSubmit={onSaveEdit}
-            className="bg-slate-900 border border-white/15 rounded-2xl max-w-md w-full shadow-xl"
+            className="border border-white/15 rounded-2xl max-w-md w-full shadow-xl"
+            style={{ backgroundColor: `var(${cssVar.superLogin.to})` }}
           >
             <div className="card-header flex justify-between items-start gap-4 border-b border-white/10 p-6">
               <h3 className="text-lg font-semibold text-white">Edit society</h3>
-              <button type="button" className="text-slate-400 hover:text-white text-sm" onClick={() => setEditRow(null)}>
+              <button type="button" className="text-fg-secondary hover:text-white text-sm" onClick={() => setEditRow(null)}>
                 Cancel
               </button>
             </div>
             <div className="card-body p-6 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Name</label>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">Name</label>
               <input
                 className="input w-full bg-surface text-fg-primary"
                 value={editName}
@@ -738,7 +751,7 @@ export default function SuperAdminConsolePage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Address</label>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">Address</label>
               <textarea
                 className="input w-full bg-surface text-fg-primary min-h-[80px]"
                 value={editAddress}
@@ -747,7 +760,7 @@ export default function SuperAdminConsolePage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Status</label>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">Status</label>
               <select
                 className="input w-full bg-surface text-fg-primary"
                 value={editStatus}
@@ -770,23 +783,26 @@ export default function SuperAdminConsolePage() {
           permanent-delete path. */}
       {deleteRow && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-brand-danger/30 rounded-2xl max-w-md w-full shadow-xl">
+          <div
+            className="border border-brand-danger/30 rounded-2xl max-w-md w-full shadow-xl"
+            style={{ backgroundColor: `var(${cssVar.superLogin.to})` }}
+          >
             <div className="card-header border-b border-white/10 p-6">
               <h3 className="text-lg font-semibold text-white">Delete permanently?</h3>
             </div>
             <div className="card-body p-6">
-            <p className="text-sm text-slate-300 mb-3">
+            <p className="text-sm text-fg-secondary mb-3">
               This drops <strong className="text-white">{deleteRow.name}</strong> and{" "}
-              <strong className="text-amber-200">cascades</strong> across users, villas, billing, visitors,
+              <strong className="text-pending-fg">cascades</strong> across users, villas, billing, visitors,
               parcels, and every other tenant-scoped table. This is irreversible — there is no undo, no
               backup restore from this UI.
             </p>
-            <p className="text-sm text-slate-300 mb-2">
+            <p className="text-sm text-fg-secondary mb-2">
               {deleteRow.archivedAt
                 ? "The society is currently archived. If this is the wrong row, click Cancel and Restore from the list."
                 : "If you only need to take this society offline, Cancel and click Archive instead — that's reversible."}
             </p>
-            <label className="block text-xs text-slate-400 mt-4 mb-1">
+            <label className="block text-xs text-fg-secondary mt-4 mb-1">
               Type <span className="font-mono text-white">{deleteRow.name}</span> to confirm:
             </label>
             <input

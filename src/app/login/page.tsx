@@ -1,11 +1,21 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowRight,
+  Building2,
+  ChevronDown,
+  ClipboardCheck,
+  LayoutDashboard,
+  LockKeyhole,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { api, setTenantSocietyIdFromLogin } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 type SocietyRow = { id: string; name: string; address?: string | null };
 const ENABLE_DEMO_LOGIN = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "1";
@@ -125,47 +135,63 @@ function LoginPageInner() {
     }
   };
 
-  return (
-    <main
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{
-        background: `linear-gradient(to bottom right, var(--gp-login-from), var(--gp-login-via), var(--gp-login-to))`,
-      }}
-    >
-      <div className="w-full max-w-md">
-        {/* Logo & Branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl border border-white/20 mb-4 p-2">
-            <Image
-              src="/favicon-192.png"
-              alt="GatePass+"
-              width={48}
-              height={48}
-              priority
-            />
-          </div>
-          <h1 className="text-3xl font-bold text-white">GatePass+</h1>
-          <p className="text-fg-tertiary mt-2 text-sm">Society admin · manage & approve</p>
-        </div>
+  const societyAlertClass =
+    societies.length === 0 && !societiesLoading ? "auth-alert auth-alert-danger" : "auth-alert auth-alert-info";
+  const societyAlertText = societiesLoading
+    ? "Fetching active societies from the backend..."
+    : societies.length === 0
+      ? "No active societies were found. Check the API connection or seed data before signing in."
+      : `${societies.length} active ${societies.length === 1 ? "society is" : "societies are"} ready for admin sign-in.`;
 
-        {/* Login Form Card */}
-        <form onSubmit={onSubmit} className="rounded-2xl shadow-2xl p-8 space-y-5 border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)' }}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-fg-primary mb-2">
-                Society
-              </label>
+  return (
+    <AuthShell
+      panelEyebrow="Society Admin"
+      panelTitle="Welcome back"
+      panelDescription="Sign in to manage residents, approvals, notices, staff, and daily society operations."
+      panelIcon={<Building2 className="h-7 w-7" />}
+      heroEyebrow="Operations dashboard"
+      heroTitle="Run your society from one secure control center."
+      heroDescription="Keep admin access polished and dependable for teams handling entry approvals, resident support, billing, and day-to-day operations."
+      heroFeatures={[
+        {
+          icon: <LayoutDashboard className="h-5 w-5" />,
+          title: "Daily operations overview",
+          description: "Review dashboards, notices, and staff activity from one consistent admin workspace.",
+        },
+        {
+          icon: <ClipboardCheck className="h-5 w-5" />,
+          title: "Faster approval flows",
+          description: "Handle visitors, invites, parcels, and operational tasks with clearer sign-in entry points.",
+        },
+        {
+          icon: <ShieldCheck className="h-5 w-5" />,
+          title: "Secure tenant-aware access",
+          description: "Every session stays scoped to the selected society for safer administration.",
+        },
+      ]}
+    >
+      <form onSubmit={onSubmit} className="auth-form">
+        <div className="auth-form-section">
+          <div className="auth-field">
+            <label className="auth-field-label" htmlFor="societyId">
+              Society
+            </label>
+            <div className="auth-input-wrap">
+              <div className="auth-input-icon">
+                <Building2 className="h-5 w-5" />
+              </div>
               <select
-                className="input w-full"
+                id="societyId"
+                className="auth-input auth-input-with-icon auth-select"
                 value={societyId}
                 onChange={(e) => setSocietyId(e.target.value)}
                 disabled={societiesLoading || societies.length === 0}
                 required
               >
                 {societiesLoading ? (
-                  <option value="">Loading societies…</option>
+                  <option value="">Loading societies...</option>
                 ) : societies.length === 0 ? (
-                  <option value="">No active societies — check API</option>
+                  <option value="">No active societies available</option>
                 ) : (
                   societies.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -174,135 +200,112 @@ function LoginPageInner() {
                   ))
                 )}
               </select>
+              <ChevronDown className="auth-select-icon h-5 w-5" />
             </div>
+            <p className="auth-field-hint">Choose the society this admin session should manage.</p>
+          </div>
 
-            {/* Username or Email Input */}
-            <div>
-              <label className="block text-sm font-semibold text-fg-primary mb-2">
-                Username or Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-fg-tertiary text-lg">👤</span>
-                </div>
-                <input
-                  type="text"
-                  value={emailOrUsername}
-                  onChange={(e) => setEmailOrUsername(e.target.value)}
-                  className="input pl-10"
-                  placeholder="Enter username or email"
-                  required
-                  minLength={3}
-                />
-              </div>
-            </div>
+          <div className={societyAlertClass}>{societyAlertText}</div>
 
-            {/* Password Input */}
-            <div>
-              <label className="block text-sm font-semibold text-fg-primary mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-fg-tertiary text-lg">🔒</span>
-                </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input pl-10"
-                  placeholder="Enter your password"
-                  required
-                  minLength={6}
-                />
+          <div className="auth-field">
+            <label className="auth-field-label" htmlFor="emailOrUsername">
+              Username or email
+            </label>
+            <div className="auth-input-wrap">
+              <div className="auth-input-icon">
+                <UserRound className="h-5 w-5" />
               </div>
+              <input
+                id="emailOrUsername"
+                type="text"
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
+                className="auth-input auth-input-with-icon"
+                placeholder="Enter your username or email"
+                autoComplete="username"
+                required
+                minLength={3}
+              />
             </div>
           </div>
 
-          {/* Login Button */}
-          <button
-            type="submit"
-            disabled={loading || !societyId || societiesLoading}
-            className="btn btn-primary w-full text-lg py-3 relative overflow-hidden group"
-          >
-            <span className="relative z-10">
-              {loading ? (
-                <span className="flex items-center justify-center">
-                  <span className="loading-spinner w-5 h-5 mr-2"></span>
-                  Signing in...
-                </span>
-              ) : (
-                "Sign In"
-              )}
+          <div className="auth-field">
+            <label className="auth-field-label" htmlFor="password">
+              Password
+            </label>
+            <div className="auth-input-wrap">
+              <div className="auth-input-icon">
+                <LockKeyhole className="h-5 w-5" />
+              </div>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="auth-input auth-input-with-icon"
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                required
+                minLength={6}
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !societyId || societiesLoading}
+          className="btn btn-primary w-full py-3 text-base font-semibold"
+        >
+          {loading ? (
+            <span className="flex items-center justify-center">
+              <span className="loading-spinner mr-2 h-5 w-5" />
+              Signing In...
             </span>
-          </button>
+          ) : (
+            "Sign In"
+          )}
+        </button>
 
-          {ENABLE_DEMO_LOGIN && DEMO_ADMIN_PASSWORD ? (
-            <>
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-surface-border"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-surface text-fg-secondary font-medium">Quick Login</span>
-                </div>
-              </div>
+        {ENABLE_DEMO_LOGIN && DEMO_ADMIN_PASSWORD ? (
+          <>
+            <div className="auth-divider">
+              <span>Quick Fill</span>
+            </div>
 
-              {/* Quick Login */}
-              <div className="flex justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => quickLogin(DEMO_ADMIN_USERNAME, DEMO_ADMIN_PASSWORD)}
-                  className="px-4 py-2 bg-info-bg text-info-fg rounded-lg text-sm font-semibold hover:opacity-90 transition-colors border border-surface-border"
-                >
-                  👨‍💼 Demo admin
-                </button>
-              </div>
+            <div className="auth-alert auth-alert-warning">
+              Demo mode is enabled for local testing. Fill the form with the configured admin credentials in one tap.
+            </div>
 
-              {/* Test Credentials Info */}
-              <div className="bg-brand-primary-light rounded-lg p-4 border border-surface-border">
-                <p className="text-xs font-semibold text-fg-primary mb-2 flex items-center">
-                  <span className="text-base mr-2">ℹ️</span>
-                  Demo credentials
-                </p>
-                <p className="text-xs text-fg-secondary mb-2">
-                  Demo login is enabled via environment variables.
-                </p>
-                <div className="text-xs text-fg-secondary space-y-1.5">
-                  <div className="flex justify-between items-center bg-surface/50 px-2 py-1 rounded">
-                    <span className="font-medium">Admin (web):</span>
-                    <code className="font-mono text-brand-primary">{DEMO_ADMIN_USERNAME} / ********</code>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : null}
-
-          <p className="text-center text-sm">
-            Have an invite?{" "}
-            <Link href="/invite/accept" className="text-brand-primary font-semibold underline">
-              Complete registration on web
-            </Link>
-          </p>
-
-          <p className="text-center text-sm">
-            <Link
-              href="/super-admin/login?prefill=1"
-              className="text-fg-secondary font-semibold underline"
+            <button
+              type="button"
+              onClick={() => quickLogin(DEMO_ADMIN_USERNAME, DEMO_ADMIN_PASSWORD)}
+              className="btn btn-ghost w-full py-3 text-sm font-semibold"
             >
-              Platform super admin
-            </Link>
-          </p>
-        </form>
+              Use Demo Admin Credentials
+            </button>
+          </>
+        ) : null}
 
-        {/* Footer */}
-        <p className="text-center text-sm mt-6" style={{ color: 'var(--gp-sidebar-muted-text)' }}>
-          © 2026 GatePass+. All rights reserved.
-        </p>
-      </div>
+        <div className="auth-link-stack">
+          <Link href="/invite/accept" className="auth-link-card">
+            <div>
+              <p className="auth-link-card-title">Complete resident onboarding</p>
+              <p className="auth-link-card-copy">Open the invite acceptance flow on the web.</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-brand-primary" />
+          </Link>
 
-    </main>
+          <Link href="/super-admin/login?prefill=1" className="auth-link-card">
+            <div>
+              <p className="auth-link-card-title">Switch to platform super admin</p>
+              <p className="auth-link-card-copy">Manage onboarding, societies, and platform-wide configuration.</p>
+            </div>
+            <ShieldCheck className="h-4 w-4 text-brand-primary" />
+          </Link>
+        </div>
+      </form>
+    </AuthShell>
   );
 }
 

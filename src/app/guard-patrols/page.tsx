@@ -1,6 +1,8 @@
 "use client";
 
+import { Plus, Route } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -194,16 +196,19 @@ export default function GuardPatrolsPage() {
 
   return (
     <AppShell title="Guard Patrols">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Monitor and schedule guard patrol activities</p>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Schedule Patrol
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Field supervision"
+          title="Guard patrols"
+          description="Schedule patrol checkpoints, review guard activity, and keep patrol execution more visible for day-to-day security operations."
+          icon={<Route className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Schedule Patrol
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">

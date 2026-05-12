@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
+import { parseApiError } from "@/utils/errorHandler";
 
 interface StaffOverview {
   id: string;
@@ -66,7 +67,12 @@ interface UnassignedResources {
       residentCount: number;
       residents: { name: string; type: string }[];
     }[];
-    vacant: any[];
+    vacant: Array<{
+      id: string;
+      villaNumber: string;
+      block: string | null;
+      ownerName: string;
+    }>;
     total: number;
   };
   summary: {
@@ -77,6 +83,31 @@ interface UnassignedResources {
   };
 }
 
+type StaffSummary = {
+  totalStaff: number;
+  activeStaff: number;
+  assignedStaff: number;
+  unassignedStaff: number;
+};
+
+type VillaSummary = {
+  totalVillas: number;
+  villasWithStaff: number;
+  villasWithoutStaff: number;
+  coveragePercentage: number;
+};
+
+type WorkloadSummary = {
+  avgWorkload: number;
+  overloaded: number;
+  balanced: number;
+  underutilized: number;
+  unassigned: number;
+};
+
+type AssignmentStaff = UnassignedResources["unassignedStaff"][number];
+type AssignmentVilla = UnassignedResources["villasWithoutStaff"]["occupied"][number];
+
 export default function StaffAssignmentOverviewPage() {
   const [activeTab, setActiveTab] = useState<
     "staff" | "villas" | "workload" | "unassigned"
@@ -86,16 +117,16 @@ export default function StaffAssignmentOverviewPage() {
   const [workload, setWorkload] = useState<WorkloadItem[]>([]);
   const [unassignedResources, setUnassignedResources] =
     useState<UnassignedResources | null>(null);
-  const [staffSummary, setStaffSummary] = useState<any>(null);
-  const [villaSummary, setVillaSummary] = useState<any>(null);
-  const [workloadSummary, setWorkloadSummary] = useState<any>(null);
+  const [staffSummary, setStaffSummary] = useState<StaffSummary | null>(null);
+  const [villaSummary, setVillaSummary] = useState<VillaSummary | null>(null);
+  const [workloadSummary, setWorkloadSummary] = useState<WorkloadSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // Assignment modal
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState<any>(null);
-  const [selectedVilla, setSelectedVilla] = useState<any>(null);
+  const [selectedStaff, setSelectedStaff] = useState<AssignmentStaff | null>(null);
+  const [selectedVilla, setSelectedVilla] = useState<AssignmentVilla | null>(null);
   const [assignmentAction, setAssignmentAction] = useState<
     "assign" | "unassign"
   >("assign");
@@ -119,8 +150,8 @@ export default function StaffAssignmentOverviewPage() {
       const response = await api.get(`/staff-assignment-overview/staff-overview`);
       setStaffOverview(response.data.staff);
       setStaffSummary(response.data.summary);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch staff overview");
+    } catch (err: unknown) {
+      setError(parseApiError(err, "Failed to fetch staff overview").message);
     } finally {
       setLoading(false);
     }
@@ -133,8 +164,8 @@ export default function StaffAssignmentOverviewPage() {
       const response = await api.get(`/staff-assignment-overview/villa-coverage`);
       setVillaCoverage(response.data.villas);
       setVillaSummary(response.data.summary);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch villa coverage");
+    } catch (err: unknown) {
+      setError(parseApiError(err, "Failed to fetch villa coverage").message);
     } finally {
       setLoading(false);
     }
@@ -147,10 +178,8 @@ export default function StaffAssignmentOverviewPage() {
       const response = await api.get(`/staff-assignment-overview/workload-distribution`);
       setWorkload(response.data.workload);
       setWorkloadSummary(response.data.summary);
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to fetch workload distribution"
-      );
+    } catch (err: unknown) {
+      setError(parseApiError(err, "Failed to fetch workload distribution").message);
     } finally {
       setLoading(false);
     }
@@ -162,10 +191,8 @@ export default function StaffAssignmentOverviewPage() {
       setError("");
       const response = await api.get(`/staff-assignment-overview/unassigned-resources`);
       setUnassignedResources(response.data);
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to fetch unassigned resources"
-      );
+    } catch (err: unknown) {
+      setError(parseApiError(err, "Failed to fetch unassigned resources").message);
     } finally {
       setLoading(false);
     }
@@ -193,19 +220,9 @@ export default function StaffAssignmentOverviewPage() {
       if (activeTab === "staff") fetchStaffOverview();
       if (activeTab === "villas") fetchVillaCoverage();
       if (activeTab === "unassigned") fetchUnassignedResources();
-    } catch (err: any) {
-      showToast(
-        err.response?.data?.message || "Failed to update assignment",
-        "error"
-      );
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to update assignment").message, "error");
     }
-  };
-
-  const getWorkloadColor = (count: number) => {
-    if (count === 0) return "bg-surface-elevated text-fg-primary";
-    if (count === 1) return "bg-pending-bg text-pending-fg";
-    if (count <= 5) return "bg-approved-bg text-approved-fg";
-    return "bg-denied-bg text-denied-fg";
   };
 
   const formatDate = (dateString: string | null) => {
@@ -260,7 +277,7 @@ export default function StaffAssignmentOverviewPage() {
 
         {/* Error Display */}
         {error && (
-          <div className="bg-denied-bg border border-red-400 text-denied-fg px-4 py-3 rounded mb-4">
+          <div className="bg-denied-bg border border-denied-bg text-denied-fg px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
@@ -299,7 +316,7 @@ export default function StaffAssignmentOverviewPage() {
                 </div>
                 <div className="stat-card">
                   <p className="stat-card-label">Unassigned</p>
-                  <p className="stat-card-value text-orange-600">
+                  <p className="stat-card-value text-pending-fg">
                     {staffSummary.unassignedStaff}
                   </p>
                 </div>
@@ -667,7 +684,7 @@ export default function StaffAssignmentOverviewPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="stat-card">
                 <p className="stat-card-label">Unassigned Staff</p>
-                <p className="stat-card-value text-orange-600">
+                  <p className="stat-card-value text-pending-fg">
                   {unassignedResources.summary.unassignedStaffCount}
                 </p>
               </div>
@@ -706,7 +723,7 @@ export default function StaffAssignmentOverviewPage() {
                     {unassignedResources.unassignedStaff.map((staff) => (
                       <div
                         key={staff.id}
-                        className="bg-orange-50 border border-orange-200 rounded p-4"
+                        className="bg-pending-bg border border-pending-bg rounded p-4"
                       >
                         <div className="flex justify-between items-start">
                           <div>

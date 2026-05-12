@@ -1,7 +1,9 @@
 "use client";
 
+import { AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 
 type Complaint = {
@@ -40,19 +42,41 @@ export default function ComplaintsPage() {
   return (
     <AppShell title="Complaints">
       <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Resident support"
+          title="Complaints"
+          description="Track complaint intake, monitor open service issues, and keep resolution visibility higher for the operations team."
+          icon={<ClipboardList className="h-6 w-6" />}
+        />
+
         {/* Stats row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="stat-card">
-            <div className="stat-card-value">{complaints.length}</div>
-            <div className="stat-card-label">Total complaints</div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="stat-card-value">{complaints.length}</div>
+                <div className="stat-card-label">Total complaints</div>
+              </div>
+              <ClipboardList className="h-8 w-8 text-brand-primary" />
+            </div>
           </div>
           <div className="stat-card">
-            <div className="stat-card-value text-pending-fg">{openCount}</div>
-            <div className="stat-card-label">Open / In progress</div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="stat-card-value text-pending-fg">{openCount}</div>
+                <div className="stat-card-label">Open / In progress</div>
+              </div>
+              <AlertTriangle className="h-8 w-8 text-pending-fg" />
+            </div>
           </div>
           <div className="stat-card">
-            <div className="stat-card-value text-approved-fg">{complaints.length - openCount}</div>
-            <div className="stat-card-label">Resolved</div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="stat-card-value text-approved-fg">{complaints.length - openCount}</div>
+                <div className="stat-card-label">Resolved</div>
+              </div>
+              <CheckCircle2 className="h-8 w-8 text-approved-fg" />
+            </div>
           </div>
         </div>
 

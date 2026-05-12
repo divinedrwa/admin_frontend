@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { BarChart3 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 
@@ -61,6 +63,14 @@ interface DailyTrend {
   }[];
 }
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 export default function GateAnalyticsPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "statistics" | "peak-hours" | "trend">(
     "overview"
@@ -75,34 +85,21 @@ export default function GateAnalyticsPage() {
   const [peakHoursPeriod, setPeakHoursPeriod] = useState("30");
   const [trendPeriod, setTrendPeriod] = useState("7");
 
-  useEffect(() => {
-    fetchGateOverview();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "statistics") {
-      fetchStatistics();
-    } else if (activeTab === "peak-hours") {
-      fetchPeakHours();
-    } else if (activeTab === "trend") {
-      fetchDailyTrend();
-    }
-  }, [activeTab, statisticsPeriod, peakHoursPeriod, trendPeriod]);
-
-  const fetchGateOverview = async () => {
+  const fetchGateOverview = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(`/gate-analytics/overview`);
       setGateOverview(response.data.gates);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch gate overview");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch gate overview");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchStatistics = async () => {
+  const fetchStatistics = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -110,14 +107,15 @@ export default function GateAnalyticsPage() {
         `/gate-analytics/visitor-statistics?days=${statisticsPeriod}`
       );
       setStatistics(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch statistics");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch statistics");
     } finally {
       setLoading(false);
     }
-  };
+  }, [statisticsPeriod]);
 
-  const fetchPeakHours = async () => {
+  const fetchPeakHours = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -125,14 +123,15 @@ export default function GateAnalyticsPage() {
         `/gate-analytics/peak-hours?days=${peakHoursPeriod}`
       );
       setPeakHours(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch peak hours");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch peak hours");
     } finally {
       setLoading(false);
     }
-  };
+  }, [peakHoursPeriod]);
 
-  const fetchDailyTrend = async () => {
+  const fetchDailyTrend = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -140,12 +139,27 @@ export default function GateAnalyticsPage() {
         `/gate-analytics/daily-trend?days=${trendPeriod}`
       );
       setDailyTrend(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch daily trend");
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.message || "Failed to fetch daily trend");
     } finally {
       setLoading(false);
     }
-  };
+  }, [trendPeriod]);
+
+  useEffect(() => {
+    void fetchGateOverview();
+  }, [fetchGateOverview]);
+
+  useEffect(() => {
+    if (activeTab === "statistics") {
+      void fetchStatistics();
+    } else if (activeTab === "peak-hours") {
+      void fetchPeakHours();
+    } else if (activeTab === "trend") {
+      void fetchDailyTrend();
+    }
+  }, [activeTab, fetchDailyTrend, fetchPeakHours, fetchStatistics]);
 
   const getGateStatusBadge = (isActive: boolean) => {
     return isActive
@@ -169,7 +183,12 @@ export default function GateAnalyticsPage() {
   return (
     <AppShell title="Gate & Visitor Analytics">
       <div className="space-y-6">
-        <p className="text-fg-secondary -mt-2">Real-time monitoring of gates, guards, and visitor patterns</p>
+        <AdminPageHeader
+          eyebrow="Security analytics"
+          title="Gate & visitor analytics"
+          description="Track gate activity, visitor traffic, and guard coverage with live overview, trend, and peak-hour reporting."
+          icon={<BarChart3 className="h-6 w-6" />}
+        />
 
         {/* Tabs */}
         <div className="tabs">
@@ -425,7 +444,7 @@ export default function GateAnalyticsPage() {
               {peakHours.peakHours.map((peak, index) => (
                 <div
                   key={peak.hour}
-                  className="bg-surface rounded-lg shadow p-6 text-center border-t-4 border-yellow-500"
+                  className="bg-surface rounded-lg shadow p-6 text-center border-t-4 border-pending-solid"
                 >
                   <p className="text-sm text-fg-secondary mb-2">
                     #{index + 1} Peak Hour
@@ -458,7 +477,7 @@ export default function GateAnalyticsPage() {
                       <div className="flex-1 ml-4">
                         <div className="w-full bg-surface-elevated rounded h-8 relative">
                           <div
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-8 rounded flex items-center px-3"
+                            className="bg-brand-primary h-8 rounded flex items-center px-3"
                             style={{ width: `${widthPercentage}%` }}
                           >
                             {hour.count > 0 && (
@@ -514,7 +533,7 @@ export default function GateAnalyticsPage() {
                       </div>
                       <div className="w-full bg-surface-elevated rounded h-8">
                         <div
-                          className="bg-gradient-to-r from-green-500 to-green-600 h-8 rounded flex items-center px-3"
+                          className="bg-approved-solid h-8 rounded flex items-center px-3"
                           style={{ width: `${widthPercentage}%` }}
                         >
                           {day.total > 0 && (

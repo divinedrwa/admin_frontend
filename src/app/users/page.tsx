@@ -1,7 +1,9 @@
 "use client";
 
+import { FileSpreadsheet, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -464,22 +466,28 @@ export default function UsersPage() {
 
   return (
     <AppShell title="Users Management">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Manage admins, residents, and guards</p>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Add User
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Identity & access"
+          title="Users management"
+          description="Manage admins, residents, and guards from one control point, including CSV imports, exports, and role-specific onboarding."
+          icon={<Users className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Add User
+            </button>
+          }
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="rounded-lg border border-approved-bg bg-approved-bg/80 p-4 space-y-2">
             <div className="flex flex-wrap justify-between gap-2">
               <div>
-                <h3 className="font-semibold text-fg-primary">Import / export residents (CSV)</h3>
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-approved-fg" />
+                  <h3 className="font-semibold text-fg-primary">Import / export residents (CSV)</h3>
+                </div>
                 <p className="text-xs text-fg-secondary mt-1">
                   Columns:{" "}
                   <code className="bg-surface px-1 rounded text-[11px]">
@@ -532,7 +540,10 @@ export default function UsersPage() {
           <div className="rounded-lg border border-pending-bg bg-pending-bg/80 p-4 space-y-2">
             <div className="flex flex-wrap justify-between gap-2">
               <div>
-                <h3 className="font-semibold text-fg-primary">Import guards (CSV)</h3>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-pending-fg" />
+                  <h3 className="font-semibold text-fg-primary">Import guards (CSV)</h3>
+                </div>
                 <p className="text-xs text-fg-secondary mt-1">
                   Columns:{" "}
                   <code className="bg-surface px-1 rounded text-[11px]">
@@ -730,7 +741,9 @@ export default function UsersPage() {
                       <select
                         required
                         value={formData.residentType}
-                        onChange={(e) => setFormData({ ...formData, residentType: e.target.value as any })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, residentType: e.target.value as UserForm["residentType"] })
+                        }
                         className="input"
                       >
                         <option value="OWNER">Owner</option>

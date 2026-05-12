@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Toast } from "@/components/Toast";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 import { ThemeFlashPrevention } from "@/theme/flash-prevention";
+import { lightTheme } from "@/theme/tokens";
 
 export const metadata: Metadata = {
   title: "GatePass+ Admin",
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: "#0F172A",
+  themeColor: lightTheme.superLogin.to,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

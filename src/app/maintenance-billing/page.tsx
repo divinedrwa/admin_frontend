@@ -1,8 +1,11 @@
 "use client";
 
+import { RefreshCcw, Wallet } from "lucide-react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
+import { parseApiError } from "@/utils/errorHandler";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type BillingCycleRow = {
@@ -71,13 +74,13 @@ function fmtDateOnly(iso: string): string {
 function paymentDeltaStyles(delta: number) {
   if (delta > 0) return "text-approved-fg font-semibold";
   if (delta < 0) return "text-denied-fg font-semibold";
-  return "text-slate-700 font-semibold";
+  return "text-fg-primary font-semibold";
 }
 
 function statusBadgeStyles(status: string) {
   if (status === "CREDIT") return "bg-approved-bg text-approved-fg border-approved-bg";
   if (status === "DUE") return "bg-denied-bg text-denied-fg border-denied-bg";
-  if (status === "SETTLED") return "bg-slate-100 text-slate-700 border-slate-200";
+  if (status === "SETTLED") return "bg-surface-elevated text-fg-primary border-surface-border";
   return "bg-surface-elevated text-fg-primary border-surface-border";
 }
 
@@ -269,8 +272,7 @@ export default function MaintenanceBillingPage() {
         window.location.reload();
       }
     } catch (err: unknown) {
-      const msg = err && typeof err === "object" && "response" in err ? (err as any).response?.data?.message : null;
-      showToast(msg ?? "Create failed", "error");
+      showToast(parseApiError(err, "Create failed").message, "error");
     } finally {
       setCreatingCycle(false);
     }
@@ -292,11 +294,7 @@ export default function MaintenanceBillingPage() {
       setFyForm({ label: "", startDate: "", endDate: "" });
       await loadFinancialYears();
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "response" in err
-          ? (err as any).response?.data?.message
-          : null;
-      showToast(msg ?? "Could not create financial year", "error");
+      showToast(parseApiError(err, "Could not create financial year").message, "error");
     }
   }
 
@@ -327,11 +325,7 @@ export default function MaintenanceBillingPage() {
       setFyForm({ label: "", startDate: "", endDate: "" });
       await loadFinancialYears();
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "response" in err
-          ? (err as any).response?.data?.message
-          : null;
-      showToast(msg ?? "Could not update financial year", "error");
+      showToast(parseApiError(err, "Could not update financial year").message, "error");
     }
   }
 
@@ -347,11 +341,7 @@ export default function MaintenanceBillingPage() {
       }
       await loadFinancialYears();
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "response" in err
-          ? (err as any).response?.data?.message
-          : null;
-      showToast(msg ?? "Could not delete financial year", "error");
+      showToast(parseApiError(err, "Could not delete financial year").message, "error");
     }
   }
 
@@ -362,11 +352,7 @@ export default function MaintenanceBillingPage() {
       await loadCycles();
       setDeleteTarget(null);
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "response" in err
-          ? (err as any).response?.data?.message
-          : null;
-      showToast(msg ?? "Could not delete cycle", "error");
+      showToast(parseApiError(err, "Could not delete cycle").message, "error");
     }
   }
 
@@ -388,8 +374,7 @@ export default function MaintenanceBillingPage() {
       setEditId(null);
       await loadCycles();
     } catch (err: unknown) {
-      const msg = err && typeof err === "object" && "response" in err ? (err as any).response?.data?.message : null;
-      showToast(msg ?? "Update failed", "error");
+      showToast(parseApiError(err, "Update failed").message, "error");
     }
   }
 
@@ -419,8 +404,7 @@ export default function MaintenanceBillingPage() {
       showToast("Cycle updated (reopen)", "success");
       await loadCycles();
     } catch (err: unknown) {
-      const msg = err && typeof err === "object" && "response" in err ? (err as any).response?.data?.message : null;
-      showToast(msg ?? "Reopen failed", "error");
+      showToast(parseApiError(err, "Reopen failed").message, "error");
     }
   }
 
@@ -438,8 +422,7 @@ export default function MaintenanceBillingPage() {
       showToast("Cash payment recorded", "success");
       await loadCycles();
     } catch (err: unknown) {
-      const msg = err && typeof err === "object" && "response" in err ? (err as any).response?.data?.message : null;
-      showToast(msg ?? "Could not save", "error");
+      showToast(parseApiError(err, "Could not save").message, "error");
     }
   }
 
@@ -456,8 +439,7 @@ export default function MaintenanceBillingPage() {
       showToast("Late fee waived", "success");
       await loadCycles();
     } catch (err: unknown) {
-      const msg = err && typeof err === "object" && "response" in err ? (err as any).response?.data?.message : null;
-      showToast(msg ?? "Could not waive", "error");
+      showToast(parseApiError(err, "Could not waive").message, "error");
     }
   }
 
@@ -476,6 +458,31 @@ export default function MaintenanceBillingPage() {
   return (
     <AppShell title="Maintenance billing cycles">
       <div className="max-w-7xl mx-auto space-y-6">
+        <AdminPageHeader
+          eyebrow="Collections control"
+          title="Maintenance billing cycles"
+          description="Create financial years, run monthly billing cycles, review resident payment status, and inspect audit activity from one operational workflow."
+          icon={<Wallet className="h-6 w-6" />}
+          actions={
+            <div className="flex flex-wrap items-center justify-end gap-3 text-left sm:text-right">
+              <div className="text-sm text-fg-secondary">
+                Active residents: <strong className="ml-1 text-fg-primary">{residentCount}</strong>
+              </div>
+              <div className="text-xs text-fg-secondary">
+                Last synced: {lastSyncedAt ? lastSyncedAt.toLocaleString("en-IN") : "Not synced yet"}
+              </div>
+              <button
+                type="button"
+                onClick={() => void refreshCoreData().catch(() => showToast("Could not refresh billing data", "error"))}
+                className="btn btn-ghost flex items-center gap-2"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Refresh
+              </button>
+            </div>
+          }
+        />
+
         <div className="tabs pb-4">
           {(["cycles", "residents", "audit"] as const).map((t) => (
             <button
@@ -487,23 +494,6 @@ export default function MaintenanceBillingPage() {
               {t === "cycles" ? "Cycles" : t === "residents" ? "Residents" : "Audit log"}
             </button>
           ))}
-          <div className="ml-auto flex items-center gap-4">
-            <span className="text-sm text-fg-secondary flex items-center">
-              Active residents: <strong className="ml-1">{residentCount}</strong>
-            </span>
-            <span className="text-xs text-fg-secondary">
-              Last synced: {lastSyncedAt ? lastSyncedAt.toLocaleString("en-IN") : "Not synced yet"}
-            </span>
-            <button
-              type="button"
-              onClick={() =>
-                void refreshCoreData().catch(() => showToast("Could not refresh billing data", "error"))
-              }
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-surface text-fg-primary border border-surface-border hover:bg-surface-background"
-            >
-              Refresh
-            </button>
-          </div>
         </div>
 
         {loading && tab === "cycles" ? (

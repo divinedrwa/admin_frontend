@@ -1,6 +1,8 @@
 "use client";
 
+import { Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -94,11 +96,13 @@ export default function VisitorGateRulesPage() {
 
   return (
     <AppShell title="Gate visitor rules">
-      <div className="max-w-2xl">
-        <p className="text-fg-secondary mb-6">
-          When security adds a visitor for more than one flat and residents must approve, this
-          setting defines how those approvals combine.
-        </p>
+      <div className="max-w-3xl space-y-6">
+        <AdminPageHeader
+          eyebrow="Approval policy"
+          title="Gate visitor rules"
+          description="Configure how multi-flat visitor approvals behave and control the operating status used by residents, guards, and admins."
+          icon={<Settings2 className="h-6 w-6" />}
+        />
 
         {loading ? (
           <div className="loading-state">

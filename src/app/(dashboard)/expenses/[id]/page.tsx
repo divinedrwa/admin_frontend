@@ -6,6 +6,17 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Edit, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
+import { lightTheme } from "@/theme/tokens";
+
+type ApiError = {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+};
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -39,10 +50,11 @@ export default function ExpenseDetailPage() {
         }
         const data = res.data;
         if (!cancelled) setExpense(data);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const apiError = err as ApiError;
         if (!cancelled) {
           setExpense(null);
-          setError(err?.response?.status === 404 ? "Expense not found." : "Could not load this expense.");
+          setError(apiError.response?.status === 404 ? "Expense not found." : "Could not load this expense.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -60,8 +72,8 @@ export default function ExpenseDetailPage() {
       await api.delete(`/expenses/${id}`);
       showToast("Expense deleted", "success");
       router.push("/expenses");
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || "Failed to delete expense", "error");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to delete expense").message, "error");
     }
   }
 
@@ -142,8 +154,8 @@ export default function ExpenseDetailPage() {
               <span
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium"
                 style={{
-                  backgroundColor: cat?.color ? `${cat.color}20` : "#eff6ff",
-                  color: "#111827",
+                  backgroundColor: cat?.color ? `${cat.color}20` : lightTheme.brand.primaryLight,
+                  color: lightTheme.text.primary,
                 }}
               >
                 <span>{cat?.icon || "📋"}</span>

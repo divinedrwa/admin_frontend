@@ -4,9 +4,19 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
+import {
+  ArrowRight,
+  Building2,
+  LockKeyhole,
+  ShieldCheck,
+  ShieldEllipsis,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
 import { getResolvedApiBaseUrl } from "@/lib/apiBaseUrl";
 import { showToast } from "@/components/Toast";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 const API_BASE_URL = getResolvedApiBaseUrl();
 
@@ -92,62 +102,100 @@ function SuperAdminLoginInner() {
   }
 
   return (
-    <main
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{
-        background: `linear-gradient(to bottom right, var(--gp-super-login-from), var(--gp-super-login-via), var(--gp-super-login-to))`,
-      }}
+    <AuthShell
+      variant="super"
+      panelEyebrow="Platform Control"
+      panelTitle="Platform super admin"
+      panelDescription="Access society onboarding, platform administration, and cross-society oversight from one secure control panel."
+      panelIcon={<ShieldEllipsis className="h-7 w-7" />}
+      heroEyebrow="Centralized oversight"
+      heroTitle="Manage societies, onboarding, and platform access with confidence."
+      heroDescription="Use the platform console for super-admin workflows that sit above day-to-day society operations."
+      heroFeatures={[
+        {
+          icon: <ShieldCheck className="h-5 w-5" />,
+          title: "Privileged platform access",
+          description: "Keep super-admin controls separate from society-specific sessions and credentials.",
+        },
+        {
+          icon: <Building2 className="h-5 w-5" />,
+          title: "Cross-society administration",
+          description: "Review onboarding, society status, and platform-wide operations from a single entry point.",
+        },
+        {
+          icon: <Users className="h-5 w-5" />,
+          title: "Cleaner role separation",
+          description: "Move between society admin and platform admin flows without weak contrast or cramped layouts.",
+        },
+      ]}
     >
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl border border-white/20 mb-4">
-            <span className="text-3xl">⚙️</span>
+      <form onSubmit={onSubmit} className="auth-form">
+        <div className="auth-form-section">
+          <div className="auth-field">
+            <label className="auth-field-label" htmlFor="superAdminUsername">
+              Username or email
+            </label>
+            <div className="auth-input-wrap">
+              <div className="auth-input-icon">
+                <UserRound className="h-5 w-5" />
+              </div>
+              <input
+                id="superAdminUsername"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="auth-input auth-input-with-icon"
+                placeholder="Enter your platform username or email"
+                required
+                minLength={3}
+                autoComplete="username"
+              />
+            </div>
+            <p className="auth-field-hint">Use the platform-level account only. Society admin credentials will not work here.</p>
           </div>
-          <h1 className="text-3xl font-bold text-white">Platform Admin</h1>
-          <p className="text-fg-tertiary mt-2 text-sm">Super admin · societies & onboarding</p>
+
+          <div className="auth-field">
+            <label className="auth-field-label" htmlFor="superAdminPassword">
+              Password
+            </label>
+            <div className="auth-input-wrap">
+              <div className="auth-input-icon">
+                <LockKeyhole className="h-5 w-5" />
+              </div>
+              <input
+                id="superAdminPassword"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="auth-input auth-input-with-icon"
+                placeholder="Enter your password"
+                required
+                minLength={6}
+                autoComplete="current-password"
+              />
+            </div>
+          </div>
+
+          <div className="auth-alert auth-alert-info">
+            Platform access controls society activation, onboarding, and cross-tenant administration. Keep this account limited to authorized operators.
+          </div>
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="rounded-2xl shadow-2xl p-8 space-y-5 border border-white/10"
-          style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)' }}
-        >
-          <div>
-            <label className="block text-sm font-semibold text-fg-primary mb-1">Username or email</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="input w-full"
-              required
-              minLength={3}
-              autoComplete="username"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-fg-primary mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input w-full"
-              required
-              minLength={6}
-              autoComplete="current-password"
-            />
-          </div>
-          <button type="submit" disabled={loading} className="btn btn-primary w-full py-3">
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
+        <button type="submit" disabled={loading} className="btn btn-primary w-full py-3 text-base font-semibold">
+          {loading ? "Signing In..." : "Sign In"}
+        </button>
 
-          <p className="text-center text-sm text-fg-secondary">
-            <Link href="/login" className="text-brand-primary font-semibold underline">
-              Society admin login
-            </Link>
-          </p>
-        </form>
-      </div>
-    </main>
+        <div className="auth-link-stack">
+          <Link href="/login" className="auth-link-card">
+            <div>
+              <p className="auth-link-card-title">Return to society admin sign-in</p>
+              <p className="auth-link-card-copy">Use the tenant-scoped login for resident, guard, and operations workflows.</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-brand-primary" />
+          </Link>
+        </div>
+      </form>
+    </AuthShell>
   );
 }
 

@@ -1,6 +1,8 @@
 "use client";
 
+import { Link2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -126,13 +128,12 @@ export default function InvitationsAdminPage() {
   return (
     <AppShell title="Invitations">
       <div className="max-w-4xl space-y-8">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">
-            Create invite links for new admins, residents, or guards. They complete signup on{" "}
-            <span className="font-mono text-sm bg-surface-elevated px-1 rounded">/invite/accept</span> or in the mobile app
-            (Join with invite).
-          </p>
-        </div>
+        <AdminPageHeader
+          eyebrow="Onboarding"
+          title="Invitations"
+          description="Create secure invite links for admins, residents, and guards so they can finish signup through the invite acceptance flow on web or mobile."
+          icon={<Link2 className="h-6 w-6" />}
+        />
 
         <div className="card">
           <div className="card-header">

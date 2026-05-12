@@ -1,7 +1,9 @@
 "use client";
 
+import { CarFront, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -150,16 +152,19 @@ export default function VehiclesPage() {
 
   return (
     <AppShell title="Vehicle Management">
-      <div className="space-y-4">
-        <div className="page-action-bar">
-          <p className="text-fg-secondary">Register and manage resident vehicles</p>
-          <button
-            onClick={handleOpenForm}
-            className="btn btn-primary"
-          >
-            + Register Vehicle
-          </button>
-        </div>
+      <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Mobility records"
+          title="Vehicle management"
+          description="Register resident vehicles, link them to villas, and keep parking and ownership details easier to audit."
+          icon={<CarFront className="h-6 w-6" />}
+          actions={
+            <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Register Vehicle
+            </button>
+          }
+        />
 
         {showForm && (
           <div className="card">
