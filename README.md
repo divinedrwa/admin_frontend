@@ -49,6 +49,32 @@ App URL: `http://localhost:3000`
 
 - `NEXT_PUBLIC_API_URL` - backend API base URL (must include `/api`)
   - default fallback in code: `http://localhost:4000/api`
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` - Supabase publishable/anon key for browser + SSR clients
+- `NEXT_PUBLIC_SUPABASE_TABLE` - public table name used by `/supabase-example`
+- `NEXT_PUBLIC_SUPABASE_QUERY` - select clause used by `/supabase-example` (example: `id,name,created_at`)
+- `NEXT_PUBLIC_SUPABASE_LIMIT` - max rows shown by `/supabase-example` (clamped to `1..50`)
+
+## Supabase Setup
+
+1. Add these values to `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>
+NEXT_PUBLIC_SUPABASE_TABLE=todos
+NEXT_PUBLIC_SUPABASE_QUERY=id,name,created_at
+NEXT_PUBLIC_SUPABASE_LIMIT=10
+```
+
+2. In the Supabase SQL Editor, run `frontend/supabase/bootstrap.sql`.
+3. Start the frontend with `npm run dev`.
+4. Open `http://localhost:3000/supabase-example` to verify:
+   - SSR client initializes
+   - browser client initializes
+   - the configured public table returns rows
+
+`bootstrap.sql` creates a minimal `public.todos` table, enables RLS, adds a read policy for `anon` and `authenticated`, and seeds a few rows so the example page can confirm connectivity immediately.
 
 ## Authentication Model
 
