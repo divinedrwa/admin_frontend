@@ -6,6 +6,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type InvitationRow = {
   id: string;
@@ -55,7 +56,14 @@ export default function InvitationsAdminPage() {
     load();
     api
       .get("/villas")
-      .then((res) => setVillas(res.data.villas ?? []))
+      .then((res) =>
+        setVillas(
+          sortByVillaNumber(
+            (res.data.villas ?? []) as Villa[],
+            (v) => v.villaNumber,
+          ),
+        ),
+      )
       .catch(() => {
         /* optional */
       });

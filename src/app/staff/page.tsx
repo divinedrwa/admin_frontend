@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type StaffAssignment = {
   id: string;
@@ -59,7 +60,18 @@ export default function StaffPage() {
     setLoading(true);
     api
       .get("/staff")
-      .then((response) => setStaff(response.data.staff ?? []))
+      .then((response) => {
+        const list = (response.data.staff ?? []) as Staff[];
+        setStaff(
+          list.map((s) => ({
+            ...s,
+            assignments: sortByVillaNumber(
+              s.assignments ?? [],
+              (a) => a.villa?.villaNumber ?? null,
+            ),
+          })),
+        );
+      })
       .catch((error: unknown) => {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -72,7 +84,14 @@ export default function StaffPage() {
   const loadVillas = () => {
     api
       .get("/villas")
-      .then((response) => setVillas(response.data.villas ?? []))
+      .then((response) =>
+        setVillas(
+          sortByVillaNumber(
+            (response.data.villas ?? []) as Villa[],
+            (v) => v.villaNumber,
+          ),
+        ),
+      )
       .catch((error: unknown) => {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??

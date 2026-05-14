@@ -1,11 +1,12 @@
 "use client";
 
 import { FileSpreadsheet, ShieldCheck, UserPlus, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type MaintenanceBillingRole = "PRIMARY" | "EXCLUDED";
 
@@ -119,6 +120,16 @@ export default function UsersPage() {
     loadUsers();
     loadVillas();
   }, []);
+
+  const sortedVillas = useMemo(
+    () => sortByVillaNumber(villas, (v) => v.villaNumber),
+    [villas],
+  );
+
+  const sortedUsers = useMemo(
+    () => sortByVillaNumber(users, (u) => u.villa?.villaNumber ?? null),
+    [users],
+  );
 
   const handleOpenForm = () => {
     setEditingUser(null);
@@ -770,7 +781,7 @@ export default function UsersPage() {
                         className="input"
                       >
                         <option value="">Select a villa</option>
-                        {villas.map((villa) => (
+                        {sortedVillas.map((villa) => (
                           <option key={villa.id} value={villa.id}>
                             {villa.villaNumber} {villa.block ? `(Block ${villa.block})` : ""} - {villa.ownerName}
                           </option>
@@ -912,7 +923,7 @@ export default function UsersPage() {
                     </td>
                   </tr>
                 ) : (
-                  users.map((user) => (
+                  sortedUsers.map((user) => (
                     <tr key={user.id} className="table-row">
                       <td className="table-td align-middle">
                         {user.role === "RESIDENT" ? (

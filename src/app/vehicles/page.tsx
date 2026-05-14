@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type Vehicle = {
   id: string;
@@ -64,7 +65,14 @@ export default function VehiclesPage() {
     setLoading(true);
     api
       .get("/vehicles")
-      .then((response) => setVehicles(response.data.vehicles ?? []))
+      .then((response) =>
+        setVehicles(
+          sortByVillaNumber(
+            (response.data.vehicles ?? []) as Vehicle[],
+            (v) => v.villa?.villaNumber ?? null,
+          ),
+        ),
+      )
       .catch((error: unknown) => {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -77,7 +85,14 @@ export default function VehiclesPage() {
   const loadVillas = () => {
     api
       .get("/villas")
-      .then((response) => setVillas(response.data.villas ?? []))
+      .then((response) =>
+        setVillas(
+          sortByVillaNumber(
+            (response.data.villas ?? []) as Villa[],
+            (v) => v.villaNumber,
+          ),
+        ),
+      )
       .catch((error: unknown) => {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??

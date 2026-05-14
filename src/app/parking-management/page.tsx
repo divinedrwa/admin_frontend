@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type ParkingTab = "overview" | "slots" | "villas";
 
@@ -123,7 +124,14 @@ export default function ParkingManagementPage() {
       setLoading(true);
       setError("");
       const response = await api.get(`/parking-management/villa-vehicles`);
-      setVillaVehicles(response.data);
+      const data = response.data as VillaVehicles;
+      setVillaVehicles({
+        ...data,
+        villaVehicles: sortByVillaNumber(
+          data.villaVehicles ?? [],
+          (v) => v.villaNumber,
+        ),
+      });
     } catch (err: unknown) {
       const apiError = err as ApiError;
       setError(apiError.response?.data?.message || "Failed to fetch villa vehicles");

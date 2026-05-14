@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 interface StaffOverview {
   id: string;
@@ -148,7 +149,13 @@ export default function StaffAssignmentOverviewPage() {
       setLoading(true);
       setError("");
       const response = await api.get(`/staff-assignment-overview/staff-overview`);
-      setStaffOverview(response.data.staff);
+      const list = (response.data.staff ?? []) as StaffOverview[];
+      setStaffOverview(
+        list.map((s) => ({
+          ...s,
+          villas: sortByVillaNumber(s.villas ?? [], (v) => v.villaNumber),
+        })),
+      );
       setStaffSummary(response.data.summary);
     } catch (err: unknown) {
       setError(parseApiError(err, "Failed to fetch staff overview").message);
@@ -162,7 +169,12 @@ export default function StaffAssignmentOverviewPage() {
       setLoading(true);
       setError("");
       const response = await api.get(`/staff-assignment-overview/villa-coverage`);
-      setVillaCoverage(response.data.villas);
+      setVillaCoverage(
+        sortByVillaNumber(
+          (response.data.villas ?? []) as VillaCoverage[],
+          (v) => v.villaNumber,
+        ),
+      );
       setVillaSummary(response.data.summary);
     } catch (err: unknown) {
       setError(parseApiError(err, "Failed to fetch villa coverage").message);
@@ -190,7 +202,21 @@ export default function StaffAssignmentOverviewPage() {
       setLoading(true);
       setError("");
       const response = await api.get(`/staff-assignment-overview/unassigned-resources`);
-      setUnassignedResources(response.data);
+      const data = response.data as UnassignedResources;
+      setUnassignedResources({
+        ...data,
+        villasWithoutStaff: {
+          ...data.villasWithoutStaff,
+          occupied: sortByVillaNumber(
+            data.villasWithoutStaff?.occupied ?? [],
+            (v) => v.villaNumber,
+          ),
+          vacant: sortByVillaNumber(
+            data.villasWithoutStaff?.vacant ?? [],
+            (v) => v.villaNumber,
+          ),
+        },
+      });
     } catch (err: unknown) {
       setError(parseApiError(err, "Failed to fetch unassigned resources").message);
     } finally {

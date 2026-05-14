@@ -1,11 +1,12 @@
 "use client";
 
 import { Building2, FileSpreadsheet, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type VillaUnit = {
   id: string;
@@ -275,6 +276,11 @@ export default function VillasPage() {
       return next;
     });
   };
+
+  const sortedVillas = useMemo(
+    () => sortByVillaNumber(villas, (v) => v.villaNumber),
+    [villas],
+  );
 
   const toggleSelectAllVillas = () => {
     const allIds = villas.map((v) => v.id);
@@ -694,7 +700,7 @@ export default function VillasPage() {
                     </td>
                   </tr>
                 ) : (
-                  villas.map((villa) => (
+                  sortedVillas.map((villa) => (
                     <tr key={villa.id} className="table-row">
                       <td className="table-td align-middle">
                         <input

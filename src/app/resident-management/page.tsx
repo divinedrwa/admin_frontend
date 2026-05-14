@@ -16,6 +16,7 @@ import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { parseApiError } from "@/utils/errorHandler";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type Resident = {
   id: string;
@@ -69,8 +70,12 @@ export default function ResidentManagementPage() {
     try {
       setLoading(true);
       const response = await api.get("/resident-management/overview");
-      setResidents(response.data.residents);
-      setFilteredResidents(response.data.residents);
+      const rows = sortByVillaNumber(
+        (response.data.residents ?? []) as Resident[],
+        (r) => r.villa?.villaNumber ?? null,
+      );
+      setResidents(rows);
+      setFilteredResidents(rows);
       setStatistics(response.data.statistics);
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to load residents").message, "error");

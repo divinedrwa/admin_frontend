@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type PaymentMode = "CASH" | "UPI" | "CHEQUE" | "BANK_TRANSFER";
 type PaymentStatus = "PAID" | "PENDING" | "OVERDUE" | "PARTIAL";
@@ -202,7 +203,12 @@ export default function MaintenanceManagementPage() {
     setSelectedMaintenanceCycleId(maintenanceCycleId);
     const r = await api.get(`/maintenance-management/collection/cycles/${maintenanceCycleId}/grid`);
     setSummary(r.data.summary ?? null);
-    setResidents(r.data.villaPayments ?? []);
+    setResidents(
+      sortByVillaNumber(
+        (r.data.villaPayments ?? []) as ResidentRow[],
+        (row) => row.villaNumber,
+      ),
+    );
     const c = r.data.cycle;
     setGridCycle(
       c && typeof c.id === "string" && typeof c.status === "string"
@@ -213,7 +219,10 @@ export default function MaintenanceManagementPage() {
 
   async function loadVillas() {
     const r = await api.get("/villas");
-    const list: VillaBasic[] = r.data.villas ?? [];
+    const list = sortByVillaNumber(
+      (r.data.villas ?? []) as VillaBasic[],
+      (v) => v.villaNumber,
+    );
     setVillas(list);
     if (list.length > 0) {
       setSelectedVillaId((prev) => prev || list[0].id);

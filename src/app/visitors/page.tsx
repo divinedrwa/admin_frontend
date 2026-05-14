@@ -7,6 +7,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type VisitorVilla = {
   villa: {
@@ -74,7 +75,18 @@ export default function VisitorsPage() {
     const endpoint = filter === "active" ? "/visitors/active/list" : "/visitors";
     api
       .get(endpoint)
-      .then((response) => setVisitors(response.data.visitors ?? []))
+      .then((response) => {
+        const list = (response.data.visitors ?? []) as Visitor[];
+        setVisitors(
+          list.map((v) => ({
+            ...v,
+            villaVisits: sortByVillaNumber(
+              v.villaVisits ?? [],
+              (vv) => vv.villa?.villaNumber ?? null,
+            ),
+          })),
+        );
+      })
       .catch(() => showToast("Failed to load visitors", "error"))
       .finally(() => setLoading(false));
   }, [filter]);
@@ -82,7 +94,14 @@ export default function VisitorsPage() {
   const loadVillas = () => {
     api
       .get("/villas")
-      .then((response) => setVillas(response.data.villas ?? []))
+      .then((response) =>
+        setVillas(
+          sortByVillaNumber(
+            (response.data.villas ?? []) as Villa[],
+            (v) => v.villaNumber,
+          ),
+        ),
+      )
       .catch(() => showToast("Failed to load villas", "error"));
   };
 

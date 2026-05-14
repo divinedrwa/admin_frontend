@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
+import { sortByVillaNumber } from "@/utils/villaSort";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type BillingCycleRow = {
@@ -151,7 +152,13 @@ export default function MaintenanceBillingPage() {
 
   const loadUsers = useCallback(async () => {
     const res = await api.get("/users", { params: { role: "RESIDENT", isActive: "true" } });
-    setUsers(res.data.users ?? []);
+    const list = (res.data.users ?? []) as Array<{
+      id: string;
+      name: string;
+      maintenanceBillingRole?: "PRIMARY" | "EXCLUDED" | null;
+      villa?: { villaNumber: string };
+    }>;
+    setUsers(sortByVillaNumber(list, (u) => u.villa?.villaNumber ?? null));
   }, []);
 
   const loadFinancialYears = useCallback(async () => {
@@ -220,7 +227,14 @@ export default function MaintenanceBillingPage() {
     void api
       .get("/v1/admin/residents/payments", { params })
       .then((r) => {
-        setResidentRows(r.data.rows ?? []);
+        const rows = sortByVillaNumber(
+          (r.data.rows ?? []) as ResidentRow[],
+          (row) => {
+            const flat = (row as Record<string, unknown>).flat;
+            return typeof flat === "string" ? flat : null;
+          },
+        );
+        setResidentRows(rows);
         const t = r.data.totals ?? {};
         setResidentTotals({
           totalExpected: Number(t.totalExpected ?? 0),

@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { sortByVillaNumber } from "@/utils/villaSort";
 
 type Parcel = {
   id: string;
@@ -60,7 +61,14 @@ export default function ParcelsPage() {
   const loadVillas = () => {
     api
       .get("/villas")
-      .then((response) => setVillas(response.data.villas ?? []))
+      .then((response) =>
+        setVillas(
+          sortByVillaNumber(
+            (response.data.villas ?? []) as Villa[],
+            (v) => v.villaNumber,
+          ),
+        ),
+      )
       .catch(() => showToast("Failed to load villas", "error"));
   };
 
