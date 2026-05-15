@@ -505,11 +505,16 @@ export default function UsersPage() {
                   <code className="bg-surface px-1 rounded text-[11px]">
                     username,name,email,password,phone,residentType,villaNumber,moveInDate
                   </code>
+                  — optional:{" "}
+                  <code className="bg-surface px-1 rounded text-[11px]">defaultFloor</code> (0 = ground tier by
+                  sort order, 1 = next, …; omit column to use the property default unit).
                 </p>
                 <p className="text-xs text-fg-secondary mt-1">
                   residentType: OWNER, TENANT, or FAMILY_MEMBER · if villaNumber is new for this society, a villa is
                   created automatically (owner name = resident name; maintenance 0 until you edit it) · moveInDate:
-                  YYYY-MM-DD · same phone can appear on multiple rows (one login per row — use unique username/email
+                  YYYY-MM-DD · when the CSV includes a <code className="bg-surface px-0.5 rounded">defaultFloor</code>{" "}
+                  column, each row can target a floor tier (0 = ground); leave the cell empty to use the property
+                  default unit · same phone can appear on multiple rows (one login per row — use unique username/email
                   each time; mobile sign-in with phone may require username/email if numbers repeat)
                 </p>
                 <p className="text-xs text-pending-fg/90 mt-1">

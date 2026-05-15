@@ -7,21 +7,23 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { sortByVillaNumber } from "@/utils/villaSort";
+import {
+  inferCanonicalTierIndex,
+  nextFreeOccupantSlotIndex,
+  occupantUnitCodeForFloorIndex,
+  occupantUnitLabelForFloorIndex,
+  suggestedOccupantUnitDefinitions,
+} from "@/lib/occupantUnitCodes";
 
-/** Matches backend suggested occupant unit codes (V{prefix}_GF / V{prefix}_FF). */
-function unitPrefixFromVillaNumber(villaNumber: string): string {
-  const slug = villaNumber.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  const base = slug.length > 0 ? slug : "VILLA";
-  return base.slice(0, 48);
-}
-
-function suggestedUnitsForVillaNumber(villaNumber: string) {
-  const p = unitPrefixFromVillaNumber(villaNumber);
-  return {
-    gf: { unitCode: `V${p}_GF`, label: "Ground floor" },
-    ff: { unitCode: `V${p}_FF`, label: "First floor" },
-  };
-}
+type ExtraUnitRow = {
+  /** Slot for `occupantUnitCodeForFloorIndex(villaNumber, slotIndex)` (same scheme as import/API). */
+  slotIndex: number;
+  label: string;
+  /** Quick-add tiers: fixed standard label. "+ Add unit": editable label, code still from slot. */
+  canonicalLabel: boolean;
+  /** When the DB unit code does not match any slot pattern, keep it on save. */
+  preservedUnitCode?: string;
+};
 
 type VillaUnit = {
   id: string;
@@ -72,7 +74,7 @@ export default function VillasPage() {
   const [editingVilla, setEditingVilla] = useState<Villa | null>(null);
   const [formData, setFormData] = useState<VillaForm>({
     villaNumber: "",
-    floors: "2",
+    floors: "1",
     area: "",
     block: "",
     ownerName: "",
@@ -85,7 +87,7 @@ export default function VillasPage() {
   const [exportingCsv, setExportingCsv] = useState(false);
   const [selectedVillaIds, setSelectedVillaIds] = useState<Set<string>>(new Set());
   const [bulkDeletingVillas, setBulkDeletingVillas] = useState(false);
-  const [extraUnits, setExtraUnits] = useState<Array<{ unitCode: string; label: string }>>([]);
+  const [extraUnits, setExtraUnits] = useState<ExtraUnitRow[]>([]);
   /** Controlled value for the "Quick add suggested unit" dropdown (always reset after pick). */
   const [quickAddUnit, setQuickAddUnit] = useState("");
 
@@ -129,17 +131,29 @@ export default function VillasPage() {
         monthlyMaintenance: villa.monthlyMaintenance.toString()
       });
       const nonDefault =
-        villa.units?.filter((u) => u.unitCode !== "_DEFAULT").map((u) => ({
-          unitCode: u.unitCode,
-          label: u.label,
-        })) ?? [];
+        villa.units
+          ?.filter((u) => u.unitCode !== "_DEFAULT")
+          .map((u) => {
+            const slot = inferCanonicalTierIndex(villa.villaNumber, u.unitCode);
+            if (slot != null) {
+              const def = occupantUnitLabelForFloorIndex(slot);
+              const canonicalLabel = u.label.trim().toLowerCase() === def.trim().toLowerCase();
+              return { slotIndex: slot, label: u.label, canonicalLabel };
+            }
+            return {
+              slotIndex: -1,
+              label: u.label,
+              canonicalLabel: false,
+              preservedUnitCode: u.unitCode,
+            };
+          }) ?? [];
       setExtraUnits(nonDefault);
       setQuickAddUnit("");
     } else {
       setEditingVilla(null);
       setFormData({
         villaNumber: "",
-        floors: "2",
+        floors: "1",
         area: "",
         block: "",
         ownerName: "",
@@ -165,39 +179,102 @@ export default function VillasPage() {
     setSubmitting(true);
 
     try {
-      const unitsPayload = extraUnits
-        .map((u) => ({
-          unitCode: u.unitCode.trim(),
-          label: u.label.trim(),
-        }))
-        .filter((u) => u.unitCode.length > 0 && u.label.length > 0);
+      const floorsNum = Math.min(10, Math.max(1, parseInt(formData.floors, 10) || 1));
+      const vn = formData.villaNumber.trim();
 
-      if (!editingVilla && unitsPayload.length < 1) {
-        showToast(
-          "Add at least one occupant unit — use Quick add (Ground / First floor) or + Add unit.",
-          "error",
-        );
+      if (extraUnits.some((u) => u.slotIndex >= 0) && !vn) {
+        showToast("Enter villa number so unit codes can be generated.", "error");
         setSubmitting(false);
         return;
       }
 
-      const payload = {
-        villaNumber: formData.villaNumber,
-        floors: parseInt(formData.floors),
+      const unitsPayload: Array<{ unitCode: string; label: string; sortOrder: number }> = [];
+      const seenLabels = new Set<string>();
+
+      for (let rowIdx = 0; rowIdx < extraUnits.length; rowIdx++) {
+        const u = extraUnits[rowIdx]!;
+        if (u.slotIndex >= 0) {
+          const label = u.canonicalLabel
+            ? occupantUnitLabelForFloorIndex(u.slotIndex)
+            : u.label.trim();
+          if (!label) {
+            showToast("Each unit needs a label. Fill in every custom unit before saving.", "error");
+            setSubmitting(false);
+            return;
+          }
+          const low = label.trim().toLowerCase();
+          if (seenLabels.has(low)) {
+            showToast("Duplicate unit labels are not allowed (case-insensitive).", "error");
+            setSubmitting(false);
+            return;
+          }
+          seenLabels.add(low);
+          unitsPayload.push({
+            unitCode: occupantUnitCodeForFloorIndex(vn, u.slotIndex),
+            label,
+            sortOrder: u.slotIndex * 10,
+          });
+        } else if (u.preservedUnitCode?.trim()) {
+          const label = u.label.trim();
+          if (!label) {
+            showToast("Each unit needs a label.", "error");
+            setSubmitting(false);
+            return;
+          }
+          const low = label.toLowerCase();
+          if (seenLabels.has(low)) {
+            showToast("Duplicate unit labels are not allowed (case-insensitive).", "error");
+            setSubmitting(false);
+            return;
+          }
+          seenLabels.add(low);
+          unitsPayload.push({
+            unitCode: u.preservedUnitCode.trim(),
+            label,
+            sortOrder: 800 + rowIdx,
+          });
+        }
+      }
+
+      let finalUnits = unitsPayload;
+      if (finalUnits.length < 1) {
+        if (!vn) {
+          showToast(
+            "Enter villa number so occupant units can be generated from Floors, or add at least one unit manually.",
+            "error",
+          );
+          setSubmitting(false);
+          return;
+        }
+        finalUnits = suggestedOccupantUnitDefinitions(vn, floorsNum).map((d) => ({
+          unitCode: d.unitCode,
+          label: d.label,
+          sortOrder: d.sortOrder,
+        }));
+      }
+
+      const baseFields = {
+        floors: floorsNum,
         area: parseFloat(formData.area),
         block: formData.block,
         ownerName: formData.ownerName,
         ownerEmail: formData.ownerEmail,
         ownerPhone: formData.ownerPhone,
         monthlyMaintenance: parseFloat(formData.monthlyMaintenance),
-        ...(unitsPayload.length > 0 ? { units: unitsPayload } : {}),
+        units: finalUnits,
       };
 
       if (editingVilla) {
-        await api.patch(`/villas/${editingVilla.id}`, payload);
+        await api.patch(`/villas/${editingVilla.id}`, {
+          ...baseFields,
+          unitsSync: true,
+        });
         showToast("Property updated successfully", "success");
       } else {
-        await api.post("/villas", payload);
+        await api.post("/villas", {
+          villaNumber: formData.villaNumber.trim(),
+          ...baseFields,
+        });
         showToast("Property created successfully", "success");
       }
 
@@ -310,6 +387,16 @@ export default function VillasPage() {
     [villas],
   );
 
+  const quickAddTiers = useMemo(() => {
+    const floors = parseInt(formData.floors, 10) || 1;
+    const vn = formData.villaNumber.trim() || "VILLA";
+    return suggestedOccupantUnitDefinitions(vn, floors).map((d, idx) => ({
+      slotIndex: idx,
+      unitCode: d.unitCode,
+      label: d.label,
+    }));
+  }, [formData.villaNumber, formData.floors]);
+
   const toggleSelectAllVillas = () => {
     const allIds = villas.map((v) => v.id);
     const allSelected = allIds.length > 0 && allIds.every((id) => selectedVillaIds.has(id));
@@ -406,7 +493,11 @@ export default function VillasPage() {
                   villaNumber,floors,area,block,ownerName,ownerEmail,ownerPhone,monthlyMaintenance
                 </code>
                 . Optional:{" "}
-                <code className="text-xs bg-surface px-1 rounded">ownerUsername,ownerPassword</code> — when{" "}
+                <code className="text-xs bg-surface px-1 rounded">defaultFloor</code> (0 = ground, 1 = first, 2 =
+                second, … — owner login is placed on that tier when units are auto-created from{" "}
+                <code className="text-xs bg-surface px-1 rounded">floors</code>),{" "}
+                <code className="text-xs bg-surface px-1 rounded">ownerUsername</code>,{" "}
+                <code className="text-xs bg-surface px-1 rounded">ownerPassword</code> — when{" "}
                 <code className="text-xs bg-surface px-1 rounded">ownerEmail</code> is set, an owner resident account is
                 created for this society (username from email if omitted; password generated unless{" "}
                 <code className="text-xs bg-surface px-1 rounded">ownerPassword</code> is at least 6 characters).
@@ -580,91 +671,132 @@ export default function VillasPage() {
                 <h3 className="text-lg font-medium">Occupant units / floors *</h3>
                 <p className="text-xs text-fg-secondary">
                   {editingVilla
-                    ? "Update unit codes and labels as needed. Legacy “Default” rows appear here so you can replace them with real floors."
-                    : "At least one unit is required before the property can be saved. Use Quick add for the usual Ground / First floor codes (they match the villa number), or add custom rows."}{" "}
+                    ? "Unit codes follow the villa number using the same rules as CSV import (V03_GF, V03_FF, …). Quick-add tiers lock the standard label; + Add unit picks the next free slot and only the label is edited. Unrecognized legacy codes are kept as-is until you change them."
+                    : "Codes are derived from the villa number (V03_GF, V03_FF, V03_SF, V03_F4, …). Leave the table empty to auto-create tiers for Floors, use Quick add, or + Add unit for an extra slot (label only — code is assigned automatically)."}
+                  {" "}
                   Residents pick a unit on the Users page.
                 </p>
                 <div className="flex flex-wrap gap-2 items-end">
-                  <div className="min-w-[220px] flex-1 max-w-md">
+                  <div className="min-w-[260px] flex-1 max-w-lg">
                     <label className="block text-xs text-fg-secondary mb-0.5">
-                      Quick add suggested unit
+                      Quick add suggested unit (from Floors)
                     </label>
                     <select
                       className="w-full border border-surface-border rounded px-2 py-1.5 text-sm bg-surface"
-                      disabled={!formData.villaNumber.trim()}
                       value={quickAddUnit}
                       onChange={(e) => {
-                        const v = e.target.value as "" | "gf" | "ff";
-                        if (!v || !formData.villaNumber.trim()) return;
-                        const sug = suggestedUnitsForVillaNumber(formData.villaNumber);
-                        const row = v === "gf" ? sug.gf : sug.ff;
+                        const v = e.target.value;
+                        if (!v) return;
+                        if (!formData.villaNumber.trim()) {
+                          showToast(
+                            "Enter the villa number first — suggested codes use it (e.g. V12_GF).",
+                            "error",
+                          );
+                          setQuickAddUnit("");
+                          return;
+                        }
+                        const idx = parseInt(v, 10);
+                        if (!quickAddTiers[idx]) {
+                          setQuickAddUnit("");
+                          return;
+                        }
                         setExtraUnits((prev) => {
-                          if (prev.some((x) => x.unitCode === row.unitCode)) return prev;
-                          return [...prev, row];
+                          if (prev.some((x) => x.slotIndex === idx)) return prev;
+                          return [
+                            ...prev,
+                            {
+                              slotIndex: idx,
+                              label: occupantUnitLabelForFloorIndex(idx),
+                              canonicalLabel: true,
+                            },
+                          ];
                         });
                         setQuickAddUnit("");
                       }}
                     >
-                      <option value="">Choose Ground or First floor…</option>
-                      <option value="gf">
-                        Ground floor ({`V${unitPrefixFromVillaNumber(formData.villaNumber || " ")}_GF`})
-                      </option>
-                      <option value="ff">
-                        First floor ({`V${unitPrefixFromVillaNumber(formData.villaNumber || " ")}_FF`})
-                      </option>
+                      <option value="">Choose a floor tier…</option>
+                      {quickAddTiers.map((tier, idx) => (
+                        <option key={`tier-${idx}`} value={String(idx)}>
+                          {tier.label} ({tier.unitCode})
+                        </option>
+                      ))}
                     </select>
                     {!formData.villaNumber.trim() && (
                       <p className="text-[11px] text-fg-secondary mt-1">
-                        Enter villa number above to enable suggested unit codes.
+                        Villa number not set yet — preview uses VILLA_* codes until you fill it in above.
                       </p>
                     )}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {extraUnits.map((row, idx) => (
-                    <div key={idx} className="flex flex-wrap gap-2 items-end">
-                      <div className="flex-1 min-w-[120px]">
-                        <label className="block text-xs text-fg-secondary mb-0.5">Unit code</label>
-                        <input
-                          type="text"
-                          className="w-full border border-surface-border rounded px-2 py-1.5 text-sm"
-                          value={row.unitCode}
-                          onChange={(e) => {
-                            const next = [...extraUnits];
-                            next[idx] = { ...next[idx], unitCode: e.target.value };
-                            setExtraUnits(next);
-                          }}
-                          placeholder="e.g. V12_F1"
-                        />
-                      </div>
-                      <div className="flex-[2] min-w-[160px]">
-                        <label className="block text-xs text-fg-secondary mb-0.5">Label</label>
-                        <input
-                          type="text"
-                          className="w-full border border-surface-border rounded px-2 py-1.5 text-sm"
-                          value={row.label}
-                          onChange={(e) => {
-                            const next = [...extraUnits];
-                            next[idx] = { ...next[idx], label: e.target.value };
-                            setExtraUnits(next);
-                          }}
-                          placeholder="e.g. First Floor"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        className="text-sm text-brand-danger hover:underline px-2"
-                        onClick={() => setExtraUnits(extraUnits.filter((_, i) => i !== idx))}
+                  {extraUnits.map((row, idx) => {
+                    const vn = formData.villaNumber.trim();
+                    const vnOrPlaceholder = vn || "VILLA";
+                    const hasSlot = row.slotIndex >= 0;
+                    const displayCode = hasSlot
+                      ? occupantUnitCodeForFloorIndex(vnOrPlaceholder, row.slotIndex)
+                      : (row.preservedUnitCode ?? "");
+                    const displayLabel = row.canonicalLabel
+                      ? occupantUnitLabelForFloorIndex(row.slotIndex)
+                      : row.label;
+                    return (
+                      <div
+                        key={hasSlot ? `s-${row.slotIndex}-${idx}` : `p-${idx}`}
+                        className="flex flex-wrap gap-2 items-end"
                       >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex-1 min-w-[120px]">
+                          <label className="block text-xs text-fg-secondary mb-0.5">Unit code</label>
+                          <input
+                            type="text"
+                            className="w-full border border-surface-border rounded px-2 py-1.5 text-sm bg-surface-elevated text-fg-secondary cursor-not-allowed"
+                            value={displayCode}
+                            readOnly
+                          />
+                          <p className="text-[10px] text-fg-secondary mt-0.5">Auto (same rules as import)</p>
+                        </div>
+                        <div className="flex-[2] min-w-[160px]">
+                          <label className="block text-xs text-fg-secondary mb-0.5">Label</label>
+                          <input
+                            type="text"
+                            className={`w-full border border-surface-border rounded px-2 py-1.5 text-sm ${
+                              row.canonicalLabel
+                                ? "bg-surface-elevated text-fg-secondary cursor-not-allowed"
+                                : ""
+                            }`}
+                            value={displayLabel}
+                            readOnly={row.canonicalLabel}
+                            onChange={(e) => {
+                              if (row.canonicalLabel) return;
+                              const next = [...extraUnits];
+                              next[idx] = { ...next[idx], label: e.target.value };
+                              setExtraUnits(next);
+                            }}
+                            placeholder="e.g. Basement / Annex"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="text-sm text-brand-danger hover:underline px-2"
+                          onClick={() => setExtraUnits(extraUnits.filter((_, i) => i !== idx))}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
                 <button
                   type="button"
                   className="text-sm text-brand-primary hover:underline"
-                  onClick={() => setExtraUnits([...extraUnits, { unitCode: "", label: "" }])}
+                  onClick={() =>
+                    setExtraUnits((prev) => {
+                      const used = new Set(
+                        prev.filter((r) => r.slotIndex >= 0).map((r) => r.slotIndex),
+                      );
+                      const slot = nextFreeOccupantSlotIndex(used);
+                      return [...prev, { slotIndex: slot, label: "", canonicalLabel: false }];
+                    })
+                  }
                 >
                   + Add unit
                 </button>
