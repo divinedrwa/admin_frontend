@@ -701,7 +701,10 @@ export default function VillasPage() {
                           return;
                         }
                         setExtraUnits((prev) => {
-                          if (prev.some((x) => x.slotIndex === idx)) return prev;
+                          if (prev.some((x) => x.slotIndex === idx)) {
+                            showToast("That floor tier is already in the list.", "info");
+                            return prev;
+                          }
                           return [
                             ...prev,
                             {
@@ -715,11 +718,15 @@ export default function VillasPage() {
                       }}
                     >
                       <option value="">Choose a floor tier…</option>
-                      {quickAddTiers.map((tier, idx) => (
-                        <option key={`tier-${idx}`} value={String(idx)}>
-                          {tier.label} ({tier.unitCode})
-                        </option>
-                      ))}
+                      {quickAddTiers.map((tier, idx) => {
+                        const taken = extraUnits.some((x) => x.slotIndex === idx);
+                        return (
+                          <option key={`tier-${idx}`} value={String(idx)} disabled={taken}>
+                            {tier.label} ({tier.unitCode})
+                            {taken ? " — already added" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
                     {!formData.villaNumber.trim() && (
                       <p className="text-[11px] text-fg-secondary mt-1">
