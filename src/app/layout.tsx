@@ -10,9 +10,13 @@ export const metadata: Metadata = {
   description: "GatePass+ admin dashboard for housing societies",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: "/app-icon.svg", type: "image/svg+xml" }],
-    shortcut: "/app-icon.svg",
-    apple: [{ url: "/app-icon.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/favicon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/favicon-192.png", sizes: "192x192", type: "image/png" }],
   },
 };
 

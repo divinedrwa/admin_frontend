@@ -39,7 +39,7 @@ export function AuthShell({
             <div className="auth-hero-card">
               <div className="auth-brand-lockup">
                 <div className="auth-brand-mark">
-                  <Image src="/app-icon.svg" alt="GatePass+" width={44} height={44} />
+                  <Image src="/app-icon.png" alt="GatePass+" width={44} height={44} />
                 </div>
               <div>
                 <p className="auth-brand-overline">GatePass+ Access</p>

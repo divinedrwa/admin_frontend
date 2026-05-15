@@ -172,7 +172,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           {!collapsed && (
             <div className="flex items-center space-x-3">
               <Image
-                src="/app-icon.svg"
+                src="/app-icon.png"
                 alt="GatePass+"
                 width={38}
                 height={38}
@@ -190,7 +190,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           )}
           {collapsed && (
             <Image
-              src="/app-icon.svg"
+              src="/app-icon.png"
               alt="GatePass+"
               width={32}
               height={32}
