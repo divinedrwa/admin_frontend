@@ -7,7 +7,50 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { sortByVillaNumber } from "@/utils/villaSort";
-import { suggestedOccupantUnitDefinitions } from "@/lib/occupantUnitCodes";
+import {
+  inferCanonicalTierIndex,
+  occupantUnitCodeForFloorIndex,
+  suggestedOccupantUnitDefinitions,
+} from "@/lib/occupantUnitCodes";
+
+type VillaResident = {
+  id: string;
+  name: string;
+  role: string;
+  email?: string | null;
+  residentType?: string | null;
+  unitId?: string | null;
+  unit?: { id: string; unitCode: string; label: string } | null;
+};
+
+function pickPrimaryResident(villa: Villa): VillaResident | null {
+  const residents = (villa.users ?? []).filter((u) => u.role === "RESIDENT") as VillaResident[];
+  if (residents.length === 0) return null;
+  const ownerEmail = villa.ownerEmail?.trim().toLowerCase();
+  if (ownerEmail) {
+    const byEmail = residents.find((u) => u.email?.trim().toLowerCase() === ownerEmail);
+    if (byEmail) return byEmail;
+  }
+  const owner = residents.find((u) => u.residentType === "OWNER");
+  if (owner) return owner;
+  return residents.find((u) => u.unitId) ?? residents[0] ?? null;
+}
+
+function tierIndexForResident(villaNumber: string, resident: VillaResident | null): string {
+  if (!resident?.unit?.unitCode) return "";
+  const idx = inferCanonicalTierIndex(villaNumber, resident.unit.unitCode);
+  return idx != null ? String(idx) : "";
+}
+
+function ensureTierInUnitRows(
+  rows: UnitRow[],
+  tier: { unitCode: string; label: string },
+): UnitRow[] {
+  if (rows.some((r) => r.unitCode.trim().toUpperCase() === tier.unitCode.toUpperCase())) {
+    return rows;
+  }
+  return [...rows, { unitCode: tier.unitCode, label: tier.label }];
+}
 
 type UnitRow = {
   unitCode: string;
@@ -35,11 +78,7 @@ type Villa = {
   monthlyMaintenance: number;
   units?: VillaUnit[];
   billingAccount?: { id: string; scope: string };
-  users: Array<{
-    id: string;
-    name: string;
-    role: string;
-  }>;
+  users: VillaResident[];
   _count: {
     users: number;
   };
@@ -77,7 +116,10 @@ export default function VillasPage() {
   const [selectedVillaIds, setSelectedVillaIds] = useState<Set<string>>(new Set());
   const [bulkDeletingVillas, setBulkDeletingVillas] = useState(false);
   const [unitRows, setUnitRows] = useState<UnitRow[]>([]);
-  const [quickAddUnit, setQuickAddUnit] = useState("");
+  /** Floor tier index (0 = ground, …) for owner / primary resident; synced to their unit on save. */
+  const [assignedFloorTier, setAssignedFloorTier] = useState("");
+  const [primaryResidentId, setPrimaryResidentId] = useState<string | null>(null);
+  const [primaryResidentName, setPrimaryResidentName] = useState<string | null>(null);
 
   const loadVillas = () => {
     setLoading(true);
@@ -124,7 +166,10 @@ export default function VillasPage() {
           .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
           .map((u) => ({ unitCode: u.unitCode, label: u.label })) ?? [];
       setUnitRows(rows);
-      setQuickAddUnit("");
+      const primary = pickPrimaryResident(villa);
+      setPrimaryResidentId(primary?.id ?? null);
+      setPrimaryResidentName(primary?.name ?? null);
+      setAssignedFloorTier(tierIndexForResident(villa.villaNumber, primary));
     } else {
       setEditingVilla(null);
       setFormData({
@@ -138,7 +183,9 @@ export default function VillasPage() {
         monthlyMaintenance: "5000"
       });
       setUnitRows([]);
-      setQuickAddUnit("");
+      setPrimaryResidentId(null);
+      setPrimaryResidentName(null);
+      setAssignedFloorTier("");
     }
     setShowForm(true);
   };
@@ -147,7 +194,9 @@ export default function VillasPage() {
     setShowForm(false);
     setEditingVilla(null);
     setUnitRows([]);
-    setQuickAddUnit("");
+    setPrimaryResidentId(null);
+    setPrimaryResidentName(null);
+    setAssignedFloorTier("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -217,10 +266,27 @@ export default function VillasPage() {
       };
 
       if (editingVilla) {
-        await api.patch(`/villas/${editingVilla.id}`, {
+        const { data } = await api.patch<{ villa: { units?: VillaUnit[] } }>(`/villas/${editingVilla.id}`, {
           ...baseFields,
           unitsSync: true,
         });
+        if (primaryResidentId && assignedFloorTier !== "") {
+          const tierIdx = parseInt(assignedFloorTier, 10);
+          if (Number.isFinite(tierIdx) && tierIdx >= 0) {
+            const codeForTier =
+              finalUnits[tierIdx]?.unitCode ?? occupantUnitCodeForFloorIndex(vn, tierIdx);
+            const savedUnits = [...(data.villa?.units ?? [])]
+              .filter((u) => u.unitCode !== "_DEFAULT")
+              .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+            const match =
+              savedUnits.find(
+                (u) => u.unitCode.trim().toUpperCase() === codeForTier.trim().toUpperCase(),
+              ) ?? savedUnits[tierIdx];
+            if (match?.id) {
+              await api.patch(`/users/${primaryResidentId}`, { unitId: match.id });
+            }
+          }
+        }
         showToast("Property updated successfully", "success");
       } else {
         await api.post("/villas", {
@@ -624,40 +690,43 @@ export default function VillasPage() {
                 <p className="text-xs text-fg-secondary">
                   Each row is one occupant unit (code + label). Edit freely, add or remove rows, then save.
                   Leave empty on create to auto-generate from the Floors count (e.g. V12_GF, V12_FF).
-                  Residents are assigned to a unit on the Users page.
+                  {primaryResidentId
+                    ? " The floor selector sets which unit the primary resident (owner) uses; saving updates them automatically."
+                    : " Add an owner login (email on import or Users page) to assign a floor from here."}
                 </p>
                 <div className="flex flex-wrap gap-2 items-end">
                   <div className="min-w-[260px] flex-1 max-w-lg">
                     <label className="block text-xs text-fg-secondary mb-0.5">
-                      Quick add suggested unit (from Floors)
+                      Assigned floor (from Floors)
+                      {primaryResidentName ? ` — ${primaryResidentName}` : ""}
                     </label>
                     <select
                       className="w-full border border-surface-border rounded px-2 py-1.5 text-sm bg-surface"
-                      value={quickAddUnit}
+                      value={assignedFloorTier}
                       onChange={(e) => {
                         const v = e.target.value;
-                        setQuickAddUnit("");
+                        setAssignedFloorTier(v);
                         if (!v) return;
                         const idx = parseInt(v, 10);
                         const tier = quickAddTiers[idx];
                         if (!tier) return;
-                        if (unitRows.some((r) => r.unitCode.trim().toUpperCase() === tier.unitCode.toUpperCase())) {
-                          showToast("That unit is already in the list — edit it below.", "info");
-                          return;
-                        }
-                        setUnitRows((prev) => [
-                          ...prev,
-                          { unitCode: tier.unitCode, label: tier.label },
-                        ]);
+                        setUnitRows((prev) => ensureTierInUnitRows(prev, tier));
                       }}
                     >
-                      <option value="">Choose a floor tier…</option>
+                      <option value="">
+                        {primaryResidentId ? "Not set / custom unit" : "Choose a floor tier…"}
+                      </option>
                       {quickAddTiers.map((tier, idx) => (
                         <option key={`tier-${idx}`} value={String(idx)}>
                           {tier.label} ({tier.unitCode})
                         </option>
                       ))}
                     </select>
+                    {primaryResidentId && assignedFloorTier === "" && (
+                      <p className="text-[11px] text-fg-secondary mt-1">
+                        Resident uses a custom unit — pick a tier above to reassign, or edit rows below.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2">
