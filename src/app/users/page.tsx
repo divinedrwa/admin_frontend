@@ -201,9 +201,10 @@ export default function UsersPage() {
       return;
     }
 
-    let unitIdForPayload = formData.unitId.trim();
+    const unitIdForPayload = formData.unitId.trim();
     if (formData.role === "RESIDENT" && formData.villaId && !unitIdForPayload) {
-      unitIdForPayload = firstUnitIdForVilla(villas, formData.villaId);
+      showToast("Please select an occupant unit (Ground floor, First floor, or another unit).", "error");
+      return;
     }
 
     if (!editingUser && !formData.password) {
@@ -250,7 +251,7 @@ export default function UsersPage() {
         if (formData.role === "RESIDENT") {
           payload.residentType = formData.residentType;
           payload.villaId = formData.villaId;
-          if (unitIdForPayload) payload.unitId = unitIdForPayload;
+          payload.unitId = unitIdForPayload;
           payload.moveInDate = new Date(formData.moveInDate).toISOString();
           payload.maintenanceBillingRole = formData.maintenanceBillingRole;
         }
@@ -775,8 +776,7 @@ export default function UsersPage() {
                         value={formData.villaId}
                         onChange={(e) => {
                           const vid = e.target.value;
-                          const uid = firstUnitIdForVilla(villas, vid);
-                          setFormData({ ...formData, villaId: vid, unitId: uid });
+                          setFormData({ ...formData, villaId: vid, unitId: "" });
                         }}
                         className="input"
                       >

@@ -8,6 +8,21 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { sortByVillaNumber } from "@/utils/villaSort";
 
+/** Matches backend suggested occupant unit codes (V{prefix}_GF / V{prefix}_FF). */
+function unitPrefixFromVillaNumber(villaNumber: string): string {
+  const slug = villaNumber.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const base = slug.length > 0 ? slug : "VILLA";
+  return base.slice(0, 48);
+}
+
+function suggestedUnitsForVillaNumber(villaNumber: string) {
+  const p = unitPrefixFromVillaNumber(villaNumber);
+  return {
+    gf: { unitCode: `V${p}_GF`, label: "Ground floor" },
+    ff: { unitCode: `V${p}_FF`, label: "First floor" },
+  };
+}
+
 type VillaUnit = {
   id: string;
   unitCode: string;
@@ -70,8 +85,9 @@ export default function VillasPage() {
   const [exportingCsv, setExportingCsv] = useState(false);
   const [selectedVillaIds, setSelectedVillaIds] = useState<Set<string>>(new Set());
   const [bulkDeletingVillas, setBulkDeletingVillas] = useState(false);
-  /** Extra occupant units (GF, F1, …) sent as `units` on create/patch; default unit is always created server-side. */
   const [extraUnits, setExtraUnits] = useState<Array<{ unitCode: string; label: string }>>([]);
+  /** Controlled value for the "Quick add suggested unit" dropdown (always reset after pick). */
+  const [quickAddUnit, setQuickAddUnit] = useState("");
 
   const loadVillas = () => {
     setLoading(true);
@@ -118,6 +134,7 @@ export default function VillasPage() {
           label: u.label,
         })) ?? [];
       setExtraUnits(nonDefault);
+      setQuickAddUnit("");
     } else {
       setEditingVilla(null);
       setFormData({
@@ -131,6 +148,7 @@ export default function VillasPage() {
         monthlyMaintenance: "5000"
       });
       setExtraUnits([]);
+      setQuickAddUnit("");
     }
     setShowForm(true);
   };
@@ -139,6 +157,7 @@ export default function VillasPage() {
     setShowForm(false);
     setEditingVilla(null);
     setExtraUnits([]);
+    setQuickAddUnit("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -152,6 +171,15 @@ export default function VillasPage() {
           label: u.label.trim(),
         }))
         .filter((u) => u.unitCode.length > 0 && u.label.length > 0);
+
+      if (!editingVilla && unitsPayload.length < 1) {
+        showToast(
+          "Add at least one occupant unit — use Quick add (Ground / First floor) or + Add unit.",
+          "error",
+        );
+        setSubmitting(false);
+        return;
+      }
 
       const payload = {
         villaNumber: formData.villaNumber,
@@ -549,13 +577,49 @@ export default function VillasPage() {
               </div>
 
               <div className="border-t pt-4 space-y-3">
-                <h3 className="text-lg font-medium">Occupant units / floors</h3>
+                <h3 className="text-lg font-medium">Occupant units / floors *</h3>
                 <p className="text-xs text-fg-secondary">
-                  A default unit is created automatically for billing and legacy data. Add rows for each floor or flat
-                  (e.g. code <code className="bg-surface-elevated px-1 rounded">V12_GF</code>, label{" "}
-                  <code className="bg-surface-elevated px-1 rounded">Ground Floor</code>). Residents are assigned to a unit in
-                  Users.
+                  {editingVilla
+                    ? "Update unit codes and labels as needed. Legacy “Default” rows appear here so you can replace them with real floors."
+                    : "At least one unit is required before the property can be saved. Use Quick add for the usual Ground / First floor codes (they match the villa number), or add custom rows."}{" "}
+                  Residents pick a unit on the Users page.
                 </p>
+                <div className="flex flex-wrap gap-2 items-end">
+                  <div className="min-w-[220px] flex-1 max-w-md">
+                    <label className="block text-xs text-fg-secondary mb-0.5">
+                      Quick add suggested unit
+                    </label>
+                    <select
+                      className="w-full border border-surface-border rounded px-2 py-1.5 text-sm bg-surface"
+                      disabled={!formData.villaNumber.trim()}
+                      value={quickAddUnit}
+                      onChange={(e) => {
+                        const v = e.target.value as "" | "gf" | "ff";
+                        if (!v || !formData.villaNumber.trim()) return;
+                        const sug = suggestedUnitsForVillaNumber(formData.villaNumber);
+                        const row = v === "gf" ? sug.gf : sug.ff;
+                        setExtraUnits((prev) => {
+                          if (prev.some((x) => x.unitCode === row.unitCode)) return prev;
+                          return [...prev, row];
+                        });
+                        setQuickAddUnit("");
+                      }}
+                    >
+                      <option value="">Choose Ground or First floor…</option>
+                      <option value="gf">
+                        Ground floor ({`V${unitPrefixFromVillaNumber(formData.villaNumber || " ")}_GF`})
+                      </option>
+                      <option value="ff">
+                        First floor ({`V${unitPrefixFromVillaNumber(formData.villaNumber || " ")}_FF`})
+                      </option>
+                    </select>
+                    {!formData.villaNumber.trim() && (
+                      <p className="text-[11px] text-fg-secondary mt-1">
+                        Enter villa number above to enable suggested unit codes.
+                      </p>
+                    )}
+                  </div>
+                </div>
                 <div className="space-y-2">
                   {extraUnits.map((row, idx) => (
                     <div key={idx} className="flex flex-wrap gap-2 items-end">
