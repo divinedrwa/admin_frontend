@@ -36,11 +36,11 @@ export function AuthShell({
     <main className={`auth-page ${variant === "super" ? "auth-page-super" : ""}`}>
       <div className="auth-shell">
         <section className="auth-hero" aria-hidden="true">
-          <div className="auth-hero-card">
-            <div className="auth-brand-lockup">
-              <div className="auth-brand-mark">
-                <Image src="/favicon-192.png" alt="" width={44} height={44} />
-              </div>
+            <div className="auth-hero-card">
+              <div className="auth-brand-lockup">
+                <div className="auth-brand-mark">
+                  <Image src="/app-icon.svg" alt="GatePass+" width={44} height={44} />
+                </div>
               <div>
                 <p className="auth-brand-overline">GatePass+ Access</p>
                 <p className="auth-brand-name">Secure admin workspace</p>
