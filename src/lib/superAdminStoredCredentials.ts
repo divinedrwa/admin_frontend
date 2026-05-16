@@ -13,7 +13,14 @@ function readAll(): CredentialMap {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    const parsed = JSON.parse(raw) as unknown;
+    // Decode from base64 obfuscation; fall back to raw JSON for backwards compat
+    let json: string;
+    try {
+      json = atob(raw);
+    } catch {
+      json = raw;
+    }
+    const parsed = JSON.parse(json) as unknown;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return parsed as CredentialMap;
     }
@@ -26,7 +33,7 @@ function readAll(): CredentialMap {
 function writeAll(map: CredentialMap): void {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    sessionStorage.setItem(STORAGE_KEY, btoa(JSON.stringify(map)));
   } catch {
     /* quota / private mode */
   }

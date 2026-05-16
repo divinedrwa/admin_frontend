@@ -115,6 +115,7 @@ export default function DashboardPage() {
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [failedEndpoints, setFailedEndpoints] = useState<string[]>([]);
 
   const [villaCount, setVillaCount] = useState(0);
   const [residentCount, setResidentCount] = useState(0);
@@ -151,6 +152,7 @@ export default function DashboardPage() {
 
   const load = useCallback(async () => {
     setLoadError(null);
+    setFailedEndpoints([]);
     setLoading(true);
     try {
       const safeGet = async <T,>(request: Promise<T>) => {
@@ -189,6 +191,18 @@ export default function DashboardPage() {
         api.get("/v1/admin/cycles").catch(() => null),
         api.get("/notices").catch(() => null),
       ]);
+
+      const silentFails: string[] = [];
+      if (!maintRes) silentFails.push("maintenance");
+      if (!financialRes) silentFails.push("finance");
+      if (!visitorsRes) silentFails.push("visitors");
+      if (!parcelsRes) silentFails.push("parcels");
+      if (!complaintsRes) silentFails.push("complaints");
+      if (!sosRes) silentFails.push("SOS alerts");
+      if (!gatesRes) silentFails.push("gates");
+      if (!billingRes) silentFails.push("billing");
+      if (!noticesRes) silentFails.push("notices");
+      if (silentFails.length > 0) setFailedEndpoints(silentFails);
 
       const m = maintRes?.data?.currentMonth as CurrentMonthMaintenance | undefined;
       setMaint(m ?? null);
@@ -509,6 +523,12 @@ export default function DashboardPage() {
       <div className="space-y-8">
         {loadError ? (
           <div className="rounded-xl border border-pending-bg bg-pending-bg px-4 py-3 text-sm text-pending-fg">{loadError}</div>
+        ) : null}
+        {failedEndpoints.length > 0 && !loadError ? (
+          <div className="flex items-center justify-between rounded-xl border border-pending-bg bg-pending-bg px-4 py-3 text-sm text-pending-fg">
+            <span>Some data could not be loaded ({failedEndpoints.join(", ")}). Try refreshing.</span>
+            <button type="button" onClick={() => setFailedEndpoints([])} className="ml-3 shrink-0 font-semibold hover:opacity-80">Dismiss</button>
+          </div>
         ) : null}
 
         <AdminPageHeader

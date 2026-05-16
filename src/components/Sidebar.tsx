@@ -38,7 +38,6 @@ import { showToast } from "./Toast";
 import { useState } from "react";
 import { clearPlatformViewSession } from "@/lib/platformViewSession";
 import { clearTenantSocietyId } from "@/lib/api";
-import { ThemeModeToggle } from "@/theme/components/ThemeModeToggle";
 
 import type { LucideIcon } from "lucide-react";
 
@@ -247,14 +246,6 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
 
       {/* Footer */}
       <div className="space-y-2 p-4" style={{ borderTop: `1px solid var(--gp-sidebar-border)` }}>
-        <div className={collapsed ? "" : "px-1 pb-2"}>
-          {!collapsed && (
-            <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-white/40">
-              Appearance
-            </p>
-          )}
-          <ThemeModeToggle iconsOnly={collapsed} />
-        </div>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="hidden w-full items-center justify-center gap-2 rounded-xl bg-white/[0.06] py-2.5 text-sm text-white/80 transition-all duration-200 hover:bg-white/[0.12] hover:text-white md:flex"

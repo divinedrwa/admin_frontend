@@ -1,4 +1,4 @@
-import { THEME_ATTRIBUTE, THEME_STORAGE_KEY } from "./tokens";
+import { THEME_ATTRIBUTE } from "./tokens";
 
 /**
  * Inline `<script>` that runs **before** React hydration and sets the
@@ -25,21 +25,15 @@ import { THEME_ATTRIBUTE, THEME_STORAGE_KEY } from "./tokens";
  * The script is the bare minimum to read localStorage and apply
  * `data-theme`. Keep it small so the page doesn't pay a parse cost.
  */
+/** Dark mode is disabled — always force light to prevent any flash. */
 export function ThemeFlashPrevention() {
   const script = `
 (function () {
   try {
-    var key = '${THEME_STORAGE_KEY}';
     var attr = '${THEME_ATTRIBUTE}';
-    var stored = localStorage.getItem(key);
-    var mode = (stored === 'light' || stored === 'dark' || stored === 'system') ? stored : 'system';
-    var resolved = mode;
-    if (mode === 'system') {
-      resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
     var html = document.documentElement;
-    html.setAttribute(attr, resolved);
-    html.style.colorScheme = resolved;
+    html.setAttribute(attr, 'light');
+    html.style.colorScheme = 'light';
   } catch (e) {}
 })();`.trim();
 

@@ -5,91 +5,49 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
 import {
   THEME_ATTRIBUTE,
-  THEME_STORAGE_KEY,
-  darkTheme,
   lightTheme,
-  type ResolvedThemeMode,
   type Theme,
   type ThemeMode,
+  type ResolvedThemeMode,
 } from "./tokens";
 
 interface ThemeContextValue {
   /** The user's preference — exactly what's in localStorage. */
   mode: ThemeMode;
-  /** What's actually rendered now: `light` or `dark`. Never `system`. */
+  /** What's actually rendered now: always `light` for now. */
   resolvedMode: ResolvedThemeMode;
-  /** The active token object — `lightTheme` or `darkTheme`. */
+  /** The active token object — always `lightTheme` for now. */
   theme: Theme;
   setMode: (mode: ThemeMode) => void;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function readStoredMode(): ThemeMode {
-  if (typeof window === "undefined") return "system";
-  const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (raw === "light" || raw === "dark" || raw === "system") return raw;
-  return "system";
-}
-
-function resolveSystemMode(): ResolvedThemeMode {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
+/** Dark mode is disabled for now — always light. */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // We start with `system` on the server to match the SSR-injected
-  // flash-prevention script (`flash-prevention.tsx`). The client reads
-  // localStorage in the first effect.
-  const [mode, setModeState] = useState<ThemeMode>("system");
-  const [resolvedMode, setResolvedMode] = useState<ResolvedThemeMode>("light");
-
-  // Hydrate from localStorage + media query on mount
-  useEffect(() => {
-    const stored = readStoredMode();
-    setModeState(stored);
-    setResolvedMode(stored === "system" ? resolveSystemMode() : stored);
-  }, []);
-
-  // React to OS-level dark-mode flips when in `system` mode
-  useEffect(() => {
-    if (mode !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => setResolvedMode(mq.matches ? "dark" : "light");
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, [mode]);
-
-  // Persist + apply to <html>
+  // Force light theme on <html>
   useEffect(() => {
     if (typeof window === "undefined") return;
-    document.documentElement.setAttribute(THEME_ATTRIBUTE, resolvedMode);
-    document.documentElement.style.colorScheme = resolvedMode;
-  }, [resolvedMode]);
+    document.documentElement.setAttribute(THEME_ATTRIBUTE, "light");
+    document.documentElement.style.colorScheme = "light";
+  }, []);
 
-  const setMode = useCallback((next: ThemeMode) => {
-    setModeState(next);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(THEME_STORAGE_KEY, next);
-    }
-    setResolvedMode(next === "system" ? resolveSystemMode() : next);
+  const setMode = useCallback((_next: ThemeMode) => {
+    // no-op — dark mode disabled
   }, []);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
-      mode,
-      resolvedMode,
-      theme: resolvedMode === "dark" ? darkTheme : lightTheme,
+      mode: "light",
+      resolvedMode: "light",
+      theme: lightTheme,
       setMode,
     }),
-    [mode, resolvedMode, setMode],
+    [setMode],
   );
 
   return (

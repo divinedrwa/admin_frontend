@@ -3,6 +3,7 @@
 import { LayoutDashboard, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Sidebar } from "@/components/Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -112,7 +113,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               "radial-gradient(circle at top right, color-mix(in srgb, var(--gp-brand-primary) 6%, transparent), transparent 20%), radial-gradient(circle at bottom left, color-mix(in srgb, var(--gp-brand-accent) 5%, transparent), transparent 24%)",
           }}
         >
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </section>
     </div>
