@@ -53,6 +53,7 @@ export default function AddExpensePage() {
   });
 
   const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
@@ -141,7 +142,21 @@ export default function AddExpensePage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles([...files, ...Array.from(e.target.files)]);
+      const incoming = Array.from(e.target.files);
+      const valid: File[] = [];
+      for (const f of incoming) {
+        if (f.size > 10 * 1024 * 1024) {
+          showToast(`"${f.name}" exceeds 10 MB limit`, 'error');
+          continue;
+        }
+        valid.push(f);
+      }
+      const total = files.length + valid.length;
+      if (total > 20) {
+        showToast(`Too many files. Maximum 20 attachments allowed.`, 'error');
+        return;
+      }
+      setFiles([...files, ...valid]);
     }
   };
 
@@ -171,13 +186,28 @@ export default function AddExpensePage() {
     setLoading(true);
 
     try {
-      // For now, we'll skip file upload and just save expense data
-      // In production, you'd upload files first and get URLs
+      // Upload files in batches of 5
+      type AttachmentMeta = { fileName: string; fileUrl: string; fileType: string; fileSize: number };
+      const attachments: AttachmentMeta[] = [];
+
+      if (files.length > 0) {
+        setUploading(true);
+        for (let i = 0; i < files.length; i += 5) {
+          const batch = files.slice(i, i + 5);
+          const fd = new FormData();
+          batch.forEach((f) => fd.append('files', f));
+          const uploadRes = await api.post('/expenses/upload-attachment', fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          attachments.push(...(uploadRes.data.attachments as AttachmentMeta[]));
+        }
+        setUploading(false);
+      }
 
       await api.post('/expenses', {
         ...formData,
         financialYearId: formData.financialYearId || undefined,
-        attachments: [] // Add file upload logic here
+        attachments,
       });
       showToast('Expense created successfully', 'success');
       router.push('/expenses');
@@ -185,6 +215,7 @@ export default function AddExpensePage() {
       console.error('Error creating expense:', error);
       showToast(parseApiError(error, "Failed to create expense").message, 'error');
     } finally {
+      setUploading(false);
       setLoading(false);
     }
   };
@@ -671,10 +702,10 @@ export default function AddExpensePage() {
           </Link>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || uploading}
             className="btn btn-primary flex-1 disabled:bg-fg-tertiary"
           >
-            {loading ? 'Saving...' : 'Save Expense'}
+            {uploading ? 'Uploading files...' : loading ? 'Saving...' : 'Save Expense'}
           </button>
         </div>
       </form>

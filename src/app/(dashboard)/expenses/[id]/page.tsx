@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, Download, Edit, FileText, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -281,25 +281,64 @@ export default function ExpenseDetailPage() {
           </div>
         )}
 
-        {Array.isArray(expense.attachments) && (expense.attachments as { id: string; fileName: string }[]).length > 0 && (
+        {Array.isArray(expense.attachments) && (expense.attachments as { id: string; fileName: string; fileUrl?: string; fileType?: string; fileSize?: number }[]).length > 0 && (
           <div className="card">
             <div className="card-header">
               <h2 className="text-sm font-semibold text-fg-secondary uppercase tracking-wide">Attachments</h2>
             </div>
             <div className="card-body">
-              <ul className="text-sm text-brand-primary space-y-1">
-                {(expense.attachments as { id: string; fileName: string; fileUrl?: string }[]).map((a) => (
-                  <li key={a.id}>
-                    {a.fileUrl ? (
-                      <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                        {a.fileName}
-                      </a>
-                    ) : (
-                      a.fileName
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(expense.attachments as { id: string; fileName: string; fileUrl?: string; fileType?: string; fileSize?: number }[]).map((a) => {
+                  const isImage = a.fileType?.startsWith('image/');
+                  return (
+                    <div key={a.id} className="border border-surface-border rounded-lg overflow-hidden">
+                      {isImage && a.fileUrl ? (
+                        <a href={a.fileUrl} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={a.fileUrl}
+                            alt={a.fileName}
+                            className="w-full h-40 object-cover bg-surface-background"
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          href={a.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center h-40 bg-surface-background"
+                        >
+                          <FileText size={48} className="text-fg-tertiary" />
+                        </a>
+                      )}
+                      <div className="p-3 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-fg-primary truncate" title={a.fileName}>
+                            {a.fileName}
+                          </p>
+                          {typeof a.fileSize === 'number' && (
+                            <p className="text-xs text-fg-secondary">
+                              {a.fileSize < 1024 * 1024
+                                ? `${(a.fileSize / 1024).toFixed(1)} KB`
+                                : `${(a.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                            </p>
+                          )}
+                        </div>
+                        {a.fileUrl && (
+                          <a
+                            href={a.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 text-brand-primary hover:text-info-fg"
+                            title="Download"
+                          >
+                            <Download size={18} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

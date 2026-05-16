@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -79,6 +79,12 @@ export default function EditExpensePage() {
   });
 
   const [tagInput, setTagInput] = useState("");
+
+  type ExistingAttachment = { id: string; fileName: string; fileUrl: string; fileType: string; fileSize: number };
+  const [existingAttachments, setExistingAttachments] = useState<ExistingAttachment[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+
   // Track whether the user manually changed paymentDate (vs initial load)
   const initialLoadDone = useRef(false);
   const userChangedDate = useRef(false);
@@ -141,6 +147,18 @@ export default function EditExpensePage() {
           (Array.isArray(exp.tags) && exp.tags.length > 0)
         ) {
           setShowAdvanced(true);
+        }
+
+        if (Array.isArray(exp.attachments)) {
+          setExistingAttachments(
+            exp.attachments.map((a: ExistingAttachment) => ({
+              id: a.id,
+              fileName: a.fileName,
+              fileUrl: a.fileUrl,
+              fileType: a.fileType || '',
+              fileSize: typeof a.fileSize === 'number' ? a.fileSize : 0,
+            }))
+          );
         }
 
         // Mark initial load complete so auto-sync doesn't overwrite saved values
@@ -227,6 +245,37 @@ export default function EditExpensePage() {
     setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
   };
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) {
+      const incoming = Array.from(e.target.files);
+      const valid: File[] = [];
+      for (const f of incoming) {
+        if (f.size > 10 * 1024 * 1024) {
+          showToast(`"${f.name}" exceeds 10 MB limit`, "error");
+          continue;
+        }
+        valid.push(f);
+      }
+      const total = existingAttachments.length + newFiles.length + valid.length;
+      if (total > 20) {
+        showToast("Too many files. Maximum 20 attachments allowed.", "error");
+        return;
+      }
+      setNewFiles((prev) => [...prev, ...valid]);
+    }
+  }
+
+  async function handleDeleteAttachment(attachmentId: string) {
+    if (!id) return;
+    try {
+      await api.delete(`/expenses/${id}/attachments/${attachmentId}`);
+      setExistingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+      showToast("Attachment deleted", "success");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to delete attachment").message, "error");
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!id) return;
@@ -254,11 +303,35 @@ export default function EditExpensePage() {
         notes: formData.notes || undefined,
         tags: formData.tags,
       });
+
+      // Upload new files and attach to expense
+      if (newFiles.length > 0) {
+        setUploading(true);
+        type AttachmentMeta = { fileName: string; fileUrl: string; fileType: string; fileSize: number };
+        const uploadedAttachments: AttachmentMeta[] = [];
+
+        for (let i = 0; i < newFiles.length; i += 5) {
+          const batch = newFiles.slice(i, i + 5);
+          const fd = new FormData();
+          batch.forEach((f) => fd.append("files", f));
+          const uploadRes = await api.post("/expenses/upload-attachment", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          uploadedAttachments.push(...(uploadRes.data.attachments as AttachmentMeta[]));
+        }
+
+        await api.post(`/expenses/${id}/attachments`, {
+          attachments: uploadedAttachments,
+        });
+        setUploading(false);
+      }
+
       showToast("Expense updated", "success");
       router.push(`/expenses/${id}`);
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to update expense").message, "error");
     } finally {
+      setUploading(false);
       setSaving(false);
     }
   }
@@ -628,16 +701,121 @@ export default function EditExpensePage() {
           </div>
         </div>
 
+        {/* Receipts & Documents */}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="text-lg font-semibold text-fg-primary">Receipts & Documents</h2>
+          </div>
+          <div className="card-body space-y-4">
+            {/* Existing attachments */}
+            {existingAttachments.length > 0 && (
+              <div className="space-y-2">
+                {existingAttachments.map((a) => {
+                  const isImage = a.fileType?.startsWith("image/");
+                  return (
+                    <div key={a.id} className="flex items-center justify-between bg-surface-background p-3 rounded">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {isImage ? (
+                          <img src={a.fileUrl} alt={a.fileName} className="w-10 h-10 object-cover rounded shrink-0" />
+                        ) : (
+                          <FileText size={24} className="text-fg-tertiary shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <a
+                            href={a.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-brand-primary hover:underline truncate block"
+                          >
+                            {a.fileName}
+                          </a>
+                          {a.fileSize > 0 && (
+                            <div className="text-xs text-fg-secondary">
+                              {a.fileSize < 1024 * 1024
+                                ? `${(a.fileSize / 1024).toFixed(1)} KB`
+                                : `${(a.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAttachment(a.id)}
+                        className="text-brand-danger hover:text-brand-danger shrink-0 ml-2"
+                        title="Remove attachment"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Upload new files */}
+            <div className="border-2 border-dashed border-surface-border rounded-lg p-6">
+              <div className="text-center">
+                <Upload size={48} className="mx-auto text-fg-tertiary mb-4" />
+                <label className="cursor-pointer">
+                  <span className="text-brand-primary hover:text-brand-primary font-medium">
+                    Upload files
+                  </span>
+                  <span className="text-fg-secondary"> or drag and drop</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,application/pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+                <p className="text-sm text-fg-secondary mt-2">
+                  PNG, JPG, PDF up to 10MB each
+                </p>
+              </div>
+            </div>
+
+            {/* New files queued */}
+            {newFiles.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-fg-secondary uppercase">New files to upload</p>
+                {newFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between bg-surface-background p-3 rounded">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">
+                        {file.type.startsWith("image/") ? "📷" : "📄"}
+                      </span>
+                      <div>
+                        <div className="text-sm font-medium text-fg-primary">{file.name}</div>
+                        <div className="text-xs text-fg-secondary">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}
+                      className="text-brand-danger hover:text-brand-danger"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex gap-4">
           <Link href={`/expenses/${id}`} className="btn btn-ghost flex-1 text-center">
             Cancel
           </Link>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || uploading}
             className="btn btn-primary flex-1 disabled:bg-fg-tertiary"
           >
-            {saving ? "Saving..." : "Save changes"}
+            {uploading ? "Uploading files..." : saving ? "Saving..." : "Save changes"}
           </button>
         </div>
       </form>
