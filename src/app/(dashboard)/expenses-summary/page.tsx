@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TrendingUp, Download, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -108,31 +108,36 @@ export default function MonthlySummaryPage() {
     }
   }, [monthOptions]);
 
-  const fetchData = useCallback(async () => {
-    if (!selectedFyId) return;
-    try {
-      setLoading(true);
-
-      const [summaryRes, breakdownRes, trendsRes] = await Promise.all([
-        api.get(`/expenses/summary/monthly?month=${month}&year=${year}`),
-        api.get(`/expenses/summary/category-breakdown?month=${month}&year=${year}&financialYearId=${selectedFyId}`),
-        api.get(`/expenses/analytics/trends?financialYearId=${selectedFyId}`),
-      ]);
-
-      setSummary(summaryRes.data);
-      setCategoryBreakdown(breakdownRes.data ?? []);
-      setTrends(trendsRes.data ?? []);
-    } catch (error: unknown) {
-      console.error('Error fetching data:', error);
-      showToast(parseApiError(error, "Failed to fetch expense summary").message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [month, year, selectedFyId]);
-
+  // Fetch data whenever the selected period changes.
+  // A single effect avoids stale-closure races between the FY and month effects.
   useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+    if (!selectedFyId) return;
+
+    let cancelled = false;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const [summaryRes, breakdownRes, trendsRes] = await Promise.all([
+          api.get(`/expenses/summary/monthly?month=${month}&year=${year}`),
+          api.get(`/expenses/summary/category-breakdown?month=${month}&year=${year}&financialYearId=${selectedFyId}`),
+          api.get(`/expenses/analytics/trends?financialYearId=${selectedFyId}`),
+        ]);
+        if (cancelled) return;
+        setSummary(summaryRes.data);
+        setCategoryBreakdown(breakdownRes.data ?? []);
+        setTrends(trendsRes.data ?? []);
+      } catch (error: unknown) {
+        if (cancelled) return;
+        console.error('Error fetching data:', error);
+        showToast(parseApiError(error, "Failed to fetch expense summary").message, 'error');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [month, year, selectedFyId]);
 
   const selectedFyLabel = financialYears.find(fy => fy.id === selectedFyId)?.label ?? '';
   const selectedMonthLabel = monthOptions.find(o => o.month === month && o.year === year)?.label ?? `${MONTHS[month - 1]} ${year}`;
