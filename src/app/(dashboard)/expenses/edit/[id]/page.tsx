@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, useMemo, useRef, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, X } from "lucide-react";
 import Link from "next/link";
@@ -8,10 +8,7 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+type FinancialYear = { id: string; label: string; startDate: string; endDate: string };
 
 type FormState = {
   categoryId: string;
@@ -25,6 +22,7 @@ type FormState = {
   paidToContact: string;
   receiptNumber: string;
   invoiceNumber: string;
+  financialYearId: string;
   month: number;
   year: number;
   gstPercentage: number;
@@ -51,6 +49,7 @@ export default function EditExpensePage() {
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
 
   const [categories, setCategories] = useState<{ id: string; name: string; icon?: string; isActive?: boolean }[]>([]);
+  const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
   const [loadingExpense, setLoadingExpense] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -68,6 +67,7 @@ export default function EditExpensePage() {
     paidToContact: "",
     receiptNumber: "",
     invoiceNumber: "",
+    financialYearId: "",
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
     gstPercentage: 0,
@@ -79,6 +79,9 @@ export default function EditExpensePage() {
   });
 
   const [tagInput, setTagInput] = useState("");
+  // Track whether the user manually changed paymentDate (vs initial load)
+  const initialLoadDone = useRef(false);
+  const userChangedDate = useRef(false);
 
   useEffect(() => {
     if (!id) return;
@@ -89,17 +92,20 @@ export default function EditExpensePage() {
       setLoadingExpense(true);
       setLoadError(null);
       try {
-        const [catRes, expRes] = await Promise.all([
+        const [catRes, expRes, fyRes] = await Promise.all([
           api.get(`/expenses/categories`),
           api.get(`/expenses/${id}`),
+          api.get('/v1/admin/financial-years'),
         ]);
 
         const cats = catRes.data ?? [];
         const exp = expRes.data;
+        const fys: FinancialYear[] = fyRes.data.financialYears ?? [];
 
         if (cancelled) return;
 
         setCategories((cats as { id: string; name: string; icon?: string; isActive?: boolean }[]).filter((c) => c.isActive !== false));
+        setFinancialYears(fys);
 
         const pd = exp.paymentDate
           ? new Date(exp.paymentDate).toISOString().split("T")[0]
@@ -117,6 +123,7 @@ export default function EditExpensePage() {
           paidToContact: exp.paidToContact || "",
           receiptNumber: exp.receiptNumber || "",
           invoiceNumber: exp.invoiceNumber || "",
+          financialYearId: exp.financialYear?.id || exp.financialYearId || "",
           month: typeof exp.month === "number" ? exp.month : new Date().getMonth() + 1,
           year: typeof exp.year === "number" ? exp.year : new Date().getFullYear(),
           gstPercentage: typeof exp.gstPercentage === "number" ? exp.gstPercentage : 0,
@@ -135,6 +142,9 @@ export default function EditExpensePage() {
         ) {
           setShowAdvanced(true);
         }
+
+        // Mark initial load complete so auto-sync doesn't overwrite saved values
+        initialLoadDone.current = true;
       } catch (err: unknown) {
         const apiError = err as ApiError;
         if (!cancelled) {
@@ -166,6 +176,46 @@ export default function EditExpensePage() {
     }
   }, [formData.amount, formData.tdsPercentage]);
 
+  const monthOptions = useMemo(() => {
+    const fy = financialYears.find(x => x.id === formData.financialYearId);
+    if (!fy) return [];
+    const start = new Date(fy.startDate);
+    const end = new Date(fy.endDate);
+    const rows: { month: number; year: number; label: string }[] = [];
+    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (cursor <= end) {
+      rows.push({
+        month: cursor.getMonth() + 1,
+        year: cursor.getFullYear(),
+        label: cursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return rows;
+  }, [financialYears, formData.financialYearId]);
+
+  // Auto-sync: paymentDate → FY + Month (only when user changes the date, not on initial load)
+  useEffect(() => {
+    if (!formData.paymentDate || financialYears.length === 0) return;
+    if (!userChangedDate.current) return;
+
+    const date = new Date(formData.paymentDate + 'T00:00:00');
+    if (isNaN(date.getTime())) return;
+
+    const matchedFy = financialYears.find(fy => {
+      const start = new Date(fy.startDate);
+      const end = new Date(fy.endDate);
+      return date >= start && date <= end;
+    });
+
+    setFormData(prev => ({
+      ...prev,
+      financialYearId: matchedFy?.id ?? '',
+      month: date.getMonth() + 1,
+      year: date.getFullYear(),
+    }));
+  }, [formData.paymentDate, financialYears]);
+
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
       setFormData((prev) => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
@@ -194,6 +244,7 @@ export default function EditExpensePage() {
         paidToContact: formData.paidToContact || undefined,
         receiptNumber: formData.receiptNumber || undefined,
         invoiceNumber: formData.invoiceNumber || undefined,
+        financialYearId: formData.financialYearId || undefined,
         month: formData.month,
         year: formData.year,
         gstAmount: formData.gstAmount,
@@ -325,7 +376,10 @@ export default function EditExpensePage() {
                 <input
                   type="date"
                   value={formData.paymentDate}
-                  onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
+                  onChange={(e) => {
+                    userChangedDate.current = true;
+                    setFormData({ ...formData, paymentDate: e.target.value });
+                  }}
                   className="input"
                   required
                 />
@@ -388,7 +442,7 @@ export default function EditExpensePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-fg-primary mb-1">Receipt number</label>
                 <input
@@ -407,31 +461,48 @@ export default function EditExpensePage() {
                   className="input"
                 />
               </div>
+            </div>
+
+            {/* Financial Period */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-fg-primary mb-1">Month / year</label>
-                <div className="flex gap-2">
-                  <select
-                    value={formData.month}
-                    onChange={(e) => setFormData({ ...formData, month: parseInt(e.target.value, 10) })}
-                    className="input flex-1"
-                  >
-                    {MONTHS.map((month, index) => (
-                      <option key={month} value={index + 1}>
-                        {month.substring(0, 3)}
-                      </option>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Financial Year *</label>
+                <select
+                  value={formData.financialYearId}
+                  onChange={(e) => setFormData({ ...formData, financialYearId: e.target.value })}
+                  className="input"
+                >
+                  <option value="">Select Financial Year</option>
+                  {[...financialYears]
+                    .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+                    .map(fy => (
+                      <option key={fy.id} value={fy.id}>{fy.label}</option>
                     ))}
-                  </select>
-                  <input
-                    type="number"
-                    value={formData.year}
-                    onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value, 10) })}
-                    className="input w-24"
-                    min={2020}
-                    max={2035}
-                  />
-                </div>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">Billing Month *</label>
+                <select
+                  value={monthOptions.length > 0 ? `${formData.month}-${formData.year}` : ''}
+                  onChange={(e) => {
+                    const [m, y] = e.target.value.split('-').map(Number);
+                    setFormData(prev => ({ ...prev, month: m, year: y }));
+                  }}
+                  className="input"
+                  disabled={!formData.financialYearId || monthOptions.length === 0}
+                >
+                  <option value="">Select Month</option>
+                  {monthOptions.map(opt => (
+                    <option key={`${opt.month}-${opt.year}`} value={`${opt.month}-${opt.year}`}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
+            <p className="text-xs text-fg-secondary -mt-2">
+              Auto-selected from payment date. Change manually if needed.
+            </p>
           </div>
         </div>
 

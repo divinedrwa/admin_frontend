@@ -123,6 +123,11 @@ export default function ExpenseDetailPage() {
                 · {MONTHS[(expense.month as number) - 1]} {expense.year as number}
               </span>
             )}
+            {(expense.financialYear as { label?: string } | null)?.label && (
+              <span className="text-fg-secondary">
+                · {(expense.financialYear as { label: string }).label}
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">

@@ -20,6 +20,7 @@ interface Expense {
   receiptNumber?: string;
   month?: number;
   year?: number;
+  financialYear?: { id: string; label: string } | null;
   status: string;
   category: {
     id: string;
@@ -37,6 +38,8 @@ interface ExpenseCategory {
   color?: string;
 }
 
+type FinancialYear = { id: string; label: string; startDate: string; endDate: string };
+
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
@@ -45,11 +48,13 @@ const MONTHS = [
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedFyId, setSelectedFyId] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -73,10 +78,20 @@ export default function ExpensesPage() {
     }
   }, []);
 
+  const fetchFinancialYears = useCallback(async () => {
+    try {
+      const response = await api.get('/v1/admin/financial-years');
+      setFinancialYears(response.data.financialYears ?? []);
+    } catch (error: unknown) {
+      console.error('Error fetching financial years:', error);
+    }
+  }, []);
+
   const fetchExpenses = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (selectedCategory) params.append('categoryId', selectedCategory);
+      if (selectedFyId) params.append('financialYearId', selectedFyId);
       if (selectedMonth) params.append('month', selectedMonth);
       if (selectedYear) params.append('year', selectedYear);
       if (selectedStatus) params.append('status', selectedStatus);
@@ -110,12 +125,13 @@ export default function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedCategory, selectedMonth, selectedPaymentMode, selectedStatus, selectedYear]);
+  }, [searchTerm, selectedCategory, selectedFyId, selectedMonth, selectedPaymentMode, selectedStatus, selectedYear]);
 
   useEffect(() => {
     void fetchCategories();
+    void fetchFinancialYears();
     void fetchExpenses();
-  }, [fetchCategories, fetchExpenses]);
+  }, [fetchCategories, fetchFinancialYears, fetchExpenses]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
@@ -158,6 +174,7 @@ export default function ExpensesPage() {
 
   const clearFilters = () => {
     setSelectedCategory('');
+    setSelectedFyId('');
     setSelectedMonth('');
     setSelectedYear('');
     setSelectedStatus('');
@@ -243,7 +260,7 @@ export default function ExpensesPage() {
         <div className="flex items-center gap-2 mb-4">
           <Filter size={20} className="text-fg-secondary" />
           <span className="font-semibold text-fg-primary">Filters</span>
-          {(searchTerm || selectedCategory || selectedMonth || selectedYear || selectedStatus || selectedPaymentMode) && (
+          {(searchTerm || selectedCategory || selectedFyId || selectedMonth || selectedYear || selectedStatus || selectedPaymentMode) && (
             <button
               onClick={clearFilters}
               className="ml-auto text-sm text-brand-primary hover:text-brand-primary"
@@ -269,6 +286,20 @@ export default function ExpensesPage() {
             </div>
           </div>
 
+          {/* Financial Year */}
+          <select
+            value={selectedFyId}
+            onChange={(e) => setSelectedFyId(e.target.value)}
+            className="input"
+          >
+            <option value="">All Financial Years</option>
+            {[...financialYears]
+              .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+              .map(fy => (
+                <option key={fy.id} value={fy.id}>{fy.label}</option>
+              ))}
+          </select>
+
           {/* Category */}
           <select
             value={selectedCategory}
@@ -292,18 +323,6 @@ export default function ExpensesPage() {
             <option value="">All Months</option>
             {MONTHS.map((month, index) => (
               <option key={index} value={index + 1}>{month}</option>
-            ))}
-          </select>
-
-          {/* Year */}
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="input"
-          >
-            <option value="">All Years</option>
-            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-              <option key={year} value={year}>{year}</option>
             ))}
           </select>
 
@@ -334,6 +353,7 @@ export default function ExpensesPage() {
                 <th className="table-th">Title</th>
                 <th className="table-th">Paid To</th>
                 <th className="table-th">Amount</th>
+                <th className="table-th">FY</th>
                 <th className="table-th">Payment</th>
                 <th className="table-th">Attachments</th>
                 <th className="table-th text-right">Actions</th>
@@ -342,7 +362,7 @@ export default function ExpensesPage() {
             <tbody className="bg-surface divide-y divide-surface-border">
               {expenses.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
+                  <td colSpan={9} className="px-6 py-12 text-center">
                     <div className="empty-state">
                       <span className="empty-state-icon">💰</span>
                       <p className="empty-state-title">No expenses found</p>
@@ -406,6 +426,11 @@ export default function ExpensesPage() {
                           Net: ₹{expense.netAmount.toLocaleString()}
                         </div>
                       )}
+                    </td>
+                    <td className="table-td whitespace-nowrap">
+                      <span className="text-sm text-fg-secondary">
+                        {expense.financialYear?.label ?? '—'}
+                      </span>
                     </td>
                     <td className="table-td whitespace-nowrap">
                       <span className={`badge ${
