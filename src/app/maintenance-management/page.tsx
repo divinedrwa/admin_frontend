@@ -35,6 +35,7 @@ type GridSummary = {
   unpaidCount: number;
   overdueCount: number;
   partialCount?: number;
+  excludedCount?: number;
   totalAmount: number;
   collectedAmount: number;
   pendingAmount: number;
@@ -55,6 +56,7 @@ type ResidentRow = {
   snapshotId?: string;
   advanceCredit?: number;
   cashPaidThisCycle?: number;
+  isExcluded?: boolean;
 };
 
 type GridCycleInfo = {
@@ -102,7 +104,7 @@ export default function MaintenanceManagementPage() {
   const [summary, setSummary] = useState<GridSummary | null>(null);
   const [residents, setResidents] = useState<ResidentRow[]>([]);
   const [gridCycle, setGridCycle] = useState<GridCycleInfo | null>(null);
-  const [filterStatus, setFilterStatus] = useState<"all" | PaymentStatus>("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | PaymentStatus | "EXCLUDED">("all");
   const [search, setSearch] = useState("");
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -113,6 +115,9 @@ export default function MaintenanceManagementPage() {
   const [creditAmount, setCreditAmount] = useState("");
   const [creditRemarks, setCreditRemarks] = useState("");
   const [showCreditHelp, setShowCreditHelp] = useState(false);
+  const [showExcludeModal, setShowExcludeModal] = useState(false);
+  const [excludeTarget, setExcludeTarget] = useState<ResidentRow | null>(null);
+  const [excludeReason, setExcludeReason] = useState("");
   const [rowEdit, setRowEdit] = useState<{
     villaId: string;
     villaNumber: string;
@@ -136,7 +141,11 @@ export default function MaintenanceManagementPage() {
 
   const filteredResidents = useMemo(() => {
     let rows = residents;
-    if (filterStatus !== "all") rows = rows.filter((r) => r.status === filterStatus);
+    if (filterStatus === "EXCLUDED") {
+      rows = rows.filter((r) => r.isExcluded);
+    } else if (filterStatus !== "all") {
+      rows = rows.filter((r) => r.status === filterStatus && !r.isExcluded);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       rows = rows.filter(
@@ -439,6 +448,51 @@ export default function MaintenanceManagementPage() {
     }
   }
 
+  function openExcludeModal(row: ResidentRow) {
+    setExcludeTarget(row);
+    setExcludeReason("");
+    setShowExcludeModal(true);
+  }
+
+  async function submitExcludeVilla(e: React.FormEvent) {
+    e.preventDefault();
+    if (!excludeTarget || !selectedMaintenanceCycleId) return;
+    try {
+      setLoading(true);
+      await api.post(
+        `/maintenance-management/collection/cycles/${selectedMaintenanceCycleId}/exclude-villa`,
+        {
+          villaId: excludeTarget.villaId,
+          reason: excludeReason.trim() || undefined,
+        }
+      );
+      setShowExcludeModal(false);
+      setExcludeTarget(null);
+      await loadGrid(selectedCycleId);
+      showToast(`Villa ${excludeTarget.villaNumber} excluded from this cycle`, "success");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to exclude villa").message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function includeVilla(row: ResidentRow) {
+    if (!selectedMaintenanceCycleId) return;
+    try {
+      setLoading(true);
+      await api.delete(
+        `/maintenance-management/collection/cycles/${selectedMaintenanceCycleId}/exclude-villa/${row.villaId}`
+      );
+      await loadGrid(selectedCycleId);
+      showToast(`Villa ${row.villaNumber} re-included in this cycle`, "success");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to include villa").message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const formatCurrency = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
   return (
@@ -561,6 +615,12 @@ export default function MaintenanceManagementPage() {
               <div className="stat-card-label text-brand-primary">Collection</div>
               <div className="stat-card-value text-lg text-fg-primary">{summary.collectionRate}%</div>
             </div>
+            {(summary.excludedCount ?? 0) > 0 && (
+              <div className="stat-card bg-surface-elevated">
+                <div className="stat-card-label text-fg-tertiary">Excluded</div>
+                <div className="stat-card-value text-lg text-fg-primary">{summary.excludedCount}</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -615,7 +675,7 @@ export default function MaintenanceManagementPage() {
         <div className="filter-bar flex gap-3 items-center">
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as "all" | PaymentStatus)}
+            onChange={(e) => setFilterStatus(e.target.value as "all" | PaymentStatus | "EXCLUDED")}
             className="input"
           >
             <option value="all">All status</option>
@@ -623,6 +683,7 @@ export default function MaintenanceManagementPage() {
             <option value="PENDING">Pending</option>
             <option value="PARTIAL">Partial</option>
             <option value="OVERDUE">Overdue</option>
+            <option value="EXCLUDED">Excluded</option>
           </select>
           <input
             type="text"
@@ -685,43 +746,67 @@ export default function MaintenanceManagementPage() {
                       )}
                     </td>
                     <td className="table-td">
-                      <span className={`badge ${
-                        r.status === "PAID"
-                          ? "badge-success"
-                          : r.status === "OVERDUE"
-                            ? "badge-danger"
-                            : r.status === "PARTIAL"
-                              ? "badge-warning"
-                              : "badge-gray"
-                      }`}>
-                        {r.status}
-                      </span>
+                      {r.isExcluded ? (
+                        <span className="badge badge-gray">EXCLUDED</span>
+                      ) : (
+                        <span className={`badge ${
+                          r.status === "PAID"
+                            ? "badge-success"
+                            : r.status === "OVERDUE"
+                              ? "badge-danger"
+                              : r.status === "PARTIAL"
+                                ? "badge-warning"
+                                : "badge-gray"
+                        }`}>
+                          {r.status}
+                        </span>
+                      )}
                     </td>
                     <td className="table-td">
-                      <div className="flex flex-wrap items-center gap-2">
+                      {r.isExcluded ? (
                         <button
                           type="button"
-                          onClick={() => openRowEdit(r)}
+                          onClick={() => includeVilla(r)}
                           disabled={!cycleEditable || loading}
-                          title={!cycleEditable ? "Only OPEN periods can be edited" : "Edit expected & collected"}
-                          className="text-fg-primary hover:text-brand-primary font-medium disabled:opacity-40"
+                          className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
                         >
-                          Edit
+                          Include
                         </button>
-                        {r.status !== "PAID" && (
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => openMarkPaid(r)}
+                            onClick={() => openRowEdit(r)}
                             disabled={!cycleEditable || loading}
-                            className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
+                            title={!cycleEditable ? "Only OPEN periods can be edited" : "Edit expected & collected"}
+                            className="text-fg-primary hover:text-brand-primary font-medium disabled:opacity-40"
                           >
-                            Mark paid
+                            Edit
                           </button>
-                        )}
-                        {r.status === "PAID" && (
-                          <span className="text-fg-secondary text-xs">Receipt: {r.receiptNumber || "—"}</span>
-                        )}
-                      </div>
+                          {r.status !== "PAID" && (
+                            <button
+                              type="button"
+                              onClick={() => openMarkPaid(r)}
+                              disabled={!cycleEditable || loading}
+                              className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
+                            >
+                              Mark paid
+                            </button>
+                          )}
+                          {r.status === "PAID" && (
+                            <span className="text-fg-secondary text-xs">Receipt: {r.receiptNumber || "—"}</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => openExcludeModal(r)}
+                            disabled={!cycleEditable || loading}
+                            className="text-fg-tertiary hover:text-denied-fg text-sm disabled:opacity-40"
+                            title="Exclude this villa from the cycle"
+                          >
+                            Exclude
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -1072,6 +1157,53 @@ export default function MaintenanceManagementPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ── Exclude Villa modal ── */}
+      {showExcludeModal && excludeTarget && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md">
+            <div className="card-header">
+              <h2 className="text-lg font-semibold">Exclude Villa from Cycle</h2>
+            </div>
+            <div className="card-body">
+              <p className="text-sm text-fg-secondary mb-4">
+                Exclude <strong>{excludeTarget.villaNumber}</strong> ({excludeTarget.ownerName}) from this billing cycle.
+                The villa will show as EXCLUDED with ₹0 expected. It will be automatically included in the next cycle.
+              </p>
+              <form onSubmit={submitExcludeVilla} className="space-y-3">
+                <div>
+                  <label className="block text-sm text-fg-primary mb-1">Reason (optional)</label>
+                  <textarea
+                    value={excludeReason}
+                    onChange={(e) => setExcludeReason(e.target.value)}
+                    placeholder="e.g. Villa under renovation, vacant unit, courtesy waiver"
+                    className="input w-full"
+                    rows={2}
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn bg-brand-danger text-white hover:opacity-90 flex-1 disabled:opacity-50"
+                  >
+                    Exclude Villa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExcludeModal(false);
+                      setExcludeTarget(null);
+                    }}
+                    className="btn btn-ghost flex-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
