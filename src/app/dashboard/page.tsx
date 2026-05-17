@@ -401,18 +401,16 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     const maintenanceView = billingMaint ?? maint;
     const pendingRupee = maintenanceView?.totalPending ?? 0;
+    const credit = fund?.totalAdvanceCredit ?? 0;
     const fundBalance = fund?.currentFundBalance ?? 0;
+    const spendable = fundBalance - credit;
     const fundSub = (() => {
       if (fund == null) return "Fund snapshot unavailable";
-      const parts: string[] = [
-        `In ${fmtInr(fund.allTimeCollected)}`,
-        `Out ${fmtInr(fund.allTimeSpent)}`,
-      ];
-      // Surface the advance-credit pool when residents have prepaid; it's
-      // already inside the balance number above, but it's useful to know
-      // the slice that's already earmarked for future cycles.
-      const credit = fund.totalAdvanceCredit ?? 0;
+      const parts: string[] = [];
       if (credit > 0.5) parts.push(`Credit pool ${fmtInr(credit)}`);
+      parts.push(`Bank ${fmtInr(fundBalance)}`);
+      parts.push(`In ${fmtInr(fund.allTimeCollected)}`);
+      parts.push(`Out ${fmtInr(fund.allTimeSpent)}`);
       return parts.join(" · ");
     })();
     return [
@@ -432,10 +430,10 @@ export default function DashboardPage() {
       },
       {
         icon: "🏦",
-        label: "Society fund balance",
-        value: fmtInr(fundBalance),
+        label: credit > 0.5 ? "Society fund (spendable)" : "Society fund balance",
+        value: fmtInr(credit > 0.5 ? spendable : fundBalance),
         sub: fundSub,
-        accent: fundBalance >= 0 ? STAT_ACCENTS.green : STAT_ACCENTS.red,
+        accent: (credit > 0.5 ? spendable : fundBalance) >= 0 ? STAT_ACCENTS.green : STAT_ACCENTS.red,
         trend: fundTrend,
       },
       {
