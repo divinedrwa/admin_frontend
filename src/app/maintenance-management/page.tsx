@@ -91,6 +91,7 @@ const MONTHS = [
 
 export default function MaintenanceManagementPage() {
   const [loading, setLoading] = useState(false);
+  const [gridLoading, setGridLoading] = useState(false);
   const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
   const [selectedFinancialYearId, setSelectedFinancialYearId] = useState("");
   const [cycles, setCycles] = useState<CycleRow[]>([]);
@@ -252,11 +253,14 @@ export default function MaintenanceManagementPage() {
   }, [selectedFinancialYearId]);
 
   useEffect(() => {
-    void loadGrid(selectedCycleId).catch((err: unknown) => {
-      showToast(parseApiError(err, "Failed to load residents").message, "error");
-      setSummary(null);
-      setResidents([]);
-    });
+    setGridLoading(true);
+    void loadGrid(selectedCycleId)
+      .catch((err: unknown) => {
+        showToast(parseApiError(err, "Failed to load residents").message, "error");
+        setSummary(null);
+        setResidents([]);
+      })
+      .finally(() => setGridLoading(false));
   }, [selectedCycleId]);
 
   async function saveVillaCustomAmount() {
@@ -694,7 +698,12 @@ export default function MaintenanceManagementPage() {
           />
         </div>
 
-        <div className="table-wrapper">
+        <div className="table-wrapper relative">
+          {gridLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/60">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
+            </div>
+          )}
           <table className="table">
             <thead className="table-head">
               <tr>

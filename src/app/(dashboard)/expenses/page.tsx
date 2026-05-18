@@ -57,7 +57,7 @@ export default function ExpensesPage() {
   const [selectedFyId, setSelectedFyId] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('APPROVED');
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('');
 
   // Stats
@@ -100,9 +100,12 @@ export default function ExpensesPage() {
 
       const response = await api.get(`/expenses?${params.toString()}`);
       const data = response.data ?? [];
+      const serverTotal = parseInt(response.headers['x-total-count'] || '0', 10);
       setExpenses(data);
-      
-      // Calculate stats
+
+      // Calculate stats from the returned page. Note: these are accurate only
+      // when filters narrow results below one page. The entry count uses the
+      // server-provided total so it always reflects the full filtered set.
       const total = data.reduce((sum: number, exp: Expense) => sum + exp.amount, 0);
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
@@ -112,10 +115,10 @@ export default function ExpensesPage() {
       const thisYear = data
         .filter((exp: Expense) => exp.year === currentYear)
         .reduce((sum: number, exp: Expense) => sum + exp.amount, 0);
-      
+
       setStats({
         total,
-        count: data.length,
+        count: serverTotal || data.length,
         thisMonth,
         thisYear
       });
@@ -147,7 +150,12 @@ export default function ExpensesPage() {
   };
 
   const exportToExcel = () => {
-    // Simple CSV export
+    const escapeCsv = (v: unknown): string => {
+      const s = String(v ?? "");
+      return s.includes(",") || s.includes('"') || s.includes("\n")
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
     const headers = ['Date', 'Category', 'Title', 'Paid To', 'Amount', 'Payment Mode', 'Status'];
     const rows = expenses.map(exp => [
       new Date(exp.paymentDate).toLocaleDateString(),
@@ -158,10 +166,10 @@ export default function ExpensesPage() {
       exp.paymentMode,
       exp.status
     ]);
-    
+
     const csv = [
       headers.join(','),
-      ...rows.map(row => row.join(','))
+      ...rows.map(row => row.map(escapeCsv).join(','))
     ].join('\n');
     
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -177,7 +185,7 @@ export default function ExpensesPage() {
     setSelectedFyId('');
     setSelectedMonth('');
     setSelectedYear('');
-    setSelectedStatus('');
+    setSelectedStatus('APPROVED');
     setSelectedPaymentMode('');
     setSearchTerm('');
   };
@@ -249,7 +257,7 @@ export default function ExpensesPage() {
         <div className="stat-card bg-brand-primary-light">
           <div className="stat-card-label text-brand-primary">Avg per Month</div>
           <div className="stat-card-value text-info-fg">
-            ₹{stats.thisYear > 0 ? Math.round(stats.thisYear / new Date().getMonth() + 1).toLocaleString() : 0}
+            ₹{stats.thisYear > 0 ? Math.round(stats.thisYear / (new Date().getMonth() + 1)).toLocaleString() : 0}
           </div>
           <div className="text-sm text-brand-primary mt-1">Current year</div>
         </div>
@@ -270,7 +278,7 @@ export default function ExpensesPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
             <div className="relative">
@@ -280,7 +288,7 @@ export default function ExpensesPage() {
                 placeholder="Search title, description, vendor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && fetchExpenses()}
+                onKeyDown={(e) => e.key === 'Enter' && fetchExpenses()}
                 className="input pl-10"
               />
             </div>
@@ -339,6 +347,19 @@ export default function ExpensesPage() {
             <option value="BANK_TRANSFER">Bank Transfer</option>
             <option value="CHEQUE">Cheque</option>
           </select>
+
+          {/* Status */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="input"
+          >
+            <option value="APPROVED">Approved</option>
+            <option value="">All Statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="PENDING">Pending</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
         </div>
       </div>
 
@@ -390,7 +411,7 @@ export default function ExpensesPage() {
                       <div className="flex items-center gap-2">
                         <span
                           className="w-8 h-8 rounded flex items-center justify-center"
-                          style={{ backgroundColor: expense.category.color + '20' }}
+                          style={{ backgroundColor: (expense.category.color ?? '#666666') + '20' }}
                         >
                           {expense.category.icon || '📋'}
                         </span>

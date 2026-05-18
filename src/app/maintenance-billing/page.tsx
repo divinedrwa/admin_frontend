@@ -46,7 +46,21 @@ type AuditRow = {
   createdAt: string;
 };
 
-type ResidentRow = Record<string, unknown>;
+type ResidentRow = {
+  id?: string;
+  userId?: string;
+  name?: string;
+  flat?: string;
+  cycleKey?: string;
+  paymentStatus?: string;
+  expectedAmount?: number;
+  cashPaidAmount?: number;
+  effectivePaidAmount?: number;
+  paidAmount?: number;
+  deltaAmount?: number;
+  statusBadge?: string;
+  [key: string]: unknown;
+};
 type ResidentTotals = {
   totalExpected: number;
   totalCollected: number;
@@ -125,6 +139,7 @@ export default function MaintenanceBillingPage() {
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("");
   const [residentRows, setResidentRows] = useState<ResidentRow[]>([]);
+  const [residentsLoading, setResidentsLoading] = useState(false);
   const [residentTotals, setResidentTotals] = useState<ResidentTotals>({
     totalExpected: 0,
     totalCollected: 0,
@@ -224,14 +239,14 @@ export default function MaintenanceBillingPage() {
     if (filterMonth) params.cycleMonth = filterMonth;
     if (filterStatus) params.status = filterStatus;
     if (sortBy) params.sortBy = sortBy;
+    setResidentsLoading(true);
     void api
       .get("/v1/admin/residents/payments", { params })
       .then((r) => {
         const rows = sortByVillaNumber(
           (r.data.rows ?? []) as ResidentRow[],
           (row) => {
-            const flat = (row as Record<string, unknown>).flat;
-            return typeof flat === "string" ? flat : null;
+            return typeof row.flat === "string" ? row.flat : null;
           },
         );
         setResidentRows(rows);
@@ -244,7 +259,8 @@ export default function MaintenanceBillingPage() {
         });
         setLastSyncedAt(new Date());
       })
-      .catch(() => showToast("Could not load residents", "error"));
+      .catch(() => showToast("Could not load residents", "error"))
+      .finally(() => setResidentsLoading(false));
   }, [tab, filterMonth, filterStatus, sortBy]);
 
   const cycleOptions = useMemo(() => cycles.map((c) => ({ id: c.id, label: `${c.cycleKey} · ${c.title}` })), [cycles]);
@@ -299,7 +315,7 @@ export default function MaintenanceBillingPage() {
       return;
     }
     try {
-      await api.post("/maintenance-management/collection/financial-years", {
+      await api.post("/v1/admin/financial-years", {
         label: fyForm.label,
         startDate: new Date(fyForm.startDate).toISOString(),
         endDate: new Date(fyForm.endDate).toISOString(),
@@ -1056,7 +1072,12 @@ export default function MaintenanceBillingPage() {
                 <option value="highest_credit">Highest credit first</option>
               </select>
             </div>
-            <div className="table-wrapper">
+            <div className="table-wrapper relative">
+              {residentsLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/60">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
+                </div>
+              )}
               <table className="table">
                 <thead className="table-head">
                   <tr>
@@ -1072,17 +1093,15 @@ export default function MaintenanceBillingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {residentRows.map((r, idx) => (
-                    <tr key={idx} className="table-row">
-                      {(() => {
-                        const delta = Number(r.deltaAmount ?? 0);
-                        const status = String(r.statusBadge ?? "");
-                        return (
-                          <>
-                      <td className="table-td">{String(r.name ?? "")}</td>
-                      <td className="table-td">{String(r.flat ?? "")}</td>
-                      <td className="table-td">{String(r.cycleKey ?? "")}</td>
-                      <td className="table-td">{String(r.paymentStatus ?? "")}</td>
+                  {residentRows.map((r) => {
+                    const delta = Number(r.deltaAmount ?? 0);
+                    const status = r.statusBadge ?? "";
+                    return (
+                    <tr key={`${r.userId ?? ""}-${r.cycleKey ?? ""}`} className="table-row">
+                      <td className="table-td">{r.name ?? ""}</td>
+                      <td className="table-td">{r.flat ?? ""}</td>
+                      <td className="table-td">{r.cycleKey ?? ""}</td>
+                      <td className="table-td">{r.paymentStatus ?? ""}</td>
                       <td className="table-td">{fmtInr(Number(r.expectedAmount ?? 0))}</td>
                       <td className="table-td">{fmtInr(Number(r.cashPaidAmount ?? 0))}</td>
                       <td className="table-td">{fmtInr(Number(r.effectivePaidAmount ?? r.paidAmount ?? 0))}</td>
@@ -1092,11 +1111,9 @@ export default function MaintenanceBillingPage() {
                           {status || "—"}
                         </span>
                       </td>
-                          </>
-                        );
-                      })()}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

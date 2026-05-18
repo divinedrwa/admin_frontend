@@ -209,33 +209,26 @@ export default function DashboardPage() {
       const f = financialRes?.data?.fund as SocietyFundSnapshot | undefined;
       setFund(f ?? null);
 
-      const now = new Date();
-      const monthWindows = Array.from({ length: 6 }, (_, idx) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - (5 - idx), 1);
-        const month = d.getMonth() + 1;
-        const year = d.getFullYear();
-        return {
-          month,
-          year,
-          key: `${year}-${String(month).padStart(2, "0")}`,
-          label: d.toLocaleDateString("en-US", { month: "short" }),
-        };
-      });
-
-      const trendResponses = await Promise.all(
-        monthWindows.map((w) =>
-          api
-            .get("/maintenance-management/financial-dashboard", {
-              params: { month: w.month, year: w.year },
-            })
-            .catch(() => null)
-        )
-      );
-      const trendPoints: FundTrendPoint[] = monthWindows.map((w, i) => {
-        const raw = trendResponses[i]?.data?.fund?.monthNet;
-        const net = typeof raw === "number" ? raw : Number(raw ?? 0);
-        return { key: w.key, label: w.label, net: Number.isFinite(net) ? net : 0 };
-      });
+      // Build 6-month trend from the maintenance dashboard's monthWise data
+      // (already returned in the initial call) instead of making 6 extra API
+      // requests to financial-dashboard.
+      const monthWise = (maintRes?.data?.monthWise ?? []) as Array<{
+        month: number;
+        year: number;
+        monthName: string;
+        net: number;
+      }>;
+      // monthWise comes newest-first; reverse for left-to-right chronological.
+      const trendPoints: FundTrendPoint[] = [...monthWise]
+        .reverse()
+        .map((mw) => {
+          const net = typeof mw.net === "number" && Number.isFinite(mw.net) ? mw.net : 0;
+          return {
+            key: `${mw.year}-${String(mw.month).padStart(2, "0")}`,
+            label: mw.monthName,
+            net,
+          };
+        });
       setFundTrend(trendPoints);
 
       const countErrors: string[] = [];
@@ -265,31 +258,33 @@ export default function DashboardPage() {
         );
       }
 
-      const visitors = (visitorsRes?.data?.visitors ?? []) as Array<{
+      // Use server-side counts for accurate stat cards (arrays are capped).
+      const visitorsData = visitorsRes?.data ?? {};
+      const visitors = (visitorsData.visitors ?? []) as Array<{
         id: string;
         checkInAt: string;
         name: string;
       }>;
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      setVisitorTodayCount(visitors.filter((v) => new Date(v.checkInAt).getTime() >= start.getTime()).length);
+      setVisitorTodayCount(typeof visitorsData.todayCount === "number" ? visitorsData.todayCount : visitors.length);
 
-      const parcels = (parcelsRes?.data?.parcels ?? []) as Array<{
+      const parcelsData = parcelsRes?.data ?? {};
+      const parcels = (parcelsData.parcels ?? []) as Array<{
         id: string;
         receivedAt: string;
         description: string;
         status: string;
         villa?: { villaNumber?: string };
       }>;
-      setParcelPendingCount(parcels.filter((p) => p.status !== "DELIVERED" && p.status !== "COLLECTED").length);
+      setParcelPendingCount(typeof parcelsData.pendingCount === "number" ? parcelsData.pendingCount : parcels.filter((p) => p.status !== "DELIVERED" && p.status !== "COLLECTED").length);
 
-      const complaints = (complaintsRes?.data?.complaints ?? []) as Array<{
+      const complaintsData = complaintsRes?.data ?? {};
+      const complaints = (complaintsData.complaints ?? []) as Array<{
         id: string;
         createdAt: string;
         title: string;
         status: string;
       }>;
-      setComplaintOpenCount(complaints.filter((c) => c.status !== "CLOSED").length);
+      setComplaintOpenCount(typeof complaintsData.openCount === "number" ? complaintsData.openCount : complaints.filter((c) => c.status !== "CLOSED").length);
 
       const sosList = (sosRes?.data?.alerts ?? []) as unknown[];
       setSosActiveCount(sosList.length);

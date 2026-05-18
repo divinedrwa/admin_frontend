@@ -1,10 +1,13 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
+
+const COMPLAINT_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const;
 
 type Complaint = {
   id: string;
@@ -22,20 +25,32 @@ type Complaint = {
 export default function ComplaintsPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadComplaints = useCallback(() => {
     api
       .get("/complaints")
       .then((response) => setComplaints(response.data.complaints ?? []))
-      .catch(async (error: unknown) => {
-        const { showToast } = await import("@/components/Toast");
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load complaints";
-        showToast(message, "error");
-      })
+      .catch(() => showToast("Failed to load complaints", "error"))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadComplaints();
+  }, [loadComplaints]);
+
+  async function updateStatus(id: string, status: string) {
+    setUpdatingId(id);
+    try {
+      await api.patch(`/complaints/${id}/status`, { status });
+      setComplaints((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
+      showToast("Status updated", "success");
+    } catch {
+      showToast("Failed to update status", "error");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   const openCount = complaints.filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED").length;
 
@@ -116,17 +131,24 @@ export default function ComplaintsPage() {
                     <td className="table-td font-medium">{complaint.title}</td>
                     <td className="table-td text-fg-secondary max-w-xs truncate">{complaint.description}</td>
                     <td className="table-td">
-                      <span
-                        className={`badge ${
+                      <select
+                        className={`text-xs font-semibold rounded-full px-2 py-1 border cursor-pointer ${
                           complaint.status === "RESOLVED" || complaint.status === "CLOSED"
-                            ? "badge-success"
+                            ? "bg-approved-bg text-approved-fg border-approved-fg/20"
                             : complaint.status === "IN_PROGRESS"
-                            ? "badge-primary"
-                            : "badge-warning"
+                            ? "bg-brand-bg text-brand-primary border-brand-primary/20"
+                            : "bg-pending-bg text-pending-fg border-pending-fg/20"
                         }`}
+                        value={complaint.status}
+                        disabled={updatingId === complaint.id}
+                        onChange={(e) => void updateStatus(complaint.id, e.target.value)}
                       >
-                        {complaint.status.replace("_", " ")}
-                      </span>
+                        {COMPLAINT_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s.replace("_", " ")}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td className="table-td text-fg-secondary">
                       {new Date(complaint.createdAt).toLocaleDateString("en-IN", {
