@@ -196,13 +196,14 @@ export default function UsersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.role === "RESIDENT" && !formData.villaId) {
-      showToast("Please select a property (villa) for resident", "error");
+    const needsVilla = formData.role === "RESIDENT" || formData.role === "ADMIN";
+    if (needsVilla && !formData.villaId) {
+      showToast("Please select a property (villa)", "error");
       return;
     }
 
     const unitIdForPayload = formData.unitId.trim();
-    if (formData.role === "RESIDENT" && formData.villaId && !unitIdForPayload) {
+    if (needsVilla && formData.villaId && !unitIdForPayload) {
       showToast("Please select an occupant unit (Ground floor, First floor, or another unit).", "error");
       return;
     }
@@ -220,11 +221,12 @@ export default function UsersPage() {
           name: formData.name.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim() || null,
+          role: formData.role,
         };
         if (formData.password.trim().length >= 6) {
           payload.password = formData.password.trim();
         }
-        if (formData.role === "RESIDENT") {
+        if (formData.role === "RESIDENT" || formData.role === "ADMIN") {
           payload.residentType = formData.residentType;
           payload.villaId = formData.villaId || null;
           if (unitIdForPayload) payload.unitId = unitIdForPayload;
@@ -248,7 +250,7 @@ export default function UsersPage() {
           payload.phone = trimmedPhone;
         }
 
-        if (formData.role === "RESIDENT") {
+        if (formData.role === "RESIDENT" || formData.role === "ADMIN") {
           payload.residentType = formData.residentType;
           payload.villaId = formData.villaId;
           payload.unitId = unitIdForPayload;
@@ -716,7 +718,6 @@ export default function UsersPage() {
                   </label>
                   <select
                     required
-                    disabled={!!editingUser}
                     value={formData.role}
                     onChange={(e) =>
                       setFormData({
@@ -724,15 +725,12 @@ export default function UsersPage() {
                         role: e.target.value as "ADMIN" | "RESIDENT" | "GUARD"
                       })
                     }
-                    className="input disabled:bg-surface-elevated disabled:text-fg-secondary"
+                    className="input"
                   >
                     <option value="ADMIN">Admin</option>
                     <option value="RESIDENT">Resident</option>
                     <option value="GUARD">Guard</option>
                   </select>
-                  {editingUser && (
-                    <p className="text-xs text-fg-secondary mt-1">Role cannot be changed here.</p>
-                  )}
                 </div>
 
                 {editingUser && (
@@ -749,7 +747,7 @@ export default function UsersPage() {
                   </div>
                 )}
 
-                {formData.role === "RESIDENT" && (
+                {(formData.role === "RESIDENT" || formData.role === "ADMIN") && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-fg-primary mb-1">
@@ -777,7 +775,7 @@ export default function UsersPage() {
                         Assign Villa *
                       </label>
                       <select
-                        required={formData.role === "RESIDENT"}
+                        required={formData.role === "RESIDENT" || formData.role === "ADMIN"}
                         value={formData.villaId}
                         onChange={(e) => {
                           const vid = e.target.value;
@@ -804,7 +802,7 @@ export default function UsersPage() {
                         Unit / floor *
                       </label>
                       <select
-                        required={formData.role === "RESIDENT" && Boolean(formData.villaId)}
+                        required={(formData.role === "RESIDENT" || formData.role === "ADMIN") && Boolean(formData.villaId)}
                         disabled={!formData.villaId}
                         value={formData.unitId}
                         onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
@@ -827,7 +825,7 @@ export default function UsersPage() {
                       </label>
                       <input
                         type="date"
-                        required={formData.role === "RESIDENT"}
+                        required={formData.role === "RESIDENT" || formData.role === "ADMIN"}
                         value={formData.moveInDate}
                         onChange={(e) => setFormData({ ...formData, moveInDate: e.target.value })}
                         className="input"
@@ -865,7 +863,7 @@ export default function UsersPage() {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  disabled={submitting || (formData.role === "RESIDENT" && villas.length === 0)}
+                  disabled={submitting || ((formData.role === "RESIDENT" || formData.role === "ADMIN") && villas.length === 0)}
                   className="btn btn-primary"
                 >
                   {submitting ? (editingUser ? "Saving..." : "Creating...") : editingUser ? "Save changes" : "Create User"}
