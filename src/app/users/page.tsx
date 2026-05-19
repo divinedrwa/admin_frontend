@@ -391,7 +391,7 @@ export default function UsersPage() {
     }
   };
 
-  const residentsList = users.filter((u) => u.role === "RESIDENT");
+  const residentsList = users.filter((u) => u.role === "RESIDENT" || u.role === "ADMIN");
 
   const toggleResidentSelected = (id: string) => {
     setSelectedResidentIds((prev) => {
@@ -528,7 +528,7 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={handleExportResidentsCsv}
-                  disabled={exportingResidents || !users.some((u) => u.role === "RESIDENT")}
+                  disabled={exportingResidents || !users.some((u) => u.role === "RESIDENT" || u.role === "ADMIN")}
                   className="text-sm font-medium bg-surface border border-approved-bg text-fg-primary px-3 py-2 rounded hover:bg-approved-bg disabled:opacity-50 disabled:cursor-not-allowed text-center"
                 >
                   {exportingResidents ? "Exporting…" : "Export residents"}
@@ -929,13 +929,13 @@ export default function UsersPage() {
                   sortedUsers.map((user) => (
                     <tr key={user.id} className="table-row">
                       <td className="table-td align-middle">
-                        {user.role === "RESIDENT" ? (
+                        {(user.role === "RESIDENT" || user.role === "ADMIN") ? (
                           <input
                             type="checkbox"
                             checked={selectedResidentIds.has(user.id)}
                             onChange={() => toggleResidentSelected(user.id)}
                             className="rounded border-surface-border"
-                            aria-label={`Select resident ${user.username}`}
+                            aria-label={`Select ${user.username}`}
                           />
                         ) : (
                           <span className="inline-block w-4" aria-hidden />
@@ -958,12 +958,12 @@ export default function UsersPage() {
                         {user.villa ? `${user.villa.villaNumber}` : "-"}
                       </td>
                       <td className="table-td text-xs">
-                        {user.role === "RESIDENT"
+                        {(user.role === "RESIDENT" || user.role === "ADMIN")
                           ? user.unit?.label ?? (user.unitId || user.linkedUnitId ? "—" : "—")
                           : "—"}
                       </td>
                       <td className="table-td">
-                        {user.role === "RESIDENT"
+                        {(user.role === "RESIDENT" || user.role === "ADMIN")
                           ? user.maintenanceBillingRole === "EXCLUDED"
                             ? "Excluded"
                             : "Primary"
