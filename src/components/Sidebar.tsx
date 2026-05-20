@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ClipboardList,
   CreditCard,
+  Wallet,
   DoorOpen,
   Droplets,
   FileText,
@@ -69,6 +70,7 @@ const linkSections: SidebarSection[] = [
       { href: "/maintenance-management", label: "Maintenance", icon: HandCoins },
       { href: "/maintenance-billing", label: "Billing cycles", icon: ScrollText },
       { href: "/bank-accounts", label: "Bank accounts", icon: CreditCard },
+      { href: "/payment-settings", label: "Payment settings", icon: Wallet },
     ],
   },
   {
