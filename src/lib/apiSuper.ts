@@ -2,10 +2,12 @@
 
 import axios from "axios";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
+import { attemptTokenRefresh } from "./tokenRefresh";
 
 const API_BASE_URL = getResolvedApiBaseUrl();
 
 export const SUPER_ADMIN_TOKEN_KEY = "super_admin_token";
+const SUPER_ADMIN_REFRESH_TOKEN_KEY = "super_admin_refresh_token";
 
 export const apiSuper = axios.create({
   baseURL: API_BASE_URL,
@@ -22,11 +24,27 @@ apiSuper.interceptors.request.use((config) => {
 
 apiSuper.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (typeof window !== "undefined") {
       const status = error.response?.status;
+
       if (status === 401) {
+        // Attempt silent refresh before redirecting to login.
+        if (!error.config?._retryAfterRefresh) {
+          const newToken = await attemptTokenRefresh({
+            tokenKey: SUPER_ADMIN_TOKEN_KEY,
+            refreshTokenKey: SUPER_ADMIN_REFRESH_TOKEN_KEY,
+          });
+          if (newToken) {
+            error.config._retryAfterRefresh = true;
+            error.config.headers.Authorization = `Bearer ${newToken}`;
+            return apiSuper.request(error.config);
+          }
+        }
+
+        // Refresh failed — clear and redirect.
         localStorage.removeItem(SUPER_ADMIN_TOKEN_KEY);
+        localStorage.removeItem(SUPER_ADMIN_REFRESH_TOKEN_KEY);
         if (!window.location.pathname.startsWith("/super-admin/login")) {
           window.location.href = "/super-admin/login";
         }

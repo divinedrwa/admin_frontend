@@ -126,6 +126,9 @@ function InviteAcceptContent() {
       const { data } = await publicApi.post("/auth/register-with-invitation", payload);
       if (data?.token) {
         localStorage.setItem("token", data.token);
+        if (data.refreshToken) {
+          localStorage.setItem("refresh_token", data.refreshToken);
+        }
         showToast("Account created — you are signed in", "success");
         router.push("/dashboard");
       }

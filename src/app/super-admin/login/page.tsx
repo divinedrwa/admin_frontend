@@ -80,7 +80,7 @@ function SuperAdminLoginInner() {
     event.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.post<{ token: string }>(
+      const { data } = await axios.post<{ token: string; refreshToken?: string }>(
         `${API_BASE_URL}/auth/super-admin/login`,
         { username: username.trim(), password },
       );
@@ -89,6 +89,9 @@ function SuperAdminLoginInner() {
         return;
       }
       localStorage.setItem(SUPER_ADMIN_TOKEN_KEY, data.token);
+      if (data.refreshToken) {
+        localStorage.setItem("super_admin_refresh_token", data.refreshToken);
+      }
       localStorage.removeItem("token");
       showToast("Signed in as platform administrator", "success");
       router.push("/super-admin");

@@ -5,6 +5,7 @@ import { parseApiError } from "@/utils/errorHandler";
 import { isSocietyPublicAuthPath } from "./authRedirect";
 import { clearPlatformViewSession } from "./platformViewSession";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
+import { attemptTokenRefresh } from "./tokenRefresh";
 
 const TENANT_SOCIETY_STORAGE_KEY = "tenant_society_id";
 
@@ -82,9 +83,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+const TENANT_REFRESH_TOKEN_KEY = "refresh_token";
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     // Enrich every rejected error with a Zod-aware parsed message. Pages
     // that read `error.response.data.message` get a message that now folds
     // in `issues[]` when present (~30 pages historically dropped them).
@@ -104,15 +107,31 @@ api.interceptors.response.use(
       const message = extractApiMessage(error.response?.data) ?? error.message ?? "Unknown error";
       const url = error.config?.url;
 
-      // Handle authentication errors
+      // Handle authentication errors — attempt silent refresh before logout.
       if (status === 401) {
+        const path = window.location.pathname;
+
+        // Don't attempt refresh on login/invite/super-admin pages.
+        if (!isSocietyPublicAuthPath(path) && !error.config?._retryAfterRefresh) {
+          const newToken = await attemptTokenRefresh({
+            tokenKey: "token",
+            refreshTokenKey: TENANT_REFRESH_TOKEN_KEY,
+          });
+          if (newToken) {
+            // Retry the original request with the new token.
+            error.config._retryAfterRefresh = true;
+            error.config.headers.Authorization = `Bearer ${newToken}`;
+            return api.request(error.config);
+          }
+        }
+
+        // Refresh failed or not applicable — clear session and redirect.
         console.warn(`Authentication failed (${status}) on ${url ?? "unknown endpoint"}: ${message}`);
         localStorage.removeItem("token");
+        localStorage.removeItem(TENANT_REFRESH_TOKEN_KEY);
         clearPlatformViewSession();
         clearTenantSocietyId();
 
-        const path = window.location.pathname;
-        // Super-admin flows use apiSuper — but avoid hijacking redirects on public/super-admin pages.
         if (isSocietyPublicAuthPath(path)) {
           return Promise.reject(error);
         }
@@ -120,13 +139,12 @@ api.interceptors.response.use(
           window.location.href = "/login";
         }
       }
-      
+
       // Handle authorization errors (403)
-      // These are logged but not shown as toasts - individual pages handle them
       if (status === 403) {
         console.warn(`Access forbidden (${status}) on ${url ?? "unknown endpoint"}: ${message}`);
       }
-      
+
       // Handle server errors
       if (status >= 500) {
         console.error(`Server error (${status}) on ${url ?? "unknown endpoint"}: ${message}`);

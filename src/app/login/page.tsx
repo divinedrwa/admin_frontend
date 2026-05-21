@@ -116,6 +116,9 @@ function LoginPageInner() {
         password,
       });
       localStorage.setItem("token", response.data.token);
+      if (response.data.refreshToken) {
+        localStorage.setItem("refresh_token", response.data.refreshToken);
+      }
       setTenantSocietyIdFromLogin(response.data?.user);
       showToast("Login successful! Welcome to GatePass+", "success");
       router.push("/dashboard");
