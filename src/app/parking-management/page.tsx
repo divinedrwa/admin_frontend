@@ -231,7 +231,7 @@ export default function ParkingManagementPage() {
                       <tr key={vehicle.id} className="table-row">
                         <td className="table-td">{vehicle.type}</td>
                         <td className="table-td font-mono font-semibold">{vehicle.registrationNumber}</td>
-                        <td className="table-td">{vehicle.model || "-"}</td>
+                        <td className="table-td">{vehicle.model && vehicle.model !== "Unknown" ? vehicle.model : "-"}</td>
                         <td className="table-td">
                           {vehicle.villa ? `${vehicle.villa.villaNumber} (${vehicle.villa.ownerName})` : "N/A"}
                         </td>
@@ -282,7 +282,7 @@ export default function ParkingManagementPage() {
                   {slotAnalysis.unassignedVehicles.map((vehicle) => (
                     <div key={vehicle.id} className="bg-surface rounded p-4">
                       <p className="font-mono font-semibold text-lg">{vehicle.registrationNumber}</p>
-                      <p className="text-sm text-fg-secondary">{vehicle.type} - {vehicle.model || "Unknown Model"}</p>
+                      <p className="text-sm text-fg-secondary">{vehicle.type} - {vehicle.model && vehicle.model !== "Unknown" ? vehicle.model : "-"}</p>
                       {vehicle.villa && (
                         <p className="text-xs text-fg-secondary mt-1">Villa: {vehicle.villa.villaNumber}</p>
                       )}
@@ -380,7 +380,7 @@ export default function ParkingManagementPage() {
                         <div key={vehicle.id} className="bg-surface-background rounded p-3">
                           <p className="font-mono font-semibold text-fg-primary">{vehicle.registrationNumber}</p>
                           <p className="text-sm text-fg-secondary">
-                            {vehicle.type} - {vehicle.model || "Unknown"}
+                            {vehicle.type} - {vehicle.model && vehicle.model !== "Unknown" ? vehicle.model : "-"}
                           </p>
                           {vehicle.parkingSlot && (
                             <p className="text-xs text-brand-primary mt-1">

@@ -12,7 +12,7 @@ import { sortByVillaNumber } from "@/utils/villaSort";
 type Parcel = {
   id: string;
   description: string;
-  status: "PENDING" | "COLLECTED";
+  status: "PENDING" | "COLLECTED" | "DELIVERED";
   receivedAt: string;
   collectedAt: string | null;
   villa: {
