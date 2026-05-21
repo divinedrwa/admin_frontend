@@ -336,8 +336,8 @@ export default function VehiclesPage() {
                       <td className="table-td">
                         {formatVehicleType(vehicle.vehicleType)}
                       </td>
-                      <td className="table-td">{vehicle.model || "-"}</td>
-                      <td className="table-td">{vehicle.color || "-"}</td>
+                      <td className="table-td">{vehicle.model && vehicle.model !== "Unknown" ? vehicle.model : "-"}</td>
+                      <td className="table-td">{vehicle.color && vehicle.color !== "Unknown" ? vehicle.color : "-"}</td>
                       <td className="table-td">
                         {vehicle.villa.villaNumber}
                         {vehicle.villa.block ? ` (${vehicle.villa.block})` : ""}
