@@ -34,6 +34,7 @@ import {
   UserRoundCheck,
   Users,
   Vote,
+  Briefcase,
 } from "lucide-react";
 import { showToast } from "./Toast";
 import { useState } from "react";
@@ -81,6 +82,12 @@ const linkSections: SidebarSection[] = [
       { href: "/expenses/add", label: "Add expense", icon: ClipboardList },
       { href: "/expenses-summary", label: "Monthly summary", icon: Gauge },
       { href: "/expenses-summary/yearly", label: "Yearly summary", icon: CalendarDays },
+    ],
+  },
+  {
+    title: "Projects",
+    links: [
+      { href: "/special-projects", label: "Special Projects", icon: Briefcase },
     ],
   },
   {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, LayoutDashboard, RefreshCw } from "lucide-react";
+import { Briefcase, Clock3, LayoutDashboard, RefreshCw } from "lucide-react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
@@ -150,6 +150,9 @@ export default function DashboardPage() {
     Array<{ id: string; at: number; icon: string; text: string; tag: string; tagClass: string }>
   >([]);
 
+  const [activeProjectCount, setActiveProjectCount] = useState(0);
+  const [projectOutstanding, setProjectOutstanding] = useState(0);
+
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -184,6 +187,7 @@ export default function DashboardPage() {
         gatesRes,
         billingRes,
         noticesRes,
+        specialProjectsRes,
       ] = await Promise.all([
         api.get("/maintenance/dashboard", { signal }).catch(() => null),
         api.get("/maintenance-management/financial-dashboard", { signal }).catch(() => null),
@@ -197,6 +201,7 @@ export default function DashboardPage() {
         api.get("/gates", { signal }).catch(() => null),
         api.get("/v1/admin/cycles", { signal }).catch(() => null),
         api.get("/notices", { signal }).catch(() => null),
+        api.get("/special-projects?status=ACTIVE&limit=200", { signal }).catch(() => null),
       ]);
 
       if (signal.aborted) return;
@@ -387,6 +392,17 @@ export default function DashboardPage() {
           tagClass: "badge-success",
         });
       }
+
+      // Special Projects
+      const spList = (specialProjectsRes?.data?.projects ?? []) as Array<{
+        id: string; totalCollected: number; targetAmount: number;
+      }>;
+      setActiveProjectCount(spList.length);
+      const totalOutstanding = spList.reduce(
+        (sum, p) => sum + Math.max(0, (p.targetAmount ?? 0) - (p.totalCollected ?? 0)),
+        0,
+      );
+      setProjectOutstanding(totalOutstanding);
 
       activities.sort((a, b) => b.at - a.at);
       setTimeline(activities.slice(0, 10));
@@ -587,6 +603,31 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Special Projects widget */}
+        {activeProjectCount > 0 && (
+          <Link
+            href="/special-projects"
+            className="block rounded-xl border border-surface-border bg-surface p-5 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-pending-bg p-3 text-2xl">
+                  <Briefcase className="h-5 w-5 text-pending-fg" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-fg-primary">
+                    {activeProjectCount} Active Project{activeProjectCount !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-sm text-fg-secondary">
+                    {fmtInr(projectOutstanding)} outstanding
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-medium text-brand-primary">View all →</span>
+            </div>
+          </Link>
+        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 card">

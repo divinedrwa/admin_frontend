@@ -34,8 +34,11 @@ export function Modal({
 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
-  // Focus trap + escape key
+  // Focus trap + escape key — depends only on `open` so typing in
+  // inputs never re-runs the effect and steals focus.
   useEffect(() => {
     if (!open) return;
 
@@ -49,7 +52,7 @@ export function Modal({
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
     }
 
@@ -59,7 +62,7 @@ export function Modal({
       document.removeEventListener("keydown", onKeyDown);
       previousFocus.current?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   // Body scroll lock
   useEffect(() => {
