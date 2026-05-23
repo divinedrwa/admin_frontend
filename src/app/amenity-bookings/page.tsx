@@ -420,13 +420,13 @@ export default function AmenityBookingsPage() {
               <table className="table">
                 <thead className="table-head">
                   <tr>
-                    <th className="table-th">Amenity</th>
-                    <th className="table-th">Resident</th>
-                    <th className="table-th">Start Time</th>
-                    <th className="table-th">End Time</th>
-                    <th className="table-th">Status</th>
-                    <th className="table-th">Price</th>
-                    <th className="table-th">Actions</th>
+                    <th scope="col" className="table-th">Amenity</th>
+                    <th scope="col" className="table-th">Resident</th>
+                    <th scope="col" className="table-th">Start Time</th>
+                    <th scope="col" className="table-th">End Time</th>
+                    <th scope="col" className="table-th">Status</th>
+                    <th scope="col" className="table-th">Price</th>
+                    <th scope="col" className="table-th">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

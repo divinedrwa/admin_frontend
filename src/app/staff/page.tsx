@@ -315,12 +315,12 @@ export default function StaffPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Name</th>
-                  <th className="table-th">Type</th>
-                  <th className="table-th">Phone</th>
-                  <th className="table-th">Assigned Villas</th>
-                  <th className="table-th">Status</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Name</th>
+                  <th scope="col" className="table-th">Type</th>
+                  <th scope="col" className="table-th">Phone</th>
+                  <th scope="col" className="table-th">Assigned Villas</th>
+                  <th scope="col" className="table-th">Status</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>

@@ -3,6 +3,7 @@
 import { RefreshCcw, Wallet } from "lucide-react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
@@ -601,11 +602,11 @@ export default function MaintenanceBillingPage() {
               <table className="table">
                 <thead className="table-head">
                   <tr>
-                    <th className="table-th">Label</th>
-                    <th className="table-th">Start</th>
-                    <th className="table-th">End</th>
-                    <th className="table-th">Status</th>
-                    <th className="table-th">Actions</th>
+                    <th scope="col" className="table-th">Label</th>
+                    <th scope="col" className="table-th">Start</th>
+                    <th scope="col" className="table-th">End</th>
+                    <th scope="col" className="table-th">Status</th>
+                    <th scope="col" className="table-th">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -803,13 +804,13 @@ export default function MaintenanceBillingPage() {
               <table className="table">
                 <thead className="table-head">
                   <tr>
-                    <th className="table-th">Month</th>
-                    <th className="table-th">Amount</th>
-                    <th className="table-th">Status</th>
-                    <th className="table-th">Window (UTC ISO)</th>
-                    <th className="table-th">Paid</th>
-                    <th className="table-th">Pending</th>
-                    <th className="table-th"></th>
+                    <th scope="col" className="table-th">Month</th>
+                    <th scope="col" className="table-th">Amount</th>
+                    <th scope="col" className="table-th">Status</th>
+                    <th scope="col" className="table-th">Window (UTC ISO)</th>
+                    <th scope="col" className="table-th">Paid</th>
+                    <th scope="col" className="table-th">Pending</th>
+                    <th scope="col" className="table-th"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1081,15 +1082,15 @@ export default function MaintenanceBillingPage() {
               <table className="table">
                 <thead className="table-head">
                   <tr>
-                    <th className="table-th">Resident</th>
-                    <th className="table-th">Unit</th>
-                    <th className="table-th">Cycle</th>
-                    <th className="table-th">Pay status</th>
-                    <th className="table-th">Expected</th>
-                    <th className="table-th">Cash paid</th>
-                    <th className="table-th">Effective paid</th>
-                    <th className="table-th">Delta</th>
-                    <th className="table-th">Badge</th>
+                    <th scope="col" className="table-th">Resident</th>
+                    <th scope="col" className="table-th">Unit</th>
+                    <th scope="col" className="table-th">Cycle</th>
+                    <th scope="col" className="table-th">Pay status</th>
+                    <th scope="col" className="table-th">Expected</th>
+                    <th scope="col" className="table-th">Cash paid</th>
+                    <th scope="col" className="table-th">Effective paid</th>
+                    <th scope="col" className="table-th">Delta</th>
+                    <th scope="col" className="table-th">Badge</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1125,10 +1126,10 @@ export default function MaintenanceBillingPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">When (UTC)</th>
-                  <th className="table-th">Action</th>
-                  <th className="table-th">Entity</th>
-                  <th className="table-th">Meta</th>
+                  <th scope="col" className="table-th">When (UTC)</th>
+                  <th scope="col" className="table-th">Action</th>
+                  <th scope="col" className="table-th">Entity</th>
+                  <th scope="col" className="table-th">Meta</th>
                 </tr>
               </thead>
               <tbody>
@@ -1150,19 +1151,18 @@ export default function MaintenanceBillingPage() {
         )}
       </div>
 
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="card w-full max-w-md">
-            <div className="card-header">
-              <h3 className="text-base font-semibold text-fg-primary">Delete billing cycle?</h3>
-            </div>
-            <div className="card-body">
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-fg-primary">Delete billing cycle?</h3>
+          </div>
+          <div className="card-body">
             <p className="mt-2 text-sm text-fg-secondary">
               You are about to delete{" "}
               <span className="font-medium text-fg-primary">
-                {deleteTarget.cycleKey}
+                {deleteTarget?.cycleKey}
               </span>
-              {deleteTarget.title ? ` (${deleteTarget.title})` : ""}.
+              {deleteTarget?.title ? ` (${deleteTarget.title})` : ""}.
             </p>
             <p className="mt-1 text-xs text-fg-secondary">
               This works only when no payments exist for the cycle.
@@ -1178,15 +1178,14 @@ export default function MaintenanceBillingPage() {
               <button
                 type="button"
                 className="btn btn-danger text-sm"
-                onClick={() => void deleteCycle(deleteTarget)}
+                onClick={() => { if (deleteTarget) void deleteCycle(deleteTarget); }}
               >
                 Delete cycle
               </button>
             </div>
-            </div>
           </div>
         </div>
-      )}
+      </Modal>
     </AppShell>
   );
 }

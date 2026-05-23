@@ -228,6 +228,8 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                         : "text-white/65 hover:bg-white/[0.06] hover:text-white"
                     }`}
                     title={collapsed ? link.label : undefined}
+                    aria-label={collapsed ? link.label : undefined}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     {isActive && !collapsed && (
                       <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-white" />
@@ -252,6 +254,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           onClick={() => setCollapsed(!collapsed)}
           className="hidden w-full items-center justify-center gap-2 rounded-xl bg-white/[0.06] py-2.5 text-sm text-white/80 transition-all duration-200 hover:bg-white/[0.12] hover:text-white md:flex"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           {!collapsed && <span className="text-xs font-medium">Collapse</span>}
@@ -259,6 +262,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         <button
           onClick={handleLogout}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-danger/85 py-2.5 text-sm text-white transition-all duration-200 hover:bg-brand-danger"
+          aria-label={collapsed ? "Logout" : undefined}
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span>Logout</span>}
@@ -274,6 +278,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         <div
           className="fixed inset-0 z-30 bg-black/50 md:hidden"
           onClick={onClose}
+          aria-hidden="true"
         />
       )}
 

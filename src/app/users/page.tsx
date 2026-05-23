@@ -1,9 +1,11 @@
 "use client";
 
 import { FileSpreadsheet, ShieldCheck, UserPlus, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { sortByVillaNumber } from "@/utils/villaSort";
@@ -64,6 +66,8 @@ function firstUnitIdForVilla(villas: Villa[], villaId: string): string {
 }
 
 export default function UsersPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [villas, setVillas] = useState<Villa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,26 +93,47 @@ export default function UsersPage() {
   const [exportingResidents, setExportingResidents] = useState(false);
   const [selectedResidentIds, setSelectedResidentIds] = useState<Set<string>>(new Set());
   const [bulkDeletingResidents, setBulkDeletingResidents] = useState(false);
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
 
-  const loadUsers = () => {
+  const abortRef = useRef<AbortController | null>(null);
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+
+  const loadUsers = useCallback((signal?: AbortSignal, offset = initialOffset) => {
     setLoading(true);
     api
-      .get("/users")
-      .then((response) => setUsers(response.data.users ?? []))
+      .get(`/users?limit=50&offset=${offset}`, { signal })
+      .then((response) => {
+        setUsers(response.data.users ?? []);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
       .catch((error: unknown) => {
+        if (signal?.aborted) return;
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Failed to load users";
         showToast(message, "error");
       })
       .finally(() => setLoading(false));
+  }, [initialOffset]);
+
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadUsers(undefined, newOffset);
   };
 
-  const loadVillas = () => {
+  const loadVillas = (signal?: AbortSignal) => {
     api
-      .get("/villas")
+      .get("/villas", { signal })
       .then((response) => setVillas(response.data.villas ?? []))
       .catch((error: unknown) => {
+        if (signal?.aborted) return;
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Failed to load villas";
@@ -117,9 +142,12 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    loadUsers();
-    loadVillas();
-  }, []);
+    const ac = new AbortController();
+    abortRef.current = ac;
+    loadUsers(ac.signal);
+    loadVillas(ac.signal);
+    return () => ac.abort();
+  }, [loadUsers]);
 
   const sortedVillas = useMemo(
     () => sortByVillaNumber(villas, (v) => v.villaNumber),
@@ -223,7 +251,7 @@ export default function UsersPage() {
           phone: formData.phone.trim() || null,
           role: formData.role,
         };
-        if (formData.password.trim().length >= 6) {
+        if (formData.password.trim().length >= 8) {
           payload.password = formData.password.trim();
         }
         if (formData.role === "RESIDENT" || formData.role === "ADMIN") {
@@ -702,11 +730,11 @@ export default function UsersPage() {
                   <input
                     type="password"
                     required={!editingUser}
-                    minLength={editingUser ? undefined : 6}
+                    minLength={editingUser ? undefined : 8}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="input"
-                    placeholder={editingUser ? "Leave blank to keep current" : "Min 6 characters"}
+                    placeholder={editingUser ? "Leave blank to keep current" : "Min 8 chars, upper+lower+number"}
                   />
                 </div>
               </div>
@@ -884,11 +912,11 @@ export default function UsersPage() {
         <div className="table-wrapper overflow-x-auto">
           {loading ? (
             <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading users...</p></div>
-          ) : (
+          ) : (<>
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th w-10">
+                  <th scope="col" className="table-th w-10">
                     {residentsList.length > 0 ? (
                       <input
                         type="checkbox"
@@ -898,20 +926,20 @@ export default function UsersPage() {
                         }
                         onChange={toggleSelectAllResidents}
                         className="rounded border-surface-border"
-                        title="Select all residents"
+                        aria-label="Select all residents"
                       />
                     ) : null}
                   </th>
-                  <th className="table-th">Username</th>
-                  <th className="table-th">Name</th>
-                  <th className="table-th">Email</th>
-                  <th className="table-th">Phone</th>
-                  <th className="table-th">Role</th>
-                  <th className="table-th">Property</th>
-                  <th className="table-th">Unit</th>
-                  <th className="table-th">Maint. billing</th>
-                  <th className="table-th">Status</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Username</th>
+                  <th scope="col" className="table-th">Name</th>
+                  <th scope="col" className="table-th">Email</th>
+                  <th scope="col" className="table-th">Phone</th>
+                  <th scope="col" className="table-th">Role</th>
+                  <th scope="col" className="table-th">Property</th>
+                  <th scope="col" className="table-th">Unit</th>
+                  <th scope="col" className="table-th">Maint. billing</th>
+                  <th scope="col" className="table-th">Status</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -997,7 +1025,13 @@ export default function UsersPage() {
                 )}
               </tbody>
             </table>
-          )}
+            <Pagination
+              total={pgMeta.total}
+              limit={pgMeta.limit}
+              offset={pgMeta.offset}
+              onPageChange={handlePageChange}
+            />
+          </>)}
         </div>
       </div>
     </AppShell>

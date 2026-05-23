@@ -219,11 +219,11 @@ export default function ParkingManagementPage() {
                 <table className="table">
                   <thead className="table-head">
                     <tr>
-                      <th className="table-th">Type</th>
-                      <th className="table-th">Number</th>
-                      <th className="table-th">Model</th>
-                      <th className="table-th">Villa</th>
-                      <th className="table-th">Parking Slot</th>
+                      <th scope="col" className="table-th">Type</th>
+                      <th scope="col" className="table-th">Number</th>
+                      <th scope="col" className="table-th">Model</th>
+                      <th scope="col" className="table-th">Villa</th>
+                      <th scope="col" className="table-th">Parking Slot</th>
                     </tr>
                   </thead>
                   <tbody>

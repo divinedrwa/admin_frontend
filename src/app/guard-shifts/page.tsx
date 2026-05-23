@@ -488,12 +488,12 @@ export default function GuardShiftsPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Date</th>
-                  <th className="table-th">Shift Type</th>
-                  <th className="table-th">Time</th>
-                  <th className="table-th">Guard</th>
-                  <th className="table-th">Gate</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Date</th>
+                  <th scope="col" className="table-th">Shift Type</th>
+                  <th scope="col" className="table-th">Time</th>
+                  <th scope="col" className="table-th">Guard</th>
+                  <th scope="col" className="table-th">Gate</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>

@@ -4,6 +4,7 @@ import { BarChart3 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { parseApiError } from "@/utils/errorHandler";
@@ -204,12 +205,12 @@ export default function ComplaintAnalyticsPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Category</th>
-                  <th className="table-th">Total</th>
-                  <th className="table-th">Resolved</th>
-                  <th className="table-th">Pending</th>
-                  <th className="table-th">Avg Resolution</th>
-                  <th className="table-th">Performance</th>
+                  <th scope="col" className="table-th">Category</th>
+                  <th scope="col" className="table-th">Total</th>
+                  <th scope="col" className="table-th">Resolved</th>
+                  <th scope="col" className="table-th">Pending</th>
+                  <th scope="col" className="table-th">Avg Resolution</th>
+                  <th scope="col" className="table-th">Performance</th>
                 </tr>
               </thead>
               <tbody>
@@ -294,9 +295,8 @@ export default function ComplaintAnalyticsPage() {
       </div>
 
       {/* Quick Update Modal */}
-      {selectedComplaint && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-          <div className="card w-full max-w-md mx-4">
+      <Modal open={!!selectedComplaint} onClose={() => { setSelectedComplaint(null); setAdminNotes(""); }}>
+          <div className="card">
             <div className="card-header">
               <h2 className="text-xl font-bold text-fg-primary">Update Complaint Status</h2>
             </div>
@@ -330,7 +330,7 @@ export default function ComplaintAnalyticsPage() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => handleQuickUpdate(selectedComplaint)}
+                  onClick={() => { if (selectedComplaint) handleQuickUpdate(selectedComplaint); }}
                   disabled={loading}
                   className="btn btn-primary flex-1"
                 >
@@ -348,8 +348,7 @@ export default function ComplaintAnalyticsPage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       {loading && !selectedComplaint && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-40">

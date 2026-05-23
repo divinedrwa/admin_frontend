@@ -309,13 +309,13 @@ export default function VehiclesPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Vehicle No.</th>
-                  <th className="table-th">Type</th>
-                  <th className="table-th">Model</th>
-                  <th className="table-th">Color</th>
-                  <th className="table-th">Villa</th>
-                  <th className="table-th">Parking</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Vehicle No.</th>
+                  <th scope="col" className="table-th">Type</th>
+                  <th scope="col" className="table-th">Model</th>
+                  <th scope="col" className="table-th">Color</th>
+                  <th scope="col" className="table-th">Villa</th>
+                  <th scope="col" className="table-th">Parking</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>

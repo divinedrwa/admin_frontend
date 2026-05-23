@@ -5,7 +5,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const fmtInr = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(
@@ -150,7 +150,14 @@ export default function DashboardPage() {
     Array<{ id: string; at: number; icon: string; text: string; tag: string; tagClass: string }>
   >([]);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    const signal = ac.signal;
+
     setLoadError(null);
     setFailedEndpoints([]);
     setLoading(true);
@@ -178,19 +185,21 @@ export default function DashboardPage() {
         billingRes,
         noticesRes,
       ] = await Promise.all([
-        api.get("/maintenance/dashboard").catch(() => null),
-        api.get("/maintenance-management/financial-dashboard").catch(() => null),
-        safeGet(api.get<VillasListResponse>("/villas")),
-        safeGet(api.get<UsersListResponse>("/users", { params: { role: "RESIDENT", isActive: "true" } })),
-        safeGet(api.get<UsersListResponse>("/users", { params: { role: "GUARD", isActive: "true" } })),
-        api.get("/visitors").catch(() => null),
-        api.get("/parcels").catch(() => null),
-        api.get("/complaints").catch(() => null),
-        api.get("/sos-alerts/active").catch(() => null),
-        api.get("/gates").catch(() => null),
-        api.get("/v1/admin/cycles").catch(() => null),
-        api.get("/notices").catch(() => null),
+        api.get("/maintenance/dashboard", { signal }).catch(() => null),
+        api.get("/maintenance-management/financial-dashboard", { signal }).catch(() => null),
+        safeGet(api.get<VillasListResponse>("/villas", { signal })),
+        safeGet(api.get<UsersListResponse>("/users", { params: { role: "RESIDENT", isActive: "true" }, signal })),
+        safeGet(api.get<UsersListResponse>("/users", { params: { role: "GUARD", isActive: "true" }, signal })),
+        api.get("/visitors", { signal }).catch(() => null),
+        api.get("/parcels", { signal }).catch(() => null),
+        api.get("/complaints", { signal }).catch(() => null),
+        api.get("/sos-alerts/active", { signal }).catch(() => null),
+        api.get("/gates", { signal }).catch(() => null),
+        api.get("/v1/admin/cycles", { signal }).catch(() => null),
+        api.get("/notices", { signal }).catch(() => null),
       ]);
+
+      if (signal.aborted) return;
 
       const silentFails: string[] = [];
       if (!maintRes) silentFails.push("maintenance");
@@ -301,7 +310,7 @@ export default function DashboardPage() {
       if (Array.isArray(cycles) && cycles[0]) {
         const cycleKey = cycles[0].cycleKey;
         const residentPayRes = await api
-          .get("/v1/admin/residents/payments", { params: { cycleMonth: cycleKey } })
+          .get("/v1/admin/residents/payments", { params: { cycleMonth: cycleKey }, signal })
           .catch(() => null);
         const t = residentPayRes?.data?.totals as BillingResidentsTotals | undefined;
         if (t) {
@@ -391,6 +400,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void load();
+    return () => abortRef.current?.abort();
   }, [load]);
 
   const stats = useMemo(() => {

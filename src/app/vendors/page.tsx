@@ -303,12 +303,12 @@ export default function VendorsPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Name</th>
-                  <th className="table-th">Category</th>
-                  <th className="table-th">Phone</th>
-                  <th className="table-th">Email</th>
-                  <th className="table-th">Status</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Name</th>
+                  <th scope="col" className="table-th">Category</th>
+                  <th scope="col" className="table-th">Phone</th>
+                  <th scope="col" className="table-th">Email</th>
+                  <th scope="col" className="table-th">Status</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
@@ -620,19 +621,19 @@ export default function StaffAssignmentOverviewPage() {
                 <table className="table">
                   <thead className="table-head">
                     <tr>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Staff Name
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Type
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Villa Count
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Workload Status
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Visual
                       </th>
                     </tr>
@@ -843,11 +844,10 @@ export default function StaffAssignmentOverviewPage() {
       </div>
 
       {/* Assignment Modal */}
-      {showAssignModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="card w-full max-w-md">
-            <div className="card-header"><h3 className="text-lg font-semibold">Quick Assignment</h3></div>
-            <div className="card-body">
+      <Modal open={showAssignModal} onClose={() => { setShowAssignModal(false); setSelectedStaff(null); setSelectedVilla(null); }}>
+        <div className="card">
+          <div className="card-header"><h3 className="text-lg font-semibold">Quick Assignment</h3></div>
+          <div className="card-body">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-fg-primary mb-1">
@@ -882,11 +882,7 @@ export default function StaffAssignmentOverviewPage() {
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <button
-                onClick={() => {
-                  setShowAssignModal(false);
-                  setSelectedStaff(null);
-                  setSelectedVilla(null);
-                }}
+                onClick={() => { setShowAssignModal(false); setSelectedStaff(null); setSelectedVilla(null); }}
                 className="btn btn-ghost"
               >
                 Cancel
@@ -898,10 +894,9 @@ export default function StaffAssignmentOverviewPage() {
                 Assign
               </button>
             </div>
-            </div>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

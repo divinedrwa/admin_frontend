@@ -265,11 +265,11 @@ export default function YearlySummaryPage() {
                   <table className="table">
                     <thead className="table-head">
                       <tr>
-                        <th className="table-th">Month</th>
-                        <th className="table-th text-right">Total Expenses</th>
-                        <th className="table-th text-right">vs Previous</th>
-                        <th className="table-th text-right">Entries</th>
-                        <th className="table-th text-right">Visual</th>
+                        <th scope="col" className="table-th">Month</th>
+                        <th scope="col" className="table-th text-right">Total Expenses</th>
+                        <th scope="col" className="table-th text-right">vs Previous</th>
+                        <th scope="col" className="table-th text-right">Entries</th>
+                        <th scope="col" className="table-th text-right">Visual</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-border">

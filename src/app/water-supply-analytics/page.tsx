@@ -372,11 +372,11 @@ export default function WaterSupplyAnalyticsPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Timestamp</th>
-                  <th className="table-th">Gate</th>
-                  <th className="table-th">Action</th>
-                  <th className="table-th">Reason</th>
-                  <th className="table-th">Time Ago</th>
+                  <th scope="col" className="table-th">Timestamp</th>
+                  <th scope="col" className="table-th">Gate</th>
+                  <th scope="col" className="table-th">Action</th>
+                  <th scope="col" className="table-th">Reason</th>
+                  <th scope="col" className="table-th">Time Ago</th>
                 </tr>
               </thead>
               <tbody>

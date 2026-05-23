@@ -4,6 +4,7 @@ import { Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Modal } from "@/components/Modal";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -707,12 +708,12 @@ export default function MaintenanceManagementPage() {
           <table className="table">
             <thead className="table-head">
               <tr>
-                <th className="table-th">Villa</th>
-                <th className="table-th">Owner</th>
-                <th className="table-th">Amount</th>
-                <th className="table-th">Advance Credit</th>
-                <th className="table-th">Status</th>
-                <th className="table-th">Actions</th>
+                <th scope="col" className="table-th">Villa</th>
+                <th scope="col" className="table-th">Owner</th>
+                <th scope="col" className="table-th">Amount</th>
+                <th scope="col" className="table-th">Advance Credit</th>
+                <th scope="col" className="table-th">Status</th>
+                <th scope="col" className="table-th">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -833,15 +834,14 @@ export default function MaintenanceManagementPage() {
       </div>
 
       {/* ── Row Edit modal ── */}
-      {showRowEditModal && rowEdit && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-md">
+      <Modal open={showRowEditModal && !!rowEdit} onClose={() => { setShowRowEditModal(false); setRowEdit(null); }}>
+          <div className="card">
             <div className="card-header">
               <h2 className="text-lg font-semibold">Edit villa row</h2>
             </div>
             <div className="card-body">
             <p className="text-sm text-fg-secondary mb-4">
-              {rowEdit.villaNumber} — adjust expected maintenance and recorded collected amount (manual correction).
+              {rowEdit?.villaNumber} — adjust expected maintenance and recorded collected amount (manual correction).
               If collected is more than expected, the extra will carry forward as resident advance credit.
             </p>
             <form onSubmit={submitRowEdit} className="space-y-3">
@@ -852,7 +852,7 @@ export default function MaintenanceManagementPage() {
                   min={0}
                   step="0.01"
                   required
-                  value={rowEdit.expectedStr}
+                  value={rowEdit?.expectedStr}
                   onChange={(e) => setRowEdit((s) => (s ? { ...s, expectedStr: e.target.value } : s))}
                   className="input w-full"
                 />
@@ -864,7 +864,7 @@ export default function MaintenanceManagementPage() {
                   min={0}
                   step="0.01"
                   required
-                  value={rowEdit.paidStr}
+                  value={rowEdit?.paidStr}
                   onChange={(e) => setRowEdit((s) => (s ? { ...s, paidStr: e.target.value } : s))}
                   className="input w-full"
                 />
@@ -896,13 +896,11 @@ export default function MaintenanceManagementPage() {
             </form>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ── Mark Paid modal ── */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-md">
+      <Modal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}>
+          <div className="card">
             <div className="card-header">
               <h2 className="text-lg font-semibold">Mark Payment as Paid</h2>
             </div>
@@ -992,22 +990,20 @@ export default function MaintenanceManagementPage() {
             </form>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ── Unified Credit modal ── */}
-      {showCreditModal && creditRow && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-md">
+      <Modal open={showCreditModal && !!creditRow} onClose={() => setShowCreditModal(false)}>
+          <div className="card">
             {/* Header with balance */}
             <div className="card-header">
               <h2 className="text-lg font-semibold text-fg-primary">
-                Advance Credit — Villa {creditRow.villaNumber}
+                Advance Credit — Villa {creditRow?.villaNumber}
               </h2>
-              <p className="text-sm text-fg-secondary mt-0.5">{creditRow.ownerName}</p>
+              <p className="text-sm text-fg-secondary mt-0.5">{creditRow?.ownerName}</p>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-approved-fg">
-                  {formatCurrency(creditRow.advanceCredit ?? 0)}
+                  {formatCurrency(creditRow?.advanceCredit ?? 0)}
                 </span>
                 <span className="text-sm text-fg-secondary">available balance</span>
               </div>
@@ -1016,7 +1012,7 @@ export default function MaintenanceManagementPage() {
             {/* Action tabs */}
             <div className="px-5 pt-4">
               <div className="flex rounded-lg bg-surface-elevated p-1 gap-1">
-                {(creditRow.advanceCredit ?? 0) > 0 && creditRow.status !== "PAID" && (
+                {(creditRow?.advanceCredit ?? 0) > 0 && creditRow?.status !== "PAID" && (
                   <button
                     type="button"
                     onClick={() => setCreditAction("apply")}
@@ -1040,7 +1036,7 @@ export default function MaintenanceManagementPage() {
                 >
                   Add credit
                 </button>
-                {(creditRow.advanceCredit ?? 0) > 0 && (
+                {(creditRow?.advanceCredit ?? 0) > 0 && (
                   <button
                     type="button"
                     onClick={() => setCreditAction("deduct")}
@@ -1063,8 +1059,8 @@ export default function MaintenanceManagementPage() {
                   <div className="bg-approved-bg border border-approved-bg rounded-lg p-3 text-sm text-fg-primary">
                     <p className="font-medium mb-1">Use credit to settle this month</p>
                     <p className="text-approved-fg text-xs">
-                      The system will apply up to {formatCurrency(creditRow.advanceCredit ?? 0)} from the
-                      available balance toward the {formatCurrency(Math.max(0, creditRow.amount - (creditRow.paidTowardCycle ?? 0)))} remaining
+                      The system will apply up to {formatCurrency(creditRow?.advanceCredit ?? 0)} from the
+                      available balance toward the {formatCurrency(Math.max(0, (creditRow?.amount ?? 0) - (creditRow?.paidTowardCycle ?? 0)))} remaining
                       due for {selectedCycle ? `${MONTHS[selectedCycle.periodMonth - 1]} ${selectedCycle.periodYear}` : "this month"}.
                       Any leftover credit stays in the balance for future months.
                     </p>
@@ -1109,7 +1105,7 @@ export default function MaintenanceManagementPage() {
                 <>
                   <div className="bg-denied-bg border border-denied-bg rounded-lg p-3 text-xs text-denied-fg">
                     Remove credit from this villa&apos;s balance. Use this to correct a mistake or reverse
-                    an incorrect entry. You cannot deduct more than the available {formatCurrency(creditRow.advanceCredit ?? 0)}.
+                    an incorrect entry. You cannot deduct more than the available {formatCurrency(creditRow?.advanceCredit ?? 0)}.
                   </div>
                   <div>
                     <label className="block text-sm text-fg-primary mb-1">Amount to deduct (₹)</label>
@@ -1117,11 +1113,11 @@ export default function MaintenanceManagementPage() {
                       type="number"
                       min={0.01}
                       step="0.01"
-                      max={creditRow.advanceCredit ?? 0}
+                      max={creditRow?.advanceCredit ?? 0}
                       required
                       value={creditAmount}
                       onChange={(e) => setCreditAmount(e.target.value)}
-                      placeholder={`Max ${formatCurrency(creditRow.advanceCredit ?? 0)}`}
+                      placeholder={`Max ${formatCurrency(creditRow?.advanceCredit ?? 0)}`}
                       className="input w-full"
                     />
                   </div>
@@ -1167,18 +1163,16 @@ export default function MaintenanceManagementPage() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </Modal>
       {/* ── Exclude Villa modal ── */}
-      {showExcludeModal && excludeTarget && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-md">
+      <Modal open={showExcludeModal && !!excludeTarget} onClose={() => { setShowExcludeModal(false); setExcludeTarget(null); }}>
+          <div className="card">
             <div className="card-header">
               <h2 className="text-lg font-semibold">Exclude Villa from Cycle</h2>
             </div>
             <div className="card-body">
               <p className="text-sm text-fg-secondary mb-4">
-                Exclude <strong>{excludeTarget.villaNumber}</strong> ({excludeTarget.ownerName}) from this billing cycle.
+                Exclude <strong>{excludeTarget?.villaNumber}</strong> ({excludeTarget?.ownerName}) from this billing cycle.
                 The villa will show as EXCLUDED with ₹0 expected. It will be automatically included in the next cycle.
               </p>
               <form onSubmit={submitExcludeVilla} className="space-y-3">
@@ -1214,8 +1208,7 @@ export default function MaintenanceManagementPage() {
               </form>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
     </AppShell>
   );
 }

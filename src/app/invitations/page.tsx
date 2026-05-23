@@ -251,12 +251,12 @@ export default function InvitationsAdminPage() {
               <table className="table">
                 <thead className="table-head">
                   <tr>
-                    <th className="table-th">Villa</th>
-                    <th className="table-th">Role</th>
-                    <th className="table-th">Contact</th>
-                    <th className="table-th">Status</th>
-                    <th className="table-th">Expires</th>
-                    <th className="table-th"></th>
+                    <th scope="col" className="table-th">Villa</th>
+                    <th scope="col" className="table-th">Role</th>
+                    <th scope="col" className="table-th">Contact</th>
+                    <th scope="col" className="table-th">Status</th>
+                    <th scope="col" className="table-th">Expires</th>
+                    <th scope="col" className="table-th"></th>
                   </tr>
                 </thead>
                 <tbody>

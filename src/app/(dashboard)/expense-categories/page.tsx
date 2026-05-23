@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Modal } from '@/components/Modal';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
 import { lightTheme } from "@/theme/tokens";
@@ -190,12 +191,14 @@ export default function ExpenseCategoriesPage() {
                     <button
                       onClick={() => openModal(category)}
                       className="text-brand-primary hover:text-brand-primary"
+                      aria-label={`Edit ${category.name}`}
                     >
                       <Edit size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(category.id)}
                       className="text-brand-danger hover:text-brand-danger"
+                      aria-label={`Delete ${category.name}`}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -232,16 +235,15 @@ export default function ExpenseCategoriesPage() {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="card max-w-md w-full">
-            <div className="card-header">
-              <h2 className="text-2xl font-bold">
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
-              </h2>
-            </div>
-            <div className="card-body">
-              <form onSubmit={handleSubmit} className="space-y-4">
+      <Modal open={showModal} onClose={closeModal}>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="text-2xl font-bold">
+              {editingCategory ? 'Edit Category' : 'Add New Category'}
+            </h2>
+          </div>
+          <div className="card-body">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-fg-primary mb-1">
                     Category Type *
@@ -386,8 +388,7 @@ export default function ExpenseCategoriesPage() {
               </form>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

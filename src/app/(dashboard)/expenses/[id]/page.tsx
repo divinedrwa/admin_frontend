@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Download, Edit, FileText, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -294,10 +295,13 @@ export default function ExpenseDetailPage() {
                     <div key={a.id} className="border border-surface-border rounded-lg overflow-hidden">
                       {isImage && a.fileUrl ? (
                         <a href={a.fileUrl} target="_blank" rel="noopener noreferrer">
-                          <img
+                          <Image
                             src={a.fileUrl}
                             alt={a.fileName}
+                            width={400}
+                            height={160}
                             className="w-full h-40 object-cover bg-surface-background"
+                            unoptimized
                           />
                         </a>
                       ) : (

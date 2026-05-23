@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { apiSuper, SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
+import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { enterPlatformView } from "@/lib/platformViewSession";
 import {
@@ -76,22 +77,26 @@ export default function SuperAdminConsolePage() {
   /** Typed-name confirmation field for hard-delete; matches case-insensitively. */
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [archivingId, setArchivingId] = useState<string | null>(null);
-  /** Bumps when sessionStorage credentials change so admin password cells re-render. */
-  const [credentialRenderTick, setCredentialRenderTick] = useState(0);
+  /** Maps `societyId:username` → password for freshly-created admins (mirrors sessionStorage). */
+  const [storedCredentials, setStoredCredentials] = useState<Record<string, string>>({});
 
-  const loadSocieties = useCallback(async () => {
+  const abortRef = useRef<AbortController | null>(null);
+
+  const loadSocieties = useCallback(async (signal?: AbortSignal) => {
     setLoadingList(true);
     try {
-      const { data } = await apiSuper.get<{ societies: SocietyRow[] }>("/super/societies");
+      const { data } = await apiSuper.get<{ societies: SocietyRow[] }>("/super/societies", { signal });
+      if (signal?.aborted) return;
       const list = data?.societies ?? [];
       setSocieties(list);
       setAdminSocietyId((prev) =>
         prev && list.some((s) => s.id === prev) ? prev : (list[0]?.id ?? ""),
       );
     } catch {
+      if (signal?.aborted) return;
       showToast("Could not load societies", "error");
     } finally {
-      setLoadingList(false);
+      if (!signal?.aborted) setLoadingList(false);
     }
   }, []);
 
@@ -102,10 +107,13 @@ export default function SuperAdminConsolePage() {
       router.replace("/super-admin/login");
       return;
     }
+    const ac = new AbortController();
+    abortRef.current = ac;
     void (async () => {
-      await loadSocieties();
-      setBooting(false);
+      await loadSocieties(ac.signal);
+      if (!ac.signal.aborted) setBooting(false);
     })();
+    return () => ac.abort();
   }, [router, loadSocieties]);
 
   function logout() {
@@ -158,7 +166,7 @@ export default function SuperAdminConsolePage() {
         phone: adminPhone.trim() || undefined,
       });
       rememberSocietyAdminPassword(sid, uname, pwd);
-      setCredentialRenderTick((t) => t + 1);
+      setStoredCredentials((prev) => ({ ...prev, [`${sid}:${uname}`]: pwd }));
       showToast("Society admin user created — they can sign in at Society Admin login.", "success");
       setAdminUsername("");
       setAdminName("");
@@ -387,7 +395,7 @@ export default function SuperAdminConsolePage() {
                   </tr>
                 ) : (
                   societies.map((s) => (
-                    <tr key={`${s.id}-${credentialRenderTick}`} className="hover:bg-white/5">
+                    <tr key={s.id} className="hover:bg-white/5">
                       <td className="px-4 py-3">
                         <div className="font-medium text-white">{s.name}</div>
                         {s.address ? (
@@ -427,7 +435,7 @@ export default function SuperAdminConsolePage() {
                         ) : (
                           <ul className="space-y-2">
                             {s.admins.map((a) => {
-                              const storedPw = getStoredPasswordForAdmin(s.id, a.username);
+                              const storedPw = storedCredentials[`${s.id}:${a.username}`] ?? getStoredPasswordForAdmin(s.id, a.username);
                               return (
                                 <li
                                   key={a.id}
@@ -615,7 +623,7 @@ export default function SuperAdminConsolePage() {
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   autoComplete="new-password"
                 />
               </div>
@@ -643,10 +651,9 @@ export default function SuperAdminConsolePage() {
       </div>
 
       {/* View society */}
-      {(detailSociety || detailLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <Modal open={!!detailSociety || detailLoading} onClose={() => { setDetailSociety(null); setDetailLoading(false); }} maxWidth="max-w-lg">
           <div
-            className="border border-white/15 rounded-2xl max-w-lg w-full shadow-xl"
+            className="border border-white/15 rounded-2xl shadow-xl"
             style={{ backgroundColor: `var(${cssVar.superLogin.to})` }}
           >
             <div className="card-header flex justify-between items-start gap-4 border-b border-white/10 p-6">
@@ -722,15 +729,13 @@ export default function SuperAdminConsolePage() {
             ) : null}
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Edit society */}
-      {editRow && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <Modal open={!!editRow} onClose={() => setEditRow(null)}>
           <form
             onSubmit={onSaveEdit}
-            className="border border-white/15 rounded-2xl max-w-md w-full shadow-xl"
+            className="border border-white/15 rounded-2xl shadow-xl"
             style={{ backgroundColor: `var(${cssVar.superLogin.to})` }}
           >
             <div className="card-header flex justify-between items-start gap-4 border-b border-white/10 p-6">
@@ -775,16 +780,14 @@ export default function SuperAdminConsolePage() {
             </button>
             </div>
           </form>
-        </div>
-      )}
+      </Modal>
 
       {/* Delete society — typed-name confirmation. The "safe" action is
           Archive (per-row button, reversible). This modal is only the
           permanent-delete path. */}
-      {deleteRow && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <Modal open={!!deleteRow} onClose={() => { setDeleteRow(null); setDeleteConfirmText(""); }}>
           <div
-            className="border border-brand-danger/30 rounded-2xl max-w-md w-full shadow-xl"
+            className="border border-brand-danger/30 rounded-2xl shadow-xl"
             style={{ backgroundColor: `var(${cssVar.superLogin.to})` }}
           >
             <div className="card-header border-b border-white/10 p-6">
@@ -792,18 +795,18 @@ export default function SuperAdminConsolePage() {
             </div>
             <div className="card-body p-6">
             <p className="text-sm text-fg-secondary mb-3">
-              This drops <strong className="text-white">{deleteRow.name}</strong> and{" "}
+              This drops <strong className="text-white">{deleteRow?.name}</strong> and{" "}
               <strong className="text-pending-fg">cascades</strong> across users, villas, billing, visitors,
               parcels, and every other tenant-scoped table. This is irreversible — there is no undo, no
               backup restore from this UI.
             </p>
             <p className="text-sm text-fg-secondary mb-2">
-              {deleteRow.archivedAt
+              {deleteRow?.archivedAt
                 ? "The society is currently archived. If this is the wrong row, click Cancel and Restore from the list."
                 : "If you only need to take this society offline, Cancel and click Archive instead — that's reversible."}
             </p>
             <label className="block text-xs text-fg-secondary mt-4 mb-1">
-              Type <span className="font-mono text-white">{deleteRow.name}</span> to confirm:
+              Type <span className="font-mono text-white">{deleteRow?.name}</span> to confirm:
             </label>
             <input
               type="text"
@@ -811,7 +814,7 @@ export default function SuperAdminConsolePage() {
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-sm font-mono"
-              placeholder={deleteRow.name}
+              placeholder={deleteRow?.name}
             />
             <div className="flex gap-3 justify-end mt-5">
               <button
@@ -828,7 +831,7 @@ export default function SuperAdminConsolePage() {
                 type="button"
                 disabled={
                   deleting ||
-                  deleteConfirmText.trim().toLowerCase() !== deleteRow.name.toLowerCase()
+                  deleteConfirmText.trim().toLowerCase() !== (deleteRow?.name ?? "").toLowerCase()
                 }
                 className="btn btn-danger text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 onClick={() => void onConfirmDelete()}
@@ -838,8 +841,7 @@ export default function SuperAdminConsolePage() {
             </div>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

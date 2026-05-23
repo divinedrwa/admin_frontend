@@ -290,6 +290,7 @@ export default function ExpensesPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && fetchExpenses()}
                 className="input pl-10"
+                aria-label="Search expenses"
               />
             </div>
           </div>
@@ -299,6 +300,7 @@ export default function ExpensesPage() {
             value={selectedFyId}
             onChange={(e) => setSelectedFyId(e.target.value)}
             className="input"
+            aria-label="Filter by financial year"
           >
             <option value="">All Financial Years</option>
             {[...financialYears]
@@ -313,6 +315,7 @@ export default function ExpensesPage() {
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="input"
+            aria-label="Filter by category"
           >
             <option value="">All Categories</option>
             {categories.map(cat => (
@@ -327,6 +330,7 @@ export default function ExpensesPage() {
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="input"
+            aria-label="Filter by month"
           >
             <option value="">All Months</option>
             {MONTHS.map((month, index) => (
@@ -369,15 +373,15 @@ export default function ExpensesPage() {
           <table className="table">
             <thead className="table-head">
               <tr>
-                <th className="table-th">Date</th>
-                <th className="table-th">Category</th>
-                <th className="table-th">Title</th>
-                <th className="table-th">Paid To</th>
-                <th className="table-th">Amount</th>
-                <th className="table-th">FY</th>
-                <th className="table-th">Payment</th>
-                <th className="table-th">Attachments</th>
-                <th className="table-th text-right">Actions</th>
+                <th scope="col" className="table-th">Date</th>
+                <th scope="col" className="table-th">Category</th>
+                <th scope="col" className="table-th">Title</th>
+                <th scope="col" className="table-th">Paid To</th>
+                <th scope="col" className="table-th">Amount</th>
+                <th scope="col" className="table-th">FY</th>
+                <th scope="col" className="table-th">Payment</th>
+                <th scope="col" className="table-th">Attachments</th>
+                <th scope="col" className="table-th text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-surface divide-y divide-surface-border">
@@ -411,7 +415,7 @@ export default function ExpensesPage() {
                       <div className="flex items-center gap-2">
                         <span
                           className="w-8 h-8 rounded flex items-center justify-center"
-                          style={{ backgroundColor: (expense.category.color ?? '#666666') + '20' }}
+                          style={{ backgroundColor: expense.category.color ? `${expense.category.color}20` : 'var(--gp-surface-elevated)' }}
                         >
                           {expense.category.icon || '📋'}
                         </span>
@@ -477,18 +481,21 @@ export default function ExpensesPage() {
                         <Link
                           href={`/expenses/${expense.id}`}
                           className="text-brand-primary hover:text-brand-primary"
+                          aria-label={`View ${expense.title}`}
                         >
                           <Eye size={18} />
                         </Link>
                         <Link
                           href={`/expenses/edit/${expense.id}`}
                           className="text-fg-secondary hover:text-fg-primary"
+                          aria-label={`Edit ${expense.title}`}
                         >
                           <Edit size={18} />
                         </Link>
                         <button
                           onClick={() => handleDelete(expense.id)}
                           className="text-brand-danger hover:text-brand-danger"
+                          aria-label={`Delete ${expense.title}`}
                         >
                           <Trash2 size={18} />
                         </button>

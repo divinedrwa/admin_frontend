@@ -208,10 +208,10 @@ export default function GatesPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Gate Name</th>
-                  <th className="table-th">Location</th>
-                  <th className="table-th">Status</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Gate Name</th>
+                  <th scope="col" className="table-th">Location</th>
+                  <th scope="col" className="table-th">Status</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>

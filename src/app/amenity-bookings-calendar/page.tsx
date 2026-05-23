@@ -262,22 +262,22 @@ export default function AmenityBookingCalendarPage() {
                 <table className="table">
                   <thead className="table-head">
                     <tr>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Amenity
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Villa
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Resident
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Start Time
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         End Time
                       </th>
-                      <th className="table-th">
+                      <th scope="col" className="table-th">
                         Status
                       </th>
                     </tr>

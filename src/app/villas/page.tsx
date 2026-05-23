@@ -1,9 +1,11 @@
 "use client";
 
 import { Building2, FileSpreadsheet, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { sortByVillaNumber } from "@/utils/villaSort";
@@ -96,6 +98,8 @@ type VillaForm = {
 };
 
 export default function VillasPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [villas, setVillas] = useState<Villa[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -120,22 +124,39 @@ export default function VillasPage() {
   const [assignedFloorTier, setAssignedFloorTier] = useState("");
   const [primaryResidentId, setPrimaryResidentId] = useState<string | null>(null);
   const [primaryResidentName, setPrimaryResidentName] = useState<string | null>(null);
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadVillas = () => {
+  const loadVillas = useCallback((offset = initialOffset) => {
     setLoading(true);
     api
-      .get("/villas")
-      .then((response) => setVillas(response.data.villas ?? []))
+      .get(`/villas?limit=50&offset=${offset}`)
+      .then((response) => {
+        setVillas(response.data.villas ?? []);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
       .catch((error: unknown) => {
         const status = (error as { response?: { status?: number } })?.response?.status;
         const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-        
+
         // Only show error toast for non-auth errors
         if (status !== 401 && status !== 403) {
           showToast(message ?? "Failed to load villas", "error");
         }
       })
       .finally(() => setLoading(false));
+  }, [initialOffset]);
+
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadVillas(newOffset);
   };
 
   useEffect(() => {
@@ -143,9 +164,9 @@ export default function VillasPage() {
     const timer = setTimeout(() => {
       loadVillas();
     }, 100);
-    
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [loadVillas]);
 
   const handleOpenForm = (villa?: Villa) => {
     if (villa) {
@@ -845,11 +866,11 @@ export default function VillasPage() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading villas...</p>
             </div>
-          ) : (
+          ) : (<>
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th w-10">
+                  <th scope="col" className="table-th w-10">
                     {villas.length > 0 ? (
                       <input
                         type="checkbox"
@@ -859,19 +880,19 @@ export default function VillasPage() {
                         }
                         onChange={toggleSelectAllVillas}
                         className="rounded border-surface-border"
-                        title="Select all villas"
+                        aria-label="Select all villas"
                       />
                     ) : null}
                   </th>
-                  <th className="table-th">Villa No.</th>
-                  <th className="table-th">Block</th>
-                  <th className="table-th">Floors</th>
-                  <th className="table-th">Area (sq.ft.)</th>
-                  <th className="table-th">Owner</th>
-                  <th className="table-th">Maintenance</th>
-                  <th className="table-th">Units</th>
-                  <th className="table-th">Residents</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Villa No.</th>
+                  <th scope="col" className="table-th">Block</th>
+                  <th scope="col" className="table-th">Floors</th>
+                  <th scope="col" className="table-th">Area (sq.ft.)</th>
+                  <th scope="col" className="table-th">Owner</th>
+                  <th scope="col" className="table-th">Maintenance</th>
+                  <th scope="col" className="table-th">Units</th>
+                  <th scope="col" className="table-th">Residents</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -937,7 +958,13 @@ export default function VillasPage() {
                 )}
               </tbody>
             </table>
-          )}
+            <Pagination
+              total={pgMeta.total}
+              limit={pgMeta.limit}
+              offset={pgMeta.offset}
+              onPageChange={handlePageChange}
+            />
+          </>)}
         </div>
       </div>
     </AppShell>

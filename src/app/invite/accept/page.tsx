@@ -360,8 +360,11 @@ function InviteAcceptContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a secure password"
                 required
-                minLength={6}
+                minLength={8}
               />
+              <p className="text-xs text-fg-secondary mt-1">
+                Min 8 characters with uppercase, lowercase, and a number
+              </p>
             </div>
           </div>
 

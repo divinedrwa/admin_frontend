@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -302,12 +303,12 @@ export default function ResidentManagementPage() {
         <table className="table">
           <thead className="table-head">
             <tr>
-              <th className="table-th">Resident</th>
-              <th className="table-th">Villa</th>
-              <th className="table-th">Type</th>
-              <th className="table-th">Move-in Date</th>
-              <th className="table-th">Status</th>
-              <th className="table-th">Actions</th>
+              <th scope="col" className="table-th">Resident</th>
+              <th scope="col" className="table-th">Villa</th>
+              <th scope="col" className="table-th">Type</th>
+              <th scope="col" className="table-th">Move-in Date</th>
+              <th scope="col" className="table-th">Status</th>
+              <th scope="col" className="table-th">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -406,14 +407,13 @@ export default function ResidentManagementPage() {
       </div>
 
       {/* Move-out Modal */}
-      {showMoveOutModal && selectedResident && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-surface rounded-lg p-6 w-full max-w-md">
+      <Modal open={showMoveOutModal && !!selectedResident} onClose={() => { setShowMoveOutModal(false); setMoveOutReason(""); }}>
+          <div className="bg-surface rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Process Move-out</h2>
             <div className="mb-4 p-3 bg-surface-background rounded">
-              <div className="font-medium text-fg-primary">{selectedResident.name}</div>
-              <div className="text-sm text-fg-secondary">{selectedResident.email}</div>
-              {selectedResident.villa && (
+              <div className="font-medium text-fg-primary">{selectedResident?.name}</div>
+              <div className="text-sm text-fg-secondary">{selectedResident?.email}</div>
+              {selectedResident?.villa && (
                 <div className="text-sm text-fg-secondary">
                   Villa: {selectedResident.villa.villaNumber}
                 </div>
@@ -464,8 +464,7 @@ export default function ResidentManagementPage() {
               </div>
             </div>
           </div>
-        </div>
-        )}
+      </Modal>
 
         {loading && !showMoveOutModal && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">

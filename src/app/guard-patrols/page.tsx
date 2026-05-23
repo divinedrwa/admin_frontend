@@ -355,13 +355,13 @@ export default function GuardPatrolsPage() {
               <table className="table">
                 <thead className="table-head">
                   <tr>
-                    <th className="table-th">Checkpoint</th>
-                    <th className="table-th">Guard</th>
-                    <th className="table-th">Gate</th>
-                    <th className="table-th">Scheduled</th>
-                    <th className="table-th">Actual</th>
-                    <th className="table-th">Status</th>
-                    <th className="table-th">Actions</th>
+                    <th scope="col" className="table-th">Checkpoint</th>
+                    <th scope="col" className="table-th">Guard</th>
+                    <th scope="col" className="table-th">Gate</th>
+                    <th scope="col" className="table-th">Scheduled</th>
+                    <th scope="col" className="table-th">Actual</th>
+                    <th scope="col" className="table-th">Status</th>
+                    <th scope="col" className="table-th">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -30,7 +30,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-background">
+      <div className="min-h-screen flex items-center justify-center bg-surface-background" role="status" aria-live="polite">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-fg-secondary">Loading...</p>
@@ -53,7 +53,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
   return (
     <div className="min-h-screen flex bg-surface-background">
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <section className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0">
         {platformView ? (
           <div className="border-b border-pending-solid/30 bg-pending-bg/80 px-4 py-3 print:hidden md:px-8">
             <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3">
@@ -122,7 +122,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
             {children}
           </div>
         </main>
-      </section>
+      </div>
     </div>
   );
 }

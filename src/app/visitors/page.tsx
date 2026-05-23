@@ -70,11 +70,11 @@ export default function VisitorsPage() {
     gateId: ""
   });
 
-  const loadVisitors = useCallback(() => {
+  const loadVisitors = useCallback((signal?: AbortSignal) => {
     setLoading(true);
     const endpoint = filter === "active" ? "/visitors/active/list" : "/visitors";
     api
-      .get(endpoint)
+      .get(endpoint, { signal })
       .then((response) => {
         const list = (response.data.visitors ?? []) as Visitor[];
         setVisitors(
@@ -87,13 +87,13 @@ export default function VisitorsPage() {
           })),
         );
       })
-      .catch(() => showToast("Failed to load visitors", "error"))
+      .catch((err) => { if (!signal?.aborted) showToast("Failed to load visitors", "error"); else throw err; })
       .finally(() => setLoading(false));
   }, [filter]);
 
-  const loadVillas = () => {
+  const loadVillas = (signal?: AbortSignal) => {
     api
-      .get("/villas")
+      .get("/villas", { signal })
       .then((response) =>
         setVillas(
           sortByVillaNumber(
@@ -102,20 +102,22 @@ export default function VisitorsPage() {
           ),
         ),
       )
-      .catch(() => showToast("Failed to load villas", "error"));
+      .catch((err) => { if (!signal?.aborted) showToast("Failed to load villas", "error"); else throw err; });
   };
 
-  const loadGates = () => {
+  const loadGates = (signal?: AbortSignal) => {
     api
-      .get("/gates")
+      .get("/gates", { signal })
       .then((response) => setGates(response.data.gates ?? []))
-      .catch(() => showToast("Failed to load gates", "error"));
+      .catch((err) => { if (!signal?.aborted) showToast("Failed to load gates", "error"); else throw err; });
   };
 
   useEffect(() => {
-    loadVisitors();
-    loadVillas();
-    loadGates();
+    const ac = new AbortController();
+    loadVisitors(ac.signal);
+    loadVillas(ac.signal);
+    loadGates(ac.signal);
+    return () => ac.abort();
   }, [loadVisitors]);
 
   const handleOpenForm = () => {
@@ -291,6 +293,7 @@ export default function VisitorsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="input text-sm"
+                aria-label="Search visitors by name or phone"
               />
             </div>
             <div>
@@ -298,6 +301,7 @@ export default function VisitorsPage() {
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as "all" | "active")}
                 className="input text-sm"
+                aria-label="Filter by status"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active Only</option>
@@ -308,6 +312,7 @@ export default function VisitorsPage() {
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="input text-sm"
+                aria-label="Filter by visitor type"
               >
                 <option value="all">All Types</option>
                 <option value="GUEST">Guest</option>
@@ -501,15 +506,15 @@ export default function VisitorsPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Name</th>
-                  <th className="table-th">Type</th>
-                  <th className="table-th">Visiting Villas</th>
-                  <th className="table-th">Gate</th>
-                  <th className="table-th">Vehicle</th>
-                  <th className="table-th">Purpose</th>
-                  <th className="table-th">Check In</th>
-                  <th className="table-th">Check Out</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Name</th>
+                  <th scope="col" className="table-th">Type</th>
+                  <th scope="col" className="table-th">Visiting Villas</th>
+                  <th scope="col" className="table-th">Gate</th>
+                  <th scope="col" className="table-th">Vehicle</th>
+                  <th scope="col" className="table-th">Purpose</th>
+                  <th scope="col" className="table-th">Check In</th>
+                  <th scope="col" className="table-th">Check Out</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -569,6 +574,7 @@ export default function VisitorsPage() {
                           disabled={deletingVisitorId === visitor.id}
                           className="btn btn-ghost text-brand-danger p-1.5 disabled:opacity-50"
                           title="Delete visitor record"
+                          aria-label={`Delete visitor ${visitor.name}`}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

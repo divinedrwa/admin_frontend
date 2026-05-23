@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 
@@ -141,9 +142,8 @@ export default function BankAccountsPage() {
           </div>
         )}
 
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-surface rounded-lg p-6 w-full max-w-md">
+        <Modal open={showModal} onClose={() => setShowModal(false)}>
+            <div className="bg-surface rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Add Bank Account</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -223,8 +223,7 @@ export default function BankAccountsPage() {
                 </div>
               </form>
             </div>
-          </div>
-        )}
+        </Modal>
       </div>
     </div>
   );

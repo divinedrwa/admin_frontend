@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, FileText, Plus, Upload, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -716,7 +717,7 @@ export default function EditExpensePage() {
                     <div key={a.id} className="flex items-center justify-between bg-surface-background p-3 rounded">
                       <div className="flex items-center gap-3 min-w-0">
                         {isImage ? (
-                          <img src={a.fileUrl} alt={a.fileName} className="w-10 h-10 object-cover rounded shrink-0" />
+                          <Image src={a.fileUrl} alt={a.fileName} width={40} height={40} className="w-10 h-10 object-cover rounded shrink-0" unoptimized />
                         ) : (
                           <FileText size={24} className="text-fg-tertiary shrink-0" />
                         )}

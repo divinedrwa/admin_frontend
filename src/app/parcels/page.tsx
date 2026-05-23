@@ -303,12 +303,12 @@ export default function ParcelsPage() {
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Villa</th>
-                  <th className="table-th">Description</th>
-                  <th className="table-th">Status</th>
-                  <th className="table-th">Received</th>
-                  <th className="table-th">Collected</th>
-                  <th className="table-th">Actions</th>
+                  <th scope="col" className="table-th">Villa</th>
+                  <th scope="col" className="table-th">Description</th>
+                  <th scope="col" className="table-th">Status</th>
+                  <th scope="col" className="table-th">Received</th>
+                  <th scope="col" className="table-th">Collected</th>
+                  <th scope="col" className="table-th">Actions</th>
                 </tr>
               </thead>
               <tbody>

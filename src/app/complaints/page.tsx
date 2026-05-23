@@ -2,8 +2,10 @@
 
 import { AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { Pagination } from "@/components/Pagination";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 
@@ -23,36 +25,62 @@ type Complaint = {
 };
 
 export default function ComplaintsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
 
-  const loadComplaints = useCallback(() => {
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+
+  const loadComplaints = useCallback((offset = initialOffset) => {
+    setLoading(true);
     api
-      .get("/complaints")
-      .then((response) => setComplaints(response.data.complaints ?? []))
+      .get(`/complaints?limit=50&offset=${offset}`)
+      .then((response) => {
+        setComplaints(response.data.complaints ?? []);
+        setOpenCount(response.data.openCount ?? 0);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
       .catch(() => showToast("Failed to load complaints", "error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialOffset]);
 
   useEffect(() => {
     loadComplaints();
   }, [loadComplaints]);
 
-  async function updateStatus(id: string, status: string) {
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadComplaints(newOffset);
+  };
+
+  async function updateStatus(id: string, newStatus: string) {
+    const prev = complaints.find((c) => c.id === id)?.status;
+    // Optimistic update
+    setComplaints((list) => list.map((c) => (c.id === id ? { ...c, status: newStatus } : c)));
     setUpdatingId(id);
     try {
-      await api.patch(`/complaints/${id}/status`, { status });
-      setComplaints((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
+      await api.patch(`/complaints/${id}/status`, { status: newStatus });
       showToast("Status updated", "success");
     } catch {
+      // Rollback
+      if (prev) setComplaints((list) => list.map((c) => (c.id === id ? { ...c, status: prev } : c)));
       showToast("Failed to update status", "error");
     } finally {
       setUpdatingId(null);
     }
   }
 
-  const openCount = complaints.filter((c) => c.status !== "RESOLVED" && c.status !== "CLOSED").length;
+  const [openCount, setOpenCount] = useState(0);
 
   return (
     <AppShell title="Complaints">
@@ -69,7 +97,7 @@ export default function ComplaintsPage() {
           <div className="stat-card">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="stat-card-value">{complaints.length}</div>
+                <div className="stat-card-value">{pgMeta.total}</div>
                 <div className="stat-card-label">Total complaints</div>
               </div>
               <ClipboardList className="h-8 w-8 text-brand-primary" />
@@ -87,7 +115,7 @@ export default function ComplaintsPage() {
           <div className="stat-card">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="stat-card-value text-approved-fg">{complaints.length - openCount}</div>
+                <div className="stat-card-value text-approved-fg">{pgMeta.total - openCount}</div>
                 <div className="stat-card-label">Resolved</div>
               </div>
               <CheckCircle2 className="h-8 w-8 text-approved-fg" />
@@ -102,21 +130,21 @@ export default function ComplaintsPage() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading complaints...</p>
             </div>
-          ) : complaints.length === 0 ? (
+          ) : complaints.length === 0 && pgMeta.total === 0 ? (
             <div className="empty-state">
               <span className="empty-state-icon">📋</span>
               <p className="empty-state-title">No complaints yet</p>
               <p className="empty-state-text">When residents submit complaints, they will appear here for review and resolution.</p>
             </div>
-          ) : (
+          ) : (<>
             <table className="table">
               <thead className="table-head">
                 <tr>
-                  <th className="table-th">Villa</th>
-                  <th className="table-th">Title</th>
-                  <th className="table-th">Description</th>
-                  <th className="table-th">Status</th>
-                  <th className="table-th">Created</th>
+                  <th scope="col" className="table-th">Villa</th>
+                  <th scope="col" className="table-th">Title</th>
+                  <th scope="col" className="table-th">Description</th>
+                  <th scope="col" className="table-th">Status</th>
+                  <th scope="col" className="table-th">Created</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,6 +170,7 @@ export default function ComplaintsPage() {
                         value={complaint.status}
                         disabled={updatingId === complaint.id}
                         onChange={(e) => void updateStatus(complaint.id, e.target.value)}
+                        aria-label={`Status for ${complaint.title}`}
                       >
                         {COMPLAINT_STATUSES.map((s) => (
                           <option key={s} value={s}>
@@ -161,7 +190,13 @@ export default function ComplaintsPage() {
                 ))}
               </tbody>
             </table>
-          )}
+            <Pagination
+              total={pgMeta.total}
+              limit={pgMeta.limit}
+              offset={pgMeta.offset}
+              onPageChange={handlePageChange}
+            />
+          </>)}
         </div>
       </div>
     </AppShell>

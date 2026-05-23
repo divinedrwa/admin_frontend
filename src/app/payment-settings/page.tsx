@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -195,11 +196,13 @@ export default function PaymentSettingsPage() {
               {settings.upiQrCodeUrl && (
                 <div className="flex flex-col items-center gap-3 rounded-lg border border-surface-border p-4">
                   <p className="text-sm font-medium text-fg-secondary">Current QR code</p>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={settings.upiQrCodeUrl}
                     alt="UPI QR Code"
-                    className="max-h-56 rounded-lg"
+                    width={224}
+                    height={224}
+                    className="max-h-56 w-auto rounded-lg"
+                    unoptimized
                   />
                   <button
                     type="button"
@@ -225,8 +228,7 @@ export default function PaymentSettingsPage() {
                 {previewUrl && (
                   <div className="flex flex-col items-center gap-2">
                     <p className="text-sm text-fg-secondary">Preview</p>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={previewUrl} alt="Preview" className="max-h-48 rounded-lg" />
+                    <Image src={previewUrl} alt="Preview" width={192} height={192} className="max-h-48 w-auto rounded-lg" unoptimized />
                   </div>
                 )}
 
