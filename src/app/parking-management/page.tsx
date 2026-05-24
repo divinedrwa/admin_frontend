@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { sortByVillaNumber } from "@/utils/villaSort";
 
@@ -141,12 +142,8 @@ export default function ParkingManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-background p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-fg-primary mb-2">🅿️ Parking Management</h1>
-          <p className="text-fg-secondary">Monitor and manage parking slots and vehicles</p>
-        </div>
+    <AppShell title="Parking Management">
+      <div className="space-y-6">
 
         <div className="tabs mb-6">
             {[
@@ -399,6 +396,6 @@ export default function ParkingManagementPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }

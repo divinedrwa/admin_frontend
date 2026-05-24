@@ -1,7 +1,7 @@
 "use client";
 
 import { FileSpreadsheet, ShieldCheck, UserPlus, Users } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -66,6 +66,14 @@ function firstUnitIdForVilla(villas: Villa[], villaId: string): string {
 }
 
 export default function UsersPage() {
+  return (
+    <Suspense fallback={<AppShell title="Users Management"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <UsersPageInner />
+    </Suspense>
+  );
+}
+
+function UsersPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);

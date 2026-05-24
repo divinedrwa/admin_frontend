@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
@@ -51,14 +52,8 @@ export default function PreApprovedVisitorsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-background p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="page-action-bar">
-          <div>
-            <h1 className="text-3xl font-bold text-fg-primary">Pre-Approved Visitors</h1>
-            <p className="text-fg-secondary">Manage pre-approved visitors for quick entry</p>
-          </div>
-        </div>
+    <AppShell title="Pre-Approved Visitors">
+      <div className="space-y-6">
 
         {error && (
           <div className="bg-denied-bg border border-brand-danger text-denied-fg px-4 py-3 rounded mb-4">
@@ -108,6 +103,6 @@ export default function PreApprovedVisitorsPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }

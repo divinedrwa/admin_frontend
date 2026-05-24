@@ -1,7 +1,8 @@
 "use client";
 
 import { Shield } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
@@ -27,12 +28,13 @@ type GarbageEvent = {
 };
 
 export default function GuardOperationsPage() {
+  const router = useRouter();
   const [waterStatus, setWaterStatus] = useState<WaterStatus[]>([]);
   const [garbageEvent, setGarbageEvent] = useState<GarbageEvent | null>(null);
   const [_loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const loadData = () => {
+  const loadData = useCallback(() => {
     Promise.all([
       api.get("/water-supply/status"),
       api.get("/garbage-collection/active"),
@@ -48,13 +50,13 @@ export default function GuardOperationsPage() {
         showToast(message, "error");
       })
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 30000); // Refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadData]);
 
   const handleToggleWater = async () => {
     if (waterStatus.length === 0) return;
@@ -250,7 +252,7 @@ export default function GuardOperationsPage() {
             )}
             <button
               className="btn btn-ghost"
-              onClick={() => (window.location.href = "/guard-patrols")}
+              onClick={() => router.push("/guard-patrols")}
             >
               View History
             </button>

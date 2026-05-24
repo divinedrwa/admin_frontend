@@ -1,9 +1,11 @@
 "use client";
 
 import { BellRing, Megaphone, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -56,6 +58,16 @@ const NOTICE_PRIORITIES = [
 ] as const;
 
 export default function NoticesPage() {
+  return (
+    <Suspense fallback={<AppShell title="Notice Board"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <NoticesPageInner />
+    </Suspense>
+  );
+}
+
+function NoticesPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -70,24 +82,45 @@ export default function NoticesPage() {
   });
   const [residentOptions, setResidentOptions] = useState<ResidentOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
 
-  const loadNotices = () => {
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+
+  const loadNotices = useCallback((offset = initialOffset, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get("/notices")
-      .then((response) => setNotices(response.data.notices ?? []))
+      .get(`/notices?limit=50&offset=${offset}`, { signal })
+      .then((response) => {
+        setNotices(response.data.notices ?? []);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
       .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Failed to load notices";
         showToast(message, "error");
       })
       .finally(() => setLoading(false));
-  };
+  }, [initialOffset]);
 
   useEffect(() => {
-    loadNotices();
-  }, []);
+    const controller = new AbortController();
+    loadNotices(initialOffset, controller.signal);
+    return () => controller.abort();
+  }, [loadNotices]);
+
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadNotices(newOffset);
+  };
 
   useEffect(() => {
     if (!showForm) return;
@@ -149,7 +182,7 @@ export default function NoticesPage() {
       await api.post("/notices", payload);
       showToast("Notice posted successfully. Residents will be notified.", "success");
       handleCloseForm();
-      loadNotices();
+      loadNotices(pgMeta.offset);
     } catch (error: unknown) {
       const data = (error as { response?: { data?: { message?: string; issues?: { path?: (string | number)[]; message?: string }[] } } })?.response?.data;
       let message = data?.message ?? "Failed to post notice";
@@ -169,7 +202,7 @@ export default function NoticesPage() {
     try {
       await api.delete(`/notices/${noticeId}`);
       showToast("Notice deleted successfully", "success");
-      loadNotices();
+      loadNotices(pgMeta.offset);
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -383,7 +416,7 @@ export default function NoticesPage() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading notices...</p>
             </div>
-          ) : notices.length === 0 ? (
+          ) : notices.length === 0 && pgMeta.total === 0 ? (
             <div className="card">
               <div className="empty-state">
                 <span className="empty-state-icon">📌</span>
@@ -392,58 +425,66 @@ export default function NoticesPage() {
               </div>
             </div>
           ) : (
-            notices.map((notice) => (
-              <div key={notice.id} className="card p-6">
-                <div className="flex justify-between items-start mb-2 gap-2">
-                  <div className="flex flex-wrap items-center gap-2 min-w-0">
-                    <h3 className="text-lg font-semibold">{notice.title}</h3>
-                    {notice.category && (
-                      <span className="badge badge-gray uppercase shrink-0">
-                        {notice.category}
-                      </span>
-                    )}
-                    {notice.isUrgent ? (
-                      <span className="badge badge-danger shrink-0">
-                        Urgent
-                      </span>
-                    ) : null}
-                    {notice.recipients && notice.recipients.length > 0 ? (
-                      <span className="badge badge-primary shrink-0">
-                        Targeted ({notice.recipients.length})
-                      </span>
-                    ) : (
-                      <span className="badge badge-success shrink-0">
-                        All residents
-                      </span>
-                    )}
+            <>
+              {notices.map((notice) => (
+                <div key={notice.id} className="card p-6">
+                  <div className="flex justify-between items-start mb-2 gap-2">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <h3 className="text-lg font-semibold">{notice.title}</h3>
+                      {notice.category && (
+                        <span className="badge badge-gray uppercase shrink-0">
+                          {notice.category}
+                        </span>
+                      )}
+                      {notice.isUrgent ? (
+                        <span className="badge badge-danger shrink-0">
+                          Urgent
+                        </span>
+                      ) : null}
+                      {notice.recipients && notice.recipients.length > 0 ? (
+                        <span className="badge badge-primary shrink-0">
+                          Targeted ({notice.recipients.length})
+                        </span>
+                      ) : (
+                        <span className="badge badge-success shrink-0">
+                          All residents
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(notice.id)}
+                      className="text-brand-danger hover:text-denied-fg text-sm"
+                    >
+                      Delete
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDelete(notice.id)}
-                    className="text-brand-danger hover:text-denied-fg text-sm"
-                  >
-                    Delete
-                  </button>
+                  <p className="text-sm text-fg-secondary mb-3">{formatDate(notice.createdAt)}</p>
+                  <p className="text-fg-primary whitespace-pre-wrap">{notice.content}</p>
+                  {notice.recipients && notice.recipients.length > 0 ? (
+                    <p className="text-sm text-fg-primary mt-2">
+                      <span className="font-semibold">Recipients: </span>
+                      {notice.recipients.map((r) => r.user?.name ?? r.userId).join(", ")}
+                    </p>
+                  ) : null}
+                  {notice.fileUrl && (
+                    <a
+                      href={notice.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-3 text-brand-primary hover:text-info-fg text-sm"
+                    >
+                      View Attachment →
+                    </a>
+                  )}
                 </div>
-                <p className="text-sm text-fg-secondary mb-3">{formatDate(notice.createdAt)}</p>
-                <p className="text-fg-primary whitespace-pre-wrap">{notice.content}</p>
-                {notice.recipients && notice.recipients.length > 0 ? (
-                  <p className="text-sm text-fg-primary mt-2">
-                    <span className="font-semibold">Recipients: </span>
-                    {notice.recipients.map((r) => r.user?.name ?? r.userId).join(", ")}
-                  </p>
-                ) : null}
-                {notice.fileUrl && (
-                  <a
-                    href={notice.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block mt-3 text-brand-primary hover:text-info-fg text-sm"
-                  >
-                    View Attachment →
-                  </a>
-                )}
-              </div>
-            ))
+              ))}
+              <Pagination
+                total={pgMeta.total}
+                limit={pgMeta.limit}
+                offset={pgMeta.offset}
+                onPageChange={handlePageChange}
+              />
+            </>
           )}
         </div>
       </div>

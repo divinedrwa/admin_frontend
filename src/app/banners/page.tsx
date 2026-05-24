@@ -46,17 +46,22 @@ export default function BannersPage() {
     actionUrl: ""
   });
 
-  const loadBanners = () => {
+  const loadBanners = (signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get("/banners")
+      .get("/banners", { signal })
       .then((response) => setBanners(response.data.banners ?? []))
-      .catch(() => showToast("Failed to load banners", "error"))
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load banners", "error");
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    loadBanners();
+    const controller = new AbortController();
+    loadBanners(controller.signal);
+    return () => controller.abort();
   }, []);
 
   const handleOpenForm = () => {

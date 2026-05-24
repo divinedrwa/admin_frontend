@@ -1,9 +1,11 @@
 "use client";
 
 import { Plus, Wrench } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -38,6 +40,16 @@ type VendorForm = {
 };
 
 export default function VendorsPage() {
+  return (
+    <Suspense fallback={<AppShell title="Vendors Management"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <VendorsPageInner />
+    </Suspense>
+  );
+}
+
+function VendorsPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -51,24 +63,45 @@ export default function VendorsPage() {
     isApproved: true
   });
   const [submitting, setSubmitting] = useState(false);
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
 
-  const loadVendors = () => {
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+
+  const loadVendors = useCallback((offset = initialOffset, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get("/vendors")
-      .then((response) => setVendors(response.data.vendors ?? []))
+      .get(`/vendors?limit=50&offset=${offset}`, { signal })
+      .then((response) => {
+        setVendors(response.data.vendors ?? []);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
       .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Failed to load vendors";
         showToast(message, "error");
       })
       .finally(() => setLoading(false));
-  };
+  }, [initialOffset]);
 
   useEffect(() => {
-    loadVendors();
-  }, []);
+    const controller = new AbortController();
+    loadVendors(initialOffset, controller.signal);
+    return () => controller.abort();
+  }, [loadVendors, initialOffset]);
+
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadVendors(newOffset);
+  };
 
   const handleOpenForm = (vendor?: Vendor) => {
     if (vendor) {
@@ -123,7 +156,7 @@ export default function VendorsPage() {
       }
 
       handleCloseForm();
-      loadVendors();
+      loadVendors(pgMeta.offset);
     } catch (error: unknown) {
       const data = (error as { response?: { data?: { message?: string; issues?: { path?: (string | number)[]; message?: string }[] } } })?.response?.data;
       let message = data?.message ?? "Failed to save vendor";
@@ -143,7 +176,7 @@ export default function VendorsPage() {
     try {
       await api.delete(`/vendors/${vendorId}`);
       showToast("Vendor deleted successfully", "success");
-      loadVendors();
+      loadVendors(pgMeta.offset);
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -293,25 +326,26 @@ export default function VendorsPage() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading vendors...</p>
             </div>
-          ) : vendors.length === 0 ? (
+          ) : vendors.length === 0 && pgMeta.total === 0 ? (
             <div className="empty-state">
               <span className="empty-state-icon">🔧</span>
               <p className="empty-state-title">No vendors found</p>
               <p className="empty-state-text">Click &quot;Add Vendor&quot; to add your first vendor.</p>
             </div>
           ) : (
-            <table className="table">
-              <thead className="table-head">
-                <tr>
-                  <th scope="col" className="table-th">Name</th>
-                  <th scope="col" className="table-th">Category</th>
-                  <th scope="col" className="table-th">Phone</th>
-                  <th scope="col" className="table-th">Email</th>
-                  <th scope="col" className="table-th">Status</th>
-                  <th scope="col" className="table-th">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <table className="table">
+                <thead className="table-head">
+                  <tr>
+                    <th scope="col" className="table-th">Name</th>
+                    <th scope="col" className="table-th">Category</th>
+                    <th scope="col" className="table-th">Phone</th>
+                    <th scope="col" className="table-th">Email</th>
+                    <th scope="col" className="table-th">Status</th>
+                    <th scope="col" className="table-th">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {vendors.map((vendor) => (
                     <tr key={vendor.id} className="table-row">
                       <td className="table-td font-medium">{vendor.name}</td>
@@ -347,8 +381,15 @@ export default function VendorsPage() {
                       </td>
                     </tr>
                   ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+              <Pagination
+                total={pgMeta.total}
+                limit={pgMeta.limit}
+                offset={pgMeta.offset}
+                onPageChange={handlePageChange}
+              />
+            </>
           )}
         </div>
       </div>

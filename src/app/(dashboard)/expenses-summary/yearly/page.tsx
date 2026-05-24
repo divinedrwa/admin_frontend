@@ -131,6 +131,7 @@ export default function YearlySummaryPage() {
     a.href = url;
     a.download = `yearly-expense-summary-${selectedFyLabel}.json`;
     a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const maxMonthlyExpense = Math.max(...monthlySummaries.map((m) => m.totalExpenses), 1);

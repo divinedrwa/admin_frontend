@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -131,15 +132,8 @@ export default function AmenityBookingCalendarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-background p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-fg-primary mb-2">📅 Amenity Booking Calendar</h1>
-          <p className="text-fg-secondary">View and manage amenity bookings</p>
-          <p className="text-sm text-fg-secondary mt-2">
-            Change a booking’s outcome using the <strong>Status</strong> dropdown in the table (e.g. confirm a pending request or mark completed).
-          </p>
-        </div>
+    <AppShell title="Amenity Booking Calendar">
+      <div className="space-y-6">
 
         <div className="tabs mb-6">
             {[
@@ -385,6 +379,6 @@ export default function AmenityBookingCalendarPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }

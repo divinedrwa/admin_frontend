@@ -1,9 +1,11 @@
 "use client";
 
 import { Plus, Vote } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -26,17 +28,28 @@ type PollOption = {
 };
 
 export default function PollsPage() {
+  return (
+    <Suspense fallback={<AppShell title="Polls & Voting"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <PollsPageInner />
+    </Suspense>
+  );
+}
+
+function PollsPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [deletingPollId, setDeletingPollId] = useState<string | null>(null);
-  
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "closed">("all");
-  
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -45,17 +58,39 @@ export default function PollsPage() {
     options: ["", ""]
   });
 
-  useEffect(() => {
-    loadPolls();
-  }, []);
+  const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadPolls = () => {
+  const loadPolls = useCallback((offset = initialOffset, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get("/polls")
-      .then((response) => setPolls(response.data.polls ?? []))
-      .catch(() => showToast("Failed to load polls", "error"))
+      .get(`/polls?limit=50&offset=${offset}`, { signal })
+      .then((response) => {
+        setPolls(response.data.polls ?? []);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load polls", "error");
+      })
       .finally(() => setLoading(false));
+  }, [initialOffset]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadPolls(initialOffset, controller.signal);
+    return () => controller.abort();
+  }, [loadPolls]);
+
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadPolls(newOffset);
   };
 
   const handleOpenForm = () => {
@@ -107,7 +142,7 @@ export default function PollsPage() {
     try {
       await api.delete(`/polls/${pollId}`);
       showToast("Poll deleted successfully", "success");
-      loadPolls();
+      loadPolls(pgMeta.offset);
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete poll").message;
       showToast(message, "error");
@@ -165,9 +200,9 @@ export default function PollsPage() {
         await api.post("/polls", payload);
         showToast("Poll created successfully", "success");
       }
-      
+
       handleCloseForm();
-      loadPolls();
+      loadPolls(pgMeta.offset);
     } catch (error: unknown) {
       const message = parseApiError(error, editingPoll ? "Failed to update poll" : "Failed to create poll").message;
       showToast(message, "error");
@@ -189,20 +224,16 @@ export default function PollsPage() {
     return Math.round((optionVotes / totalVotes) * 100);
   };
 
-  // Filter and search logic
+  // Filter and search logic (client-side within current page)
   const filteredPolls = polls.filter((poll) => {
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesTitle = poll.title.toLowerCase().includes(query);
       const matchesDesc = poll.description?.toLowerCase().includes(query);
       if (!matchesTitle && !matchesDesc) return false;
     }
-
-    // Status filter
     if (statusFilter === "active" && !poll.isActive) return false;
     if (statusFilter === "closed" && poll.isActive) return false;
-
     return true;
   });
 
@@ -255,7 +286,7 @@ export default function PollsPage() {
 
           {/* Results Count */}
           <div className="mt-3 text-sm text-fg-secondary">
-            Showing {filteredPolls.length} of {polls.length} polls
+            Showing {filteredPolls.length} of {polls.length} polls on this page
           </div>
         </div>
 
@@ -383,7 +414,7 @@ export default function PollsPage() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading polls...</p>
             </div>
-          ) : filteredPolls.length === 0 ? (
+          ) : filteredPolls.length === 0 && pgMeta.total === 0 ? (
             <div className="card">
               <div className="empty-state">
                 <span className="empty-state-icon">📊</span>
@@ -396,76 +427,84 @@ export default function PollsPage() {
               </div>
             </div>
           ) : (
-            filteredPolls.map((poll) => (
-              <div key={poll.id} className="card p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-fg-primary">{poll.title}</h3>
-                    {poll.description && (
-                      <p className="text-fg-secondary mt-1">{poll.description}</p>
-                    )}
+            <>
+              {filteredPolls.map((poll) => (
+                <div key={poll.id} className="card p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-fg-primary">{poll.title}</h3>
+                      {poll.description && (
+                        <p className="text-fg-secondary mt-1">{poll.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`badge ${
+                          poll.isActive
+                            ? "badge-success"
+                            : "badge-gray"
+                        }`}
+                      >
+                        {poll.isActive ? "Active" : "Closed"}
+                      </span>
+                      <button
+                        onClick={() => handleEdit(poll)}
+                        className="p-2 text-brand-primary hover:bg-brand-primary-light rounded"
+                        title="Edit poll"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDelete(poll.id)}
+                        disabled={deletingPollId === poll.id}
+                        className="p-2 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
+                        title="Delete poll"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`badge ${
-                        poll.isActive
-                          ? "badge-success"
-                          : "badge-gray"
-                      }`}
-                    >
-                      {poll.isActive ? "Active" : "Closed"}
+
+                  <div className="space-y-3 mb-4">
+                    {poll.options?.map((option) => {
+                      const votes = option._count?.votes ?? 0;
+                      const totalVotes = poll._count?.votes ?? 0;
+                      const percentage = getVotePercentage(votes, totalVotes);
+
+                      return (
+                        <div key={option.id} className="border rounded p-3">
+                          <div className="flex justify-between mb-2">
+                            <span className="font-medium">{option.optionText}</span>
+                            <span className="text-fg-secondary">
+                              {votes} votes ({percentage}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-surface-elevated rounded h-2">
+                            <div
+                              className="bg-brand-primary h-2 rounded"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex justify-between text-sm text-fg-secondary border-t pt-3">
+                    <span>
+                      {formatDate(poll.startDate)} - {formatDate(poll.endDate)}
                     </span>
-                    <button
-                      onClick={() => handleEdit(poll)}
-                      className="p-2 text-brand-primary hover:bg-brand-primary-light rounded"
-                      title="Edit poll"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDelete(poll.id)}
-                      disabled={deletingPollId === poll.id}
-                      className="p-2 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
-                      title="Delete poll"
-                    >
-                      🗑️
-                    </button>
+                    <span>Total Votes: {poll._count?.votes ?? 0}</span>
                   </div>
                 </div>
-
-                <div className="space-y-3 mb-4">
-                  {poll.options?.map((option) => {
-                    const votes = option._count?.votes ?? 0;
-                    const totalVotes = poll._count?.votes ?? 0;
-                    const percentage = getVotePercentage(votes, totalVotes);
-
-                    return (
-                      <div key={option.id} className="border rounded p-3">
-                        <div className="flex justify-between mb-2">
-                          <span className="font-medium">{option.optionText}</span>
-                          <span className="text-fg-secondary">
-                            {votes} votes ({percentage}%)
-                          </span>
-                        </div>
-                        <div className="w-full bg-surface-elevated rounded h-2">
-                          <div
-                            className="bg-brand-primary h-2 rounded"
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="flex justify-between text-sm text-fg-secondary border-t pt-3">
-                  <span>
-                    {formatDate(poll.startDate)} - {formatDate(poll.endDate)}
-                  </span>
-                  <span>Total Votes: {poll._count?.votes ?? 0}</span>
-                </div>
-              </div>
-            ))
+              ))}
+              <Pagination
+                total={pgMeta.total}
+                limit={pgMeta.limit}
+                offset={pgMeta.offset}
+                onPageChange={handlePageChange}
+              />
+            </>
           )}
         </div>
       </div>

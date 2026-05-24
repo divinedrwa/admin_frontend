@@ -18,6 +18,9 @@ type Summary = {
   pendingCount: number;
   resolutionRate: number;
   avgResolutionTime: number;
+  slaBreached?: number;
+  slaComplianceRate?: number;
+  byPriority?: { LOW: number; MEDIUM: number; HIGH: number; URGENT: number };
 };
 
 type CategoryStat = {
@@ -38,8 +41,11 @@ type PendingComplaint = {
   status: ComplaintStatus;
   category: string | null;
   createdAt: string;
+  priority?: string;
+  slaDeadline?: string | null;
   daysPending: number;
   urgencyLevel: string;
+  slaBreached?: boolean;
   villa: {
     villaNumber: string;
     block: string;
@@ -165,30 +171,57 @@ export default function ComplaintAnalyticsPage() {
 
         {/* Summary Statistics */}
         {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="stat-card">
-              <div className="stat-card-label">Total Complaints</div>
-              <div className="stat-card-value">{summary.totalComplaints}</div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="stat-card">
+                <div className="stat-card-label">Total Complaints</div>
+                <div className="stat-card-value">{summary.totalComplaints}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-card-label">Resolved</div>
+                <div className="stat-card-value text-approved-solid">{summary.resolvedCount}</div>
+                <div className="text-xs text-approved-fg mt-1">{summary.resolutionRate}% rate</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-card-label">In Progress</div>
+                <div className="stat-card-value text-info-fg">{summary.inProgressCount}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-card-label">Pending</div>
+                <div className="stat-card-value text-pending-solid">{summary.pendingCount}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-card-label">Avg Resolution</div>
+                <div className="stat-card-value">{summary.avgResolutionTime}</div>
+                <div className="text-xs text-fg-secondary mt-1">days</div>
+              </div>
+              {summary.slaComplianceRate !== undefined && (
+                <div className="stat-card">
+                  <div className="stat-card-label">SLA Compliance</div>
+                  <div className={`stat-card-value ${summary.slaComplianceRate >= 80 ? "text-approved-solid" : "text-denied-fg"}`}>
+                    {summary.slaComplianceRate}%
+                  </div>
+                  {(summary.slaBreached ?? 0) > 0 && (
+                    <div className="text-xs text-denied-fg mt-1">
+                      {summary.slaBreached} breached
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="stat-card">
-              <div className="stat-card-label">Resolved</div>
-              <div className="stat-card-value text-approved-solid">{summary.resolvedCount}</div>
-              <div className="text-xs text-approved-fg mt-1">{summary.resolutionRate}% rate</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-label">In Progress</div>
-              <div className="stat-card-value text-info-fg">{summary.inProgressCount}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-label">Pending</div>
-              <div className="stat-card-value text-pending-solid">{summary.pendingCount}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-label">Avg Resolution</div>
-              <div className="stat-card-value">{summary.avgResolutionTime}</div>
-              <div className="text-xs text-fg-secondary mt-1">days</div>
-            </div>
-          </div>
+
+            {/* Priority Breakdown */}
+            {summary.byPriority && (
+              <div className="grid grid-cols-4 gap-3">
+                {(["LOW", "MEDIUM", "HIGH", "URGENT"] as const).map((p) => (
+                  <div key={p} className="card p-3 text-center">
+                    <div className="text-xs text-fg-secondary uppercase">{p}</div>
+                    <div className="text-lg font-bold text-fg-primary">{summary.byPriority![p]}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
       {/* Category Breakdown */}
@@ -252,9 +285,18 @@ export default function ComplaintAnalyticsPage() {
                     <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(complaint.status)}`}>
                       {complaint.status}
                     </span>
-                    {complaint.urgencyLevel === "critical" && (
+                    {complaint.priority && complaint.priority !== "MEDIUM" && (
+                      <span className={`px-2 py-1 text-xs rounded font-medium ${
+                        complaint.priority === "URGENT" ? "bg-brand-danger text-white" :
+                        complaint.priority === "HIGH" ? "bg-pending-bg text-pending-fg" :
+                        "bg-info-bg text-info-fg"
+                      }`}>
+                        {complaint.priority}
+                      </span>
+                    )}
+                    {complaint.slaBreached && (
                       <span className="px-2 py-1 text-xs rounded bg-brand-danger text-white font-bold">
-                        🚨 CRITICAL
+                        SLA BREACHED
                       </span>
                     )}
                   </div>

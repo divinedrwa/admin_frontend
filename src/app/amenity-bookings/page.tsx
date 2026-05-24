@@ -1,9 +1,11 @@
 "use client";
 
 import { CalendarRange, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -36,6 +38,16 @@ type Resident = {
 };
 
 export default function AmenityBookingsPage() {
+  return (
+    <Suspense fallback={<AppShell title="Amenity Bookings"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <AmenityBookingsPageInner />
+    </Suspense>
+  );
+}
+
+function AmenityBookingsPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [bookings, setBookings] = useState<AmenityBooking[]>([]);
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [residents, setResidents] = useState<Resident[]>([]);
@@ -45,13 +57,12 @@ export default function AmenityBookingsPage() {
   const [editingBooking, setEditingBooking] = useState<AmenityBooking | null>(null);
   const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
-  
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  
+
   const [formData, setFormData] = useState({
     amenityId: "",
     residentId: "",
@@ -59,33 +70,62 @@ export default function AmenityBookingsPage() {
     endTime: ""
   });
 
-  const loadBookings = () => {
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+
+  const loadBookings = useCallback((offset = initialOffset, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get("/amenity-bookings")
-      .then((response) => setBookings(response.data.bookings ?? []))
-      .catch(() => showToast("Failed to load bookings", "error"))
+      .get(`/amenity-bookings?limit=50&offset=${offset}`, { signal })
+      .then((response) => {
+        setBookings(response.data.bookings ?? []);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load bookings", "error");
+      })
       .finally(() => setLoading(false));
-  };
+  }, [initialOffset]);
 
-  const loadDropdownData = () => {
+  const loadDropdownData = (signal?: AbortSignal) => {
     api
-      .get("/amenities")
+      .get("/amenities", { signal })
       .then((response) => setAmenities(response.data.amenities ?? []))
-      .catch(() => showToast("Failed to load amenities", "error"));
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load amenities", "error");
+      });
 
     api
-      .get("/users?role=RESIDENT")
+      .get("/users?role=RESIDENT", { signal })
       .then((response) => setResidents(response.data.users ?? []))
-      .catch(() => showToast("Failed to load residents", "error"));
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load residents", "error");
+      });
   };
 
   useEffect(() => {
-    loadBookings();
-    loadDropdownData();
-  }, []);
+    const controller = new AbortController();
+    loadBookings(initialOffset, controller.signal);
+    loadDropdownData(controller.signal);
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadBookings]);
 
-  // Filter and search logic
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadBookings(newOffset);
+  };
+
+  // Filter and search logic (client-side within current page)
   const filteredBookings = bookings.filter((booking) => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -96,16 +136,6 @@ export default function AmenityBookingsPage() {
     if (statusFilter !== "all" && booking.status !== statusFilter) return false;
     return true;
   });
-
-  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
-  const paginatedBookings = filteredBookings.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
 
   const statusCounts = {
     PENDING: bookings.filter((b) => b.status === "PENDING").length,
@@ -120,13 +150,13 @@ export default function AmenityBookingsPage() {
     try {
       await api.patch(`/amenity-bookings/${bookingId}/status`, { status });
       showToast("Status updated", "success");
-      loadBookings();
+      loadBookings(pgMeta.offset);
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         "Failed to update status";
       showToast(message, "error");
-      loadBookings();
+      loadBookings(pgMeta.offset);
     } finally {
       setUpdatingStatusId(null);
     }
@@ -174,7 +204,7 @@ export default function AmenityBookingsPage() {
     try {
       await api.delete(`/amenity-bookings/${bookingId}`);
       showToast("Booking deleted successfully", "success");
-      loadBookings();
+      loadBookings(pgMeta.offset);
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete booking").message;
       showToast(message, "error");
@@ -220,7 +250,7 @@ export default function AmenityBookingsPage() {
       }
 
       handleCloseForm();
-      loadBookings();
+      loadBookings(pgMeta.offset);
     } catch (error: unknown) {
       const message = parseApiError(error, editingBooking ? "Failed to update booking" : "Failed to book amenity").message;
       showToast(message, "error");
@@ -280,15 +310,8 @@ export default function AmenityBookingsPage() {
               </select>
             </div>
           </div>
-          <div className="mt-3 flex justify-between items-center text-sm">
-            <span className="text-fg-secondary">Showing {paginatedBookings.length} of {filteredBookings.length} bookings</span>
-            {totalPages > 1 && (
-              <div className="flex gap-2">
-                <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="px-3 py-1 border rounded disabled:opacity-50">Previous</button>
-                <span>Page {currentPage} of {totalPages}</span>
-                <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="px-3 py-1 border rounded disabled:opacity-50">Next</button>
-              </div>
-            )}
+          <div className="mt-3 text-sm text-fg-secondary">
+            Showing {filteredBookings.length} of {bookings.length} bookings on this page
           </div>
         </div>
 
@@ -407,7 +430,7 @@ export default function AmenityBookingsPage() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading bookings...</p>
             </div>
-          ) : filteredBookings.length === 0 ? (
+          ) : filteredBookings.length === 0 && pgMeta.total === 0 ? (
             <div className="empty-state">
               <span className="empty-state-icon">📅</span>
               <p className="empty-state-title">No bookings found</p>
@@ -416,72 +439,80 @@ export default function AmenityBookingsPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead className="table-head">
-                  <tr>
-                    <th scope="col" className="table-th">Amenity</th>
-                    <th scope="col" className="table-th">Resident</th>
-                    <th scope="col" className="table-th">Start Time</th>
-                    <th scope="col" className="table-th">End Time</th>
-                    <th scope="col" className="table-th">Status</th>
-                    <th scope="col" className="table-th">Price</th>
-                    <th scope="col" className="table-th">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedBookings.map((booking) => (
-                    <tr key={booking.id} className="table-row">
-                      <td className="table-td">
-                        <div className="font-medium text-fg-primary">{booking.amenity?.name || "N/A"}</div>
-                        <div className="text-xs text-fg-secondary">{booking.amenity?.type || ""}</div>
-                      </td>
-                      <td className="table-td">{booking.resident?.name || "N/A"}</td>
-                      <td className="table-td text-xs">{formatDateTime(booking.startTime)}</td>
-                      <td className="table-td text-xs">{formatDateTime(booking.endTime)}</td>
-                      <td className="table-td">
-                        <select
-                          value={booking.status}
-                          disabled={updatingStatusId === booking.id}
-                          onChange={(e) =>
-                            updateBookingStatus(booking.id, e.target.value, booking.status)
-                          }
-                          className="text-xs rounded border border-surface-border bg-surface px-2 py-1 max-w-[10rem] disabled:opacity-60"
-                          aria-label="Booking status"
-                        >
-                          <option value="PENDING">PENDING</option>
-                          <option value="CONFIRMED">CONFIRMED</option>
-                          <option value="COMPLETED">COMPLETED</option>
-                          <option value="CANCELLED">CANCELLED</option>
-                        </select>
-                      </td>
-                      <td className="table-td font-medium">
-                        {booking.totalPrice ? `₹${booking.totalPrice}` : "-"}
-                      </td>
-                      <td className="table-td">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleEdit(booking)}
-                            className="p-1 text-brand-primary hover:bg-brand-primary-light rounded"
-                            title="Edit booking"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleDelete(booking.id)}
-                            disabled={deletingBookingId === booking.id}
-                            className="p-1 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
-                            title="Delete booking"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="table">
+                  <thead className="table-head">
+                    <tr>
+                      <th scope="col" className="table-th">Amenity</th>
+                      <th scope="col" className="table-th">Resident</th>
+                      <th scope="col" className="table-th">Start Time</th>
+                      <th scope="col" className="table-th">End Time</th>
+                      <th scope="col" className="table-th">Status</th>
+                      <th scope="col" className="table-th">Price</th>
+                      <th scope="col" className="table-th">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredBookings.map((booking) => (
+                      <tr key={booking.id} className="table-row">
+                        <td className="table-td">
+                          <div className="font-medium text-fg-primary">{booking.amenity?.name || "N/A"}</div>
+                          <div className="text-xs text-fg-secondary">{booking.amenity?.type || ""}</div>
+                        </td>
+                        <td className="table-td">{booking.resident?.name || "N/A"}</td>
+                        <td className="table-td text-xs">{formatDateTime(booking.startTime)}</td>
+                        <td className="table-td text-xs">{formatDateTime(booking.endTime)}</td>
+                        <td className="table-td">
+                          <select
+                            value={booking.status}
+                            disabled={updatingStatusId === booking.id}
+                            onChange={(e) =>
+                              updateBookingStatus(booking.id, e.target.value, booking.status)
+                            }
+                            className="text-xs rounded border border-surface-border bg-surface px-2 py-1 max-w-[10rem] disabled:opacity-60"
+                            aria-label="Booking status"
+                          >
+                            <option value="PENDING">PENDING</option>
+                            <option value="CONFIRMED">CONFIRMED</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                          </select>
+                        </td>
+                        <td className="table-td font-medium">
+                          {booking.totalPrice ? `₹${booking.totalPrice}` : "-"}
+                        </td>
+                        <td className="table-td">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleEdit(booking)}
+                              className="p-1 text-brand-primary hover:bg-brand-primary-light rounded"
+                              title="Edit booking"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDelete(booking.id)}
+                              disabled={deletingBookingId === booking.id}
+                              className="p-1 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
+                              title="Delete booking"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                total={pgMeta.total}
+                limit={pgMeta.limit}
+                offset={pgMeta.offset}
+                onPageChange={handlePageChange}
+              />
+            </>
           )}
         </div>
       </div>

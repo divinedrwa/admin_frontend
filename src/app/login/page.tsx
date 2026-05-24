@@ -290,6 +290,15 @@ function LoginPageInner() {
           </>
         ) : null}
 
+        <div className="text-center">
+          <Link
+            href={`/forgot-password${societyId ? `?society=${societyId}` : ""}`}
+            className="text-sm text-brand-primary hover:underline"
+          >
+            Forgot your password?
+          </Link>
+        </div>
+
         <div className="auth-link-stack">
           <Link href="/invite/accept" className="auth-link-card">
             <div>

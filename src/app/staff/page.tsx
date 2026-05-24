@@ -103,6 +103,7 @@ export default function StaffPage() {
   useEffect(() => {
     loadStaff();
     loadVillas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleOpenForm = () => {

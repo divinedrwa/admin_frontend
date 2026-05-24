@@ -42,17 +42,22 @@ export default function IncidentsPage() {
     photoUrl: ""
   });
 
-  const loadIncidents = () => {
+  const loadIncidents = (signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get("/incidents")
+      .get("/incidents", { signal })
       .then((response) => setIncidents(response.data.incidents ?? []))
-      .catch(() => showToast("Failed to load incidents", "error"))
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load incidents", "error");
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    loadIncidents();
+    const controller = new AbortController();
+    loadIncidents(controller.signal);
+    return () => controller.abort();
   }, []);
 
   // Filter and search logic

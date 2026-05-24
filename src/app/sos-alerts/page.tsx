@@ -49,13 +49,14 @@ export default function SOSAlertsPage() {
     message: ""
   });
 
-  const loadAlerts = useCallback(() => {
+  const loadAlerts = useCallback((signal?: AbortSignal) => {
     setLoading(true);
     const endpoint = filter === "active" ? "/sos-alerts/active" : "/sos-alerts";
     api
-      .get(endpoint)
+      .get(endpoint, { signal })
       .then((response) => setAlerts(response.data.alerts ?? []))
       .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Failed to load SOS alerts";
@@ -64,9 +65,9 @@ export default function SOSAlertsPage() {
       .finally(() => setLoading(false));
   }, [filter]);
 
-  const loadVillas = () => {
+  const loadVillas = (signal?: AbortSignal) => {
     api
-      .get("/villas")
+      .get("/villas", { signal })
       .then((response) =>
         setVillas(
           sortByVillaNumber(
@@ -75,14 +76,18 @@ export default function SOSAlertsPage() {
           ),
         ),
       )
-      .catch(() => showToast("Failed to load villas", "error"));
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load villas", "error");
+      });
   };
 
   useEffect(() => {
-    loadAlerts();
-    loadVillas();
-    const interval = setInterval(loadAlerts, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    loadAlerts(controller.signal);
+    loadVillas(controller.signal);
+    const interval = setInterval(() => loadAlerts(), 30000); // Refresh every 30 seconds
+    return () => { controller.abort(); clearInterval(interval); };
   }, [loadAlerts]);
 
   const handleOpenForm = () => {
@@ -278,7 +283,7 @@ export default function SOSAlertsPage() {
               + Create Alert (Test)
             </button>
             <button
-              onClick={loadAlerts}
+              onClick={() => loadAlerts()}
               className="btn btn-ghost"
             >
               Refresh

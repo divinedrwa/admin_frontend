@@ -12,7 +12,6 @@ import {
   ChevronRight,
   ClipboardList,
   CreditCard,
-  Wallet,
   DoorOpen,
   Droplets,
   FileText,
@@ -35,11 +34,20 @@ import {
   Users,
   Vote,
   Briefcase,
+  Scale,
+  Trash2,
+  ClipboardCheck,
+  BarChart3,
+  FileSignature,
+  Boxes,
+  CalendarClock,
+  UserCheck,
+  Settings,
 } from "lucide-react";
 import { showToast } from "./Toast";
 import { useState } from "react";
 import { clearPlatformViewSession } from "@/lib/platformViewSession";
-import { clearTenantSocietyId } from "@/lib/api";
+import { api, clearTenantSocietyId } from "@/lib/api";
 
 import type { LucideIcon } from "lucide-react";
 
@@ -70,8 +78,11 @@ const linkSections: SidebarSection[] = [
       { href: "/resident-management", label: "Residents", icon: UserRoundCheck },
       { href: "/maintenance-management", label: "Maintenance", icon: HandCoins },
       { href: "/maintenance-billing", label: "Billing cycles", icon: ScrollText },
-      { href: "/bank-accounts", label: "Bank accounts", icon: CreditCard },
-      { href: "/payment-settings", label: "Payment settings", icon: Wallet },
+      { href: "/payment-methods", label: "Payment methods", icon: CreditCard },
+      { href: "/upi-payments", label: "UPI verification", icon: CreditCard },
+      { href: "/financial-reports", label: "Financial reports", icon: BarChart3 },
+      { href: "/reconciliation", label: "Reconciliation", icon: Scale },
+      { href: "/audit-log", label: "Audit log", icon: ClipboardCheck },
     ],
   },
   {
@@ -99,6 +110,7 @@ const linkSections: SidebarSection[] = [
       { href: "/staff-assignment-overview", label: "Staff", icon: Users },
       { href: "/parking-management", label: "Parking", icon: ParkingSquare },
       { href: "/amenity-bookings-calendar", label: "Amenity calendar", icon: CalendarDays },
+      { href: "/garbage-collection", label: "Garbage collection", icon: Trash2 },
     ],
   },
   {
@@ -121,6 +133,7 @@ const linkSections: SidebarSection[] = [
       { href: "/parcels", label: "Parcels", icon: Package },
       { href: "/vehicles", label: "Vehicles", icon: CarFront },
       { href: "/staff", label: "Domestic staff", icon: Users },
+      { href: "/staff-attendance", label: "Staff attendance", icon: UserCheck },
     ],
   },
   {
@@ -140,6 +153,20 @@ const linkSections: SidebarSection[] = [
       { href: "/amenities", label: "Manage facilities", icon: Building2 },
       { href: "/amenity-bookings", label: "Bookings", icon: CalendarDays },
       { href: "/vendors", label: "Vendors", icon: Store },
+      { href: "/vendor-contracts", label: "Contracts", icon: FileSignature },
+      { href: "/assets", label: "Asset inventory", icon: Boxes },
+    ],
+  },
+  {
+    title: "Governance",
+    links: [
+      { href: "/meetings", label: "Meetings & AGM", icon: CalendarClock },
+    ],
+  },
+  {
+    title: "Settings",
+    links: [
+      { href: "/society-settings", label: "Society settings", icon: Settings },
     ],
   },
 ];
@@ -155,7 +182,13 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   function handleLogout() {
+    // Best-effort: revoke the refresh token server-side before clearing local state.
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (refreshToken) {
+      api.post("/auth/logout", { refreshToken }).catch(() => {});
+    }
     localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
     clearTenantSocietyId();
     clearPlatformViewSession();
     showToast("Logged out successfully", "success");

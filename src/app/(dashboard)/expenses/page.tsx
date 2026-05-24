@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { Plus, Search, Filter, Download, Edit, Trash2, Eye, Calendar, ReceiptText } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { Pagination } from "@/components/Pagination";
 import { parseApiError } from "@/utils/errorHandler";
 
 interface Expense {
@@ -45,11 +47,14 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-export default function ExpensesPage() {
+function ExpensesPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,28 +73,34 @@ export default function ExpensesPage() {
     thisYear: 0
   });
 
-  const fetchCategories = useCallback(async () => {
+  const fetchCategories = useCallback(async (signal?: AbortSignal) => {
     try {
-      const response = await api.get('/expenses/categories');
+      const response = await api.get('/expenses/categories', { signal });
       setCategories(response.data ?? []);
     } catch (error: unknown) {
+      if ((error as { name?: string }).name === "CanceledError") return;
       console.error('Error fetching categories:', error);
       showToast(parseApiError(error, "Failed to fetch categories").message, 'error');
     }
   }, []);
 
-  const fetchFinancialYears = useCallback(async () => {
+  const fetchFinancialYears = useCallback(async (signal?: AbortSignal) => {
     try {
-      const response = await api.get('/v1/admin/financial-years');
+      const response = await api.get('/v1/admin/financial-years', { signal });
       setFinancialYears(response.data.financialYears ?? []);
     } catch (error: unknown) {
+      if ((error as { name?: string }).name === "CanceledError") return;
       console.error('Error fetching financial years:', error);
     }
   }, []);
 
-  const fetchExpenses = useCallback(async () => {
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+
+  const fetchExpenses = useCallback(async (offset = initialOffset, signal?: AbortSignal) => {
     try {
       const params = new URLSearchParams();
+      params.append('limit', '50');
+      params.append('offset', String(offset));
       if (selectedCategory) params.append('categoryId', selectedCategory);
       if (selectedFyId) params.append('financialYearId', selectedFyId);
       if (selectedMonth) params.append('month', selectedMonth);
@@ -98,10 +109,11 @@ export default function ExpensesPage() {
       if (selectedPaymentMode) params.append('paymentMode', selectedPaymentMode);
       if (searchTerm) params.append('search', searchTerm);
 
-      const response = await api.get(`/expenses?${params.toString()}`);
+      const response = await api.get(`/expenses?${params.toString()}`, { signal });
       const data = response.data ?? [];
       const serverTotal = parseInt(response.headers['x-total-count'] || '0', 10);
       setExpenses(data);
+      setPgMeta({ total: serverTotal || data.length, limit: 50, offset });
 
       // Calculate stats from the returned page. Note: these are accurate only
       // when filters narrow results below one page. The entry count uses the
@@ -123,25 +135,36 @@ export default function ExpensesPage() {
         thisYear
       });
     } catch (error: unknown) {
+      if ((error as { name?: string }).name === "CanceledError") return;
       console.error('Error fetching expenses:', error);
       showToast(parseApiError(error, "Failed to fetch expenses").message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedCategory, selectedFyId, selectedMonth, selectedPaymentMode, selectedStatus, selectedYear]);
+  }, [initialOffset, searchTerm, selectedCategory, selectedFyId, selectedMonth, selectedPaymentMode, selectedStatus, selectedYear]);
 
   useEffect(() => {
-    void fetchCategories();
-    void fetchFinancialYears();
-    void fetchExpenses();
-  }, [fetchCategories, fetchFinancialYears, fetchExpenses]);
+    const controller = new AbortController();
+    void fetchCategories(controller.signal);
+    void fetchFinancialYears(controller.signal);
+    void fetchExpenses(initialOffset, controller.signal);
+    return () => controller.abort();
+  }, [fetchCategories, fetchFinancialYears, fetchExpenses, initialOffset]);
+
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    void fetchExpenses(newOffset);
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
     
     try {
       await api.delete(`/expenses/${id}`);
-      await fetchExpenses();
+      await fetchExpenses(pgMeta.offset);
       showToast('Expense deleted', 'success');
     } catch (error: unknown) {
       console.error('Error deleting expense:', error);
@@ -178,6 +201,7 @@ export default function ExpensesPage() {
     a.href = url;
     a.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const clearFilters = () => {
@@ -509,6 +533,13 @@ export default function ExpensesPage() {
         </div>
       </div>
 
+      <Pagination
+        total={pgMeta.total}
+        limit={pgMeta.limit}
+        offset={pgMeta.offset}
+        onPageChange={handlePageChange}
+      />
+
       {/* Quick Links */}
       <div className="mt-6 flex gap-4">
         <Link
@@ -531,5 +562,13 @@ export default function ExpensesPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function ExpensesPage() {
+  return (
+    <Suspense fallback={<div className="loading-state"><div className="loading-spinner w-10 h-10" /><p className="loading-state-text">Loading expenses...</p></div>}>
+      <ExpensesPageInner />
+    </Suspense>
   );
 }

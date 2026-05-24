@@ -87,6 +87,7 @@ export default function AmenitiesPage() {
 
   useEffect(() => {
     loadAmenities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleOpenForm = (amenity?: Amenity) => {

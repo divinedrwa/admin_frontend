@@ -1,9 +1,11 @@
 "use client";
 
 import { Clock3, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 
@@ -67,6 +69,16 @@ function parseLocalDateTime(dateStr: string, timeStr: string): Date {
 }
 
 export default function GuardShiftsPage() {
+  return (
+    <Suspense fallback={<AppShell title="Guard Shifts"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <GuardShiftsPageInner />
+    </Suspense>
+  );
+}
+
+function GuardShiftsPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [shifts, setShifts] = useState<GuardShift[]>([]);
   const [gates, setGates] = useState<Gate[]>([]);
   const [guards, setGuards] = useState<Guard[]>([]);
@@ -82,29 +94,41 @@ export default function GuardShiftsPage() {
     repeatDaily: false,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
 
-  const loadShifts = () => {
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+
+  const loadShifts = useCallback((offset = initialOffset, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get("/guard-shifts")
-      .then((response) => setShifts(response.data.shifts ?? []))
+      .get(`/guard-shifts?limit=50&offset=${offset}`, { signal })
+      .then((response) => {
+        setShifts(response.data.shifts ?? []);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
       .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Failed to load shifts";
         showToast(message, "error");
       })
       .finally(() => setLoading(false));
-  };
+  }, [initialOffset]);
 
-  const loadGates = () => {
+  const loadGates = (signal?: AbortSignal) => {
     api
-      .get("/gates")
+      .get("/gates", { signal })
       .then((response) => {
         const allGates = response.data.gates ?? [];
         setGates(allGates.filter((g: Gate) => g.isActive));
       })
       .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Failed to load gates";
@@ -112,14 +136,15 @@ export default function GuardShiftsPage() {
       });
   };
 
-  const loadGuards = () => {
+  const loadGuards = (signal?: AbortSignal) => {
     api
-      .get("/users")
+      .get("/users", { signal })
       .then((response) => {
         const allUsers = response.data.users ?? [];
         setGuards(allUsers.filter((u: { role: string }) => u.role === "GUARD"));
       })
       .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Failed to load guards";
@@ -128,10 +153,20 @@ export default function GuardShiftsPage() {
   };
 
   useEffect(() => {
-    loadShifts();
-    loadGates();
-    loadGuards();
-  }, []);
+    const controller = new AbortController();
+    loadShifts(initialOffset, controller.signal);
+    loadGates(controller.signal);
+    loadGuards(controller.signal);
+    return () => controller.abort();
+  }, [loadShifts]);
+
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadShifts(newOffset);
+  };
 
   const handleOpenForm = () => {
     const today = new Date().toISOString().split("T")[0];
@@ -245,7 +280,7 @@ export default function GuardShiftsPage() {
       }
       showToast("Guard shift scheduled successfully", "success");
       handleCloseForm();
-      loadShifts();
+      loadShifts(pgMeta.offset);
     } catch (error: unknown) {
       const data = (error as { response?: { data?: { message?: string; issues?: { path: (string | number)[]; message: string }[] } } })
         ?.response?.data;
@@ -267,7 +302,7 @@ export default function GuardShiftsPage() {
     try {
       await api.delete(`/guard-shifts/${shiftId}`);
       showToast("Shift deleted successfully", "success");
-      loadShifts();
+      loadShifts(pgMeta.offset);
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -485,96 +520,104 @@ export default function GuardShiftsPage() {
               <p className="loading-state-text">Loading shifts...</p>
             </div>
           ) : (
-            <table className="table">
-              <thead className="table-head">
-                <tr>
-                  <th scope="col" className="table-th">Date</th>
-                  <th scope="col" className="table-th">Shift Type</th>
-                  <th scope="col" className="table-th">Time</th>
-                  <th scope="col" className="table-th">Guard</th>
-                  <th scope="col" className="table-th">Gate</th>
-                  <th scope="col" className="table-th">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shifts.length === 0 ? (
+            <>
+              <table className="table">
+                <thead className="table-head">
                   <tr>
-                    <td colSpan={6}>
-                      <div className="empty-state">
-                        <span className="empty-state-icon">📅</span>
-                        <p className="empty-state-title">No Shifts Scheduled</p>
-                        <p className="empty-state-text">Click &quot;Schedule Shift&quot; to create your first shift.</p>
-                      </div>
-                    </td>
+                    <th scope="col" className="table-th">Date</th>
+                    <th scope="col" className="table-th">Shift Type</th>
+                    <th scope="col" className="table-th">Time</th>
+                    <th scope="col" className="table-th">Guard</th>
+                    <th scope="col" className="table-th">Gate</th>
+                    <th scope="col" className="table-th">Actions</th>
                   </tr>
-                ) : (
-                  shifts.map((shift) => (
-                    <tr key={shift.id} className="table-row">
-                      <td className="table-td">
-                        {shift.recurringDaily ? (
-                          <span className="inline-flex items-center gap-1">
-                            <span className="font-medium text-info-fg">Every day</span>
-                            {shift.recurringStartMinutes != null &&
-                              shift.recurringEndMinutes != null && (
-                                <span className="text-xs text-fg-secondary">
-                                  (
-                                  {formatMinutesAsClock(shift.recurringStartMinutes)}–
-                                  {formatMinutesAsClock(shift.recurringEndMinutes)})
-                                </span>
-                              )}
-                          </span>
-                        ) : (
-                          formatDate(shift.startTime)
-                        )}
-                      </td>
-                      <td className="table-td">
-                        <span
-                          className={`badge ${getShiftBadgeColor(
-                            shift.shiftType
-                          )}`}
-                        >
-                          {shift.shiftType}
-                        </span>
-                      </td>
-                      <td className="table-td text-xs">
-                        {shift.recurringDaily &&
-                        shift.recurringStartMinutes != null &&
-                        shift.recurringEndMinutes != null ? (
-                          <>
-                            {formatMinutesAsClock(shift.recurringStartMinutes)} –{" "}
-                            {formatMinutesAsClock(shift.recurringEndMinutes)}
-                          </>
-                        ) : (
-                          <>
-                            {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
-                          </>
-                        )}
-                      </td>
-                      <td className="table-td">
-                        <div>
-                          <div className="font-medium">{shift.guard.name}</div>
-                          <div className="text-xs text-fg-secondary">{shift.guard.email}</div>
+                </thead>
+                <tbody>
+                  {shifts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <div className="empty-state">
+                          <span className="empty-state-icon">📅</span>
+                          <p className="empty-state-title">No Shifts Scheduled</p>
+                          <p className="empty-state-text">Click &quot;Schedule Shift&quot; to create your first shift.</p>
                         </div>
-                      </td>
-                      <td className="table-td">
-                        <div>
-                          <div className="font-medium">{shift.gate.name}</div>
-                          <div className="text-xs text-fg-secondary">{shift.gate.location}</div>
-                        </div>
-                      </td>
-                      <td className="table-td">
-                        <button
-                          onClick={() => handleDelete(shift.id)}
-                          className="btn btn-danger !py-1 !px-3 text-xs"
-                        >
-                          Delete
-                        </button>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    shifts.map((shift) => (
+                      <tr key={shift.id} className="table-row">
+                        <td className="table-td">
+                          {shift.recurringDaily ? (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-medium text-info-fg">Every day</span>
+                              {shift.recurringStartMinutes != null &&
+                                shift.recurringEndMinutes != null && (
+                                  <span className="text-xs text-fg-secondary">
+                                    (
+                                    {formatMinutesAsClock(shift.recurringStartMinutes)}–
+                                    {formatMinutesAsClock(shift.recurringEndMinutes)})
+                                  </span>
+                                )}
+                            </span>
+                          ) : (
+                            formatDate(shift.startTime)
+                          )}
+                        </td>
+                        <td className="table-td">
+                          <span
+                            className={`badge ${getShiftBadgeColor(
+                              shift.shiftType
+                            )}`}
+                          >
+                            {shift.shiftType}
+                          </span>
+                        </td>
+                        <td className="table-td text-xs">
+                          {shift.recurringDaily &&
+                          shift.recurringStartMinutes != null &&
+                          shift.recurringEndMinutes != null ? (
+                            <>
+                              {formatMinutesAsClock(shift.recurringStartMinutes)} –{" "}
+                              {formatMinutesAsClock(shift.recurringEndMinutes)}
+                            </>
+                          ) : (
+                            <>
+                              {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
+                            </>
+                          )}
+                        </td>
+                        <td className="table-td">
+                          <div>
+                            <div className="font-medium">{shift.guard.name}</div>
+                            <div className="text-xs text-fg-secondary">{shift.guard.email}</div>
+                          </div>
+                        </td>
+                        <td className="table-td">
+                          <div>
+                            <div className="font-medium">{shift.gate.name}</div>
+                            <div className="text-xs text-fg-secondary">{shift.gate.location}</div>
+                          </div>
+                        </td>
+                        <td className="table-td">
+                          <button
+                            onClick={() => handleDelete(shift.id)}
+                            className="btn btn-danger !py-1 !px-3 text-xs"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <Pagination
+                total={pgMeta.total}
+                limit={pgMeta.limit}
+                offset={pgMeta.offset}
+                onPageChange={handlePageChange}
+              />
+            </>
           )}
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -25,6 +25,14 @@ type Complaint = {
 };
 
 export default function ComplaintsPage() {
+  return (
+    <Suspense fallback={<AppShell title="Complaints"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <ComplaintsPageInner />
+    </Suspense>
+  );
+}
+
+function ComplaintsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
@@ -34,10 +42,10 @@ export default function ComplaintsPage() {
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadComplaints = useCallback((offset = initialOffset) => {
+  const loadComplaints = useCallback((offset = initialOffset, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get(`/complaints?limit=50&offset=${offset}`)
+      .get(`/complaints?limit=50&offset=${offset}`, { signal })
       .then((response) => {
         setComplaints(response.data.complaints ?? []);
         setOpenCount(response.data.openCount ?? 0);
@@ -47,13 +55,18 @@ export default function ComplaintsPage() {
           offset: response.data.offset ?? 0,
         });
       })
-      .catch(() => showToast("Failed to load complaints", "error"))
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load complaints", "error");
+      })
       .finally(() => setLoading(false));
   }, [initialOffset]);
 
   useEffect(() => {
-    loadComplaints();
-  }, [loadComplaints]);
+    const controller = new AbortController();
+    loadComplaints(initialOffset, controller.signal);
+    return () => controller.abort();
+  }, [loadComplaints, initialOffset]);
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());

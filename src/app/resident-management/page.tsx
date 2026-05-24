@@ -67,10 +67,10 @@ export default function ResidentManagementPage() {
   const [moveOutReason, setMoveOutReason] = useState("");
 
   // Fetch residents
-  const fetchResidents = async () => {
+  const fetchResidents = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
-      const response = await api.get("/resident-management/overview");
+      const response = await api.get("/resident-management/overview", { signal });
       const rows = sortByVillaNumber(
         (response.data.residents ?? []) as Resident[],
         (r) => r.villa?.villaNumber ?? null,
@@ -79,6 +79,7 @@ export default function ResidentManagementPage() {
       setFilteredResidents(rows);
       setStatistics(response.data.statistics);
     } catch (error: unknown) {
+      if ((error as { name?: string }).name === "CanceledError") return;
       showToast(parseApiError(error, "Failed to load residents").message, "error");
     } finally {
       setLoading(false);
@@ -86,7 +87,9 @@ export default function ResidentManagementPage() {
   };
 
   useEffect(() => {
-    fetchResidents();
+    const controller = new AbortController();
+    fetchResidents(controller.signal);
+    return () => controller.abort();
   }, []);
 
   // Apply filters

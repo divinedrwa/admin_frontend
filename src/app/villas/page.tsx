@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, FileSpreadsheet, Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -98,6 +98,14 @@ type VillaForm = {
 };
 
 export default function VillasPage() {
+  return (
+    <Suspense fallback={<AppShell title="Villas Management"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <VillasPageInner />
+    </Suspense>
+  );
+}
+
+function VillasPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [villas, setVillas] = useState<Villa[]>([]);
@@ -127,10 +135,10 @@ export default function VillasPage() {
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadVillas = useCallback((offset = initialOffset) => {
+  const loadVillas = useCallback((offset = initialOffset, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get(`/villas?limit=50&offset=${offset}`)
+      .get(`/villas?limit=50&offset=${offset}`, { signal })
       .then((response) => {
         setVillas(response.data.villas ?? []);
         setPgMeta({
@@ -140,6 +148,7 @@ export default function VillasPage() {
         });
       })
       .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
         const status = (error as { response?: { status?: number } })?.response?.status;
         const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
 
@@ -160,13 +169,14 @@ export default function VillasPage() {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     // Small delay to ensure token is loaded from localStorage
     const timer = setTimeout(() => {
-      loadVillas();
+      loadVillas(initialOffset, controller.signal);
     }, 100);
 
-    return () => clearTimeout(timer);
-  }, [loadVillas]);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [loadVillas, initialOffset]);
 
   const handleOpenForm = (villa?: Villa) => {
     if (villa) {

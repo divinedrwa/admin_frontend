@@ -48,6 +48,7 @@ export default function GatesPage() {
 
   useEffect(() => {
     loadGates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleOpenForm = (gate?: Gate) => {

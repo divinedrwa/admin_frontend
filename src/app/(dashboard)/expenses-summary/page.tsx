@@ -156,6 +156,7 @@ export default function MonthlySummaryPage() {
     a.href = url;
     a.download = `expense-summary-${selectedFyLabel}-${month}-${year}.json`;
     a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const maxTrendValue = Math.max(...trends.map(t => t.totalExpenses), 1);

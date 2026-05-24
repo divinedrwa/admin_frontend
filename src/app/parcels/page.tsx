@@ -1,9 +1,11 @@
 "use client";
 
 import { Package, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -30,6 +32,16 @@ type Villa = {
 };
 
 export default function ParcelsPage() {
+  return (
+    <Suspense fallback={<AppShell title="Parcels"><div className="loading-state"><div className="loading-spinner w-10 h-10" /></div></AppShell>}>
+      <ParcelsPageInner />
+    </Suspense>
+  );
+}
+
+function ParcelsPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [villas, setVillas] = useState<Villa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,30 +49,41 @@ export default function ParcelsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editingParcel, setEditingParcel] = useState<Parcel | null>(null);
   const [deletingParcelId, setDeletingParcelId] = useState<string | null>(null);
-  
+  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "PENDING" | "COLLECTED">("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  
+
   const [formData, setFormData] = useState({
     villaId: "",
     description: ""
   });
 
-  const loadParcels = () => {
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+
+  const loadParcels = useCallback((offset = initialOffset, signal?: AbortSignal) => {
     setLoading(true);
     api
-      .get("/parcels")
-      .then((response) => setParcels(response.data.parcels ?? []))
-      .catch(() => showToast("Failed to load parcels", "error"))
+      .get(`/parcels?limit=50&offset=${offset}`, { signal })
+      .then((response) => {
+        setParcels(response.data.parcels ?? []);
+        setPgMeta({
+          total: response.data.total ?? 0,
+          limit: response.data.limit ?? 50,
+          offset: response.data.offset ?? 0,
+        });
+      })
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load parcels", "error");
+      })
       .finally(() => setLoading(false));
-  };
+  }, [initialOffset]);
 
-  const loadVillas = () => {
+  const loadVillas = (signal?: AbortSignal) => {
     api
-      .get("/villas")
+      .get("/villas", { signal })
       .then((response) =>
         setVillas(
           sortByVillaNumber(
@@ -69,15 +92,29 @@ export default function ParcelsPage() {
           ),
         ),
       )
-      .catch(() => showToast("Failed to load villas", "error"));
+      .catch((error: unknown) => {
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast("Failed to load villas", "error");
+      });
   };
 
   useEffect(() => {
-    loadParcels();
-    loadVillas();
-  }, []);
+    const controller = new AbortController();
+    loadParcels(initialOffset, controller.signal);
+    loadVillas(controller.signal);
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadParcels]);
 
-  // Filter and search logic
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+    loadParcels(newOffset);
+  };
+
+  // Filter and search logic (client-side within current page)
   const filteredParcels = parcels.filter((parcel) => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -88,16 +125,6 @@ export default function ParcelsPage() {
     if (statusFilter !== "all" && parcel.status !== statusFilter) return false;
     return true;
   });
-
-  const totalPages = Math.ceil(filteredParcels.length / itemsPerPage);
-  const paginatedParcels = filteredParcels.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
 
   const pendingCount = parcels.filter(p => p.status === "PENDING").length;
   const collectedCount = parcels.filter(p => p.status === "COLLECTED").length;
@@ -131,7 +158,7 @@ export default function ParcelsPage() {
     try {
       await api.delete(`/parcels/${parcelId}`);
       showToast("Parcel deleted successfully", "success");
-      loadParcels();
+      loadParcels(pgMeta.offset);
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete parcel").message;
       showToast(message, "error");
@@ -164,7 +191,7 @@ export default function ParcelsPage() {
         showToast("Parcel logged successfully", "success");
       }
       handleCloseForm();
-      loadParcels();
+      loadParcels(pgMeta.offset);
     } catch (error: unknown) {
       const message = parseApiError(error, editingParcel ? "Failed to update parcel" : "Failed to log parcel").message;
       showToast(message, "error");
@@ -213,15 +240,8 @@ export default function ParcelsPage() {
               </select>
             </div>
           </div>
-          <div className="mt-3 flex justify-between items-center text-sm">
-            <span className="text-fg-secondary">Showing {paginatedParcels.length} of {filteredParcels.length} parcels</span>
-            {totalPages > 1 && (
-              <div className="flex gap-2">
-                <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="px-3 py-1 border rounded disabled:opacity-50">Previous</button>
-                <span>Page {currentPage} of {totalPages}</span>
-                <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="px-3 py-1 border rounded disabled:opacity-50">Next</button>
-              </div>
-            )}
+          <div className="mt-3 text-sm text-fg-secondary">
+            Showing {filteredParcels.length} of {parcels.length} parcels on this page
           </div>
         </div>
 
@@ -300,69 +320,77 @@ export default function ParcelsPage() {
           {loading ? (
             <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading parcels...</p></div>
           ) : (
-            <table className="table">
-              <thead className="table-head">
-                <tr>
-                  <th scope="col" className="table-th">Villa</th>
-                  <th scope="col" className="table-th">Description</th>
-                  <th scope="col" className="table-th">Status</th>
-                  <th scope="col" className="table-th">Received</th>
-                  <th scope="col" className="table-th">Collected</th>
-                  <th scope="col" className="table-th">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredParcels.length === 0 ? (
+            <>
+              <table className="table">
+                <thead className="table-head">
                   <tr>
-                    <td colSpan={6}>
-                      <div className="empty-state">
-                        <span className="empty-state-icon">📦</span>
-                        <p className="empty-state-title">{searchQuery || statusFilter !== "all" ? "No matching parcels" : "No parcels found"}</p>
-                        <p className="empty-state-text">{searchQuery || statusFilter !== "all" ? "No parcels match your search criteria." : "Click \"Log Parcel\" to add one."}</p>
-                      </div>
-                    </td>
+                    <th scope="col" className="table-th">Villa</th>
+                    <th scope="col" className="table-th">Description</th>
+                    <th scope="col" className="table-th">Status</th>
+                    <th scope="col" className="table-th">Received</th>
+                    <th scope="col" className="table-th">Collected</th>
+                    <th scope="col" className="table-th">Actions</th>
                   </tr>
-                ) : (
-                  paginatedParcels.map((parcel) => (
-                    <tr key={parcel.id} className="table-row">
-                      <td className="table-td">
-                        {parcel.villa.villaNumber}
-                        {parcel.villa.block ? ` (${parcel.villa.block})` : ""}
-                      </td>
-                      <td className="table-td">{parcel.description}</td>
-                      <td className="table-td">
-                        <span className={`badge ${parcel.status === "COLLECTED" ? "badge-success" : "badge-warning"}`}>
-                          {parcel.status}
-                        </span>
-                      </td>
-                      <td className="table-td text-xs">{new Date(parcel.receivedAt).toLocaleString()}</td>
-                      <td className="table-td text-xs">
-                        {parcel.collectedAt ? new Date(parcel.collectedAt).toLocaleString() : "-"}
-                      </td>
-                      <td className="table-td">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleEdit(parcel)}
-                            className="p-1 text-brand-primary hover:bg-brand-primary-light rounded"
-                            title="Edit parcel"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleDelete(parcel.id)}
-                            disabled={deletingParcelId === parcel.id}
-                            className="p-1 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
-                            title="Delete parcel"
-                          >
-                            🗑️
-                          </button>
+                </thead>
+                <tbody>
+                  {filteredParcels.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <div className="empty-state">
+                          <span className="empty-state-icon">📦</span>
+                          <p className="empty-state-title">{searchQuery || statusFilter !== "all" ? "No matching parcels" : "No parcels found"}</p>
+                          <p className="empty-state-text">{searchQuery || statusFilter !== "all" ? "No parcels match your search criteria." : "Click \"Log Parcel\" to add one."}</p>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredParcels.map((parcel) => (
+                      <tr key={parcel.id} className="table-row">
+                        <td className="table-td">
+                          {parcel.villa.villaNumber}
+                          {parcel.villa.block ? ` (${parcel.villa.block})` : ""}
+                        </td>
+                        <td className="table-td">{parcel.description}</td>
+                        <td className="table-td">
+                          <span className={`badge ${parcel.status === "COLLECTED" ? "badge-success" : "badge-warning"}`}>
+                            {parcel.status}
+                          </span>
+                        </td>
+                        <td className="table-td text-xs">{new Date(parcel.receivedAt).toLocaleString()}</td>
+                        <td className="table-td text-xs">
+                          {parcel.collectedAt ? new Date(parcel.collectedAt).toLocaleString() : "-"}
+                        </td>
+                        <td className="table-td">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleEdit(parcel)}
+                              className="p-1 text-brand-primary hover:bg-brand-primary-light rounded"
+                              title="Edit parcel"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDelete(parcel.id)}
+                              disabled={deletingParcelId === parcel.id}
+                              className="p-1 text-brand-danger hover:bg-denied-bg rounded disabled:opacity-50"
+                              title="Delete parcel"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <Pagination
+                total={pgMeta.total}
+                limit={pgMeta.limit}
+                offset={pgMeta.offset}
+                onPageChange={handlePageChange}
+              />
+            </>
           )}
         </div>
       </div>

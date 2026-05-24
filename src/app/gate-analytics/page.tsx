@@ -85,13 +85,14 @@ export default function GateAnalyticsPage() {
   const [peakHoursPeriod, setPeakHoursPeriod] = useState("30");
   const [trendPeriod, setTrendPeriod] = useState("7");
 
-  const fetchGateOverview = useCallback(async () => {
+  const fetchGateOverview = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/gate-analytics/overview`);
+      const response = await api.get(`/gate-analytics/overview`, { signal });
       setGateOverview(response.data.gates);
     } catch (err: unknown) {
+      if ((err as { name?: string }).name === "CanceledError") return;
       const apiError = err as ApiError;
       setError(apiError.response?.data?.message || "Failed to fetch gate overview");
     } finally {
@@ -99,15 +100,17 @@ export default function GateAnalyticsPage() {
     }
   }, []);
 
-  const fetchStatistics = useCallback(async () => {
+  const fetchStatistics = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(
-        `/gate-analytics/visitor-statistics?days=${statisticsPeriod}`
+        `/gate-analytics/visitor-statistics?days=${statisticsPeriod}`,
+        { signal }
       );
       setStatistics(response.data);
     } catch (err: unknown) {
+      if ((err as { name?: string }).name === "CanceledError") return;
       const apiError = err as ApiError;
       setError(apiError.response?.data?.message || "Failed to fetch statistics");
     } finally {
@@ -115,15 +118,17 @@ export default function GateAnalyticsPage() {
     }
   }, [statisticsPeriod]);
 
-  const fetchPeakHours = useCallback(async () => {
+  const fetchPeakHours = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(
-        `/gate-analytics/peak-hours?days=${peakHoursPeriod}`
+        `/gate-analytics/peak-hours?days=${peakHoursPeriod}`,
+        { signal }
       );
       setPeakHours(response.data);
     } catch (err: unknown) {
+      if ((err as { name?: string }).name === "CanceledError") return;
       const apiError = err as ApiError;
       setError(apiError.response?.data?.message || "Failed to fetch peak hours");
     } finally {
@@ -131,15 +136,17 @@ export default function GateAnalyticsPage() {
     }
   }, [peakHoursPeriod]);
 
-  const fetchDailyTrend = useCallback(async () => {
+  const fetchDailyTrend = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(
-        `/gate-analytics/daily-trend?days=${trendPeriod}`
+        `/gate-analytics/daily-trend?days=${trendPeriod}`,
+        { signal }
       );
       setDailyTrend(response.data);
     } catch (err: unknown) {
+      if ((err as { name?: string }).name === "CanceledError") return;
       const apiError = err as ApiError;
       setError(apiError.response?.data?.message || "Failed to fetch daily trend");
     } finally {
@@ -148,17 +155,21 @@ export default function GateAnalyticsPage() {
   }, [trendPeriod]);
 
   useEffect(() => {
-    void fetchGateOverview();
+    const controller = new AbortController();
+    void fetchGateOverview(controller.signal);
+    return () => controller.abort();
   }, [fetchGateOverview]);
 
   useEffect(() => {
+    const controller = new AbortController();
     if (activeTab === "statistics") {
-      void fetchStatistics();
+      void fetchStatistics(controller.signal);
     } else if (activeTab === "peak-hours") {
-      void fetchPeakHours();
+      void fetchPeakHours(controller.signal);
     } else if (activeTab === "trend") {
-      void fetchDailyTrend();
+      void fetchDailyTrend(controller.signal);
     }
+    return () => controller.abort();
   }, [activeTab, fetchDailyTrend, fetchPeakHours, fetchStatistics]);
 
   const getGateStatusBadge = (isActive: boolean) => {
@@ -230,7 +241,7 @@ export default function GateAnalyticsPage() {
           <div>
             <div className="page-action-bar">
               <h2 className="text-xl font-semibold">Real-Time Gate Status</h2>
-              <button onClick={fetchGateOverview} className="btn btn-ghost">
+              <button onClick={() => fetchGateOverview()} className="btn btn-ghost">
                 Refresh
               </button>
             </div>

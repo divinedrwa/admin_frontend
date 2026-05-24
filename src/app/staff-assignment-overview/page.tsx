@@ -123,6 +123,7 @@ export default function StaffAssignmentOverviewPage() {
   const [villaSummary, setVillaSummary] = useState<VillaSummary | null>(null);
   const [workloadSummary, setWorkloadSummary] = useState<WorkloadSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [assigning, setAssigning] = useState(false);
   const [error, setError] = useState("");
 
   // Assignment modal
@@ -232,6 +233,7 @@ export default function StaffAssignmentOverviewPage() {
     }
 
     try {
+      setAssigning(true);
       const response = await api.post(`/staff-assignment-overview/quick-assign`, {
         staffId: selectedStaff.id,
         villaId: selectedVilla.id,
@@ -249,6 +251,8 @@ export default function StaffAssignmentOverviewPage() {
       if (activeTab === "unassigned") fetchUnassignedResources();
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to update assignment").message, "error");
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -890,8 +894,9 @@ export default function StaffAssignmentOverviewPage() {
               <button
                 onClick={handleQuickAssign}
                 className="btn btn-primary"
+                disabled={assigning}
               >
-                Assign
+                {assigning ? "Assigning..." : "Assign"}
               </button>
             </div>
           </div>
