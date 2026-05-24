@@ -32,6 +32,7 @@ export function Modal({
   className = "",
   zIndex = "z-50",
 }: ModalProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -46,9 +47,8 @@ export function Modal({
 
     // Reset scroll position and focus the dialog container
     const timer = setTimeout(() => {
-      if (dialogRef.current) {
-        dialogRef.current.scrollTop = 0;
-      }
+      if (dialogRef.current) dialogRef.current.scrollTop = 0;
+      if (overlayRef.current) overlayRef.current.scrollTop = 0;
       dialogRef.current?.focus();
     }, 0);
 
@@ -81,7 +81,8 @@ export function Modal({
 
   return (
     <div
-      className={`fixed inset-0 ${zIndex} flex justify-center bg-black/50 backdrop-blur-sm overflow-y-auto p-4`}
+      ref={overlayRef}
+      className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/50 backdrop-blur-sm p-4`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -92,7 +93,7 @@ export function Modal({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className={`w-full ${maxWidth} my-auto ${className} outline-none`}
+        className={`w-full ${maxWidth} max-h-[calc(100vh-2rem)] overflow-y-auto ${className} outline-none`}
       >
         {children}
       </div>
