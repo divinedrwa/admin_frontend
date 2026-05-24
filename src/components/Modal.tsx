@@ -89,7 +89,7 @@ export function Modal({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className={`w-full ${maxWidth} ${className} outline-none`}
+        className={`w-full ${maxWidth} max-h-[calc(100vh-2rem)] overflow-y-auto ${className} outline-none`}
       >
         {children}
       </div>
