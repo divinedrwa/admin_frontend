@@ -44,8 +44,11 @@ export function Modal({
 
     previousFocus.current = document.activeElement as HTMLElement;
 
-    // Focus the dialog container
+    // Reset scroll position and focus the dialog container
     const timer = setTimeout(() => {
+      if (dialogRef.current) {
+        dialogRef.current.scrollTop = 0;
+      }
       dialogRef.current?.focus();
     }, 0);
 
@@ -78,20 +81,24 @@ export function Modal({
 
   return (
     <div
-      className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/50 backdrop-blur-sm p-4`}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className={`fixed inset-0 ${zIndex} overflow-y-auto bg-black/50 backdrop-blur-sm`}
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
     >
       <div
-        ref={dialogRef}
-        tabIndex={-1}
-        className={`w-full ${maxWidth} max-h-[calc(100vh-2rem)] overflow-y-auto ${className} outline-none`}
+        className="flex min-h-full items-center justify-center p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
       >
-        {children}
+        <div
+          ref={dialogRef}
+          tabIndex={-1}
+          className={`w-full ${maxWidth} ${className} outline-none`}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
