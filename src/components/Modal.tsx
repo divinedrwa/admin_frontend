@@ -81,24 +81,20 @@ export function Modal({
 
   return (
     <div
-      className={`fixed inset-0 ${zIndex} overflow-y-auto bg-black/50 backdrop-blur-sm`}
+      className={`fixed inset-0 ${zIndex} flex justify-center bg-black/50 backdrop-blur-sm overflow-y-auto p-4`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
     >
       <div
-        className="flex min-h-full items-center justify-center p-4"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
+        ref={dialogRef}
+        tabIndex={-1}
+        className={`w-full ${maxWidth} my-auto ${className} outline-none`}
       >
-        <div
-          ref={dialogRef}
-          tabIndex={-1}
-          className={`w-full ${maxWidth} ${className} outline-none`}
-        >
-          {children}
-        </div>
+        {children}
       </div>
     </div>
   );
