@@ -306,7 +306,8 @@ export default function MaintenanceManagementPage() {
   }
 
   /** Until grid loads, allow the rules form; after load, only OPEN collection cycles are editable. */
-  const cycleEditable = gridCycle == null ? true : gridCycle.status === "OPEN";
+  /** Admin can edit in any status except LOCKED. */
+  const cycleEditable = gridCycle == null ? true : gridCycle.status !== "LOCKED";
 
   function openRowEdit(r: ResidentRow) {
     const paid = r.paidTowardCycle ?? 0;
@@ -619,7 +620,7 @@ export default function MaintenanceManagementPage() {
               type="button"
               onClick={() => void saveVillaCustomAmount()}
               disabled={loading || !selectedCycleId || !cycleEditable}
-              title={!cycleEditable ? "Only OPEN billing periods can be edited" : undefined}
+              title={!cycleEditable ? "This billing cycle is locked" : undefined}
               className="btn btn-primary disabled:opacity-50"
             >
               Save for selected month
@@ -818,7 +819,7 @@ export default function MaintenanceManagementPage() {
                             type="button"
                             onClick={() => openRowEdit(r)}
                             disabled={!cycleEditable || loading}
-                            title={!cycleEditable ? "Only OPEN periods can be edited" : "Edit expected & collected"}
+                            title={!cycleEditable ? "This billing cycle is locked" : "Edit expected & collected"}
                             className="text-fg-primary hover:text-brand-primary font-medium disabled:opacity-40"
                           >
                             Edit
