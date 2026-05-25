@@ -180,8 +180,9 @@ export default function UpiPaymentsPage() {
             {["PENDING", "VERIFIED", "REJECTED"].map((s) => (
               <button
                 key={s}
+                disabled={loading}
                 onClick={() => { setStatusFilter(s); setLoading(true); }}
-                className={`btn ${statusFilter === s ? "btn-primary" : "btn-ghost"} text-sm`}
+                className={`btn ${statusFilter === s ? "btn-primary" : "btn-ghost"} text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {s.charAt(0) + s.slice(1).toLowerCase()}
               </button>

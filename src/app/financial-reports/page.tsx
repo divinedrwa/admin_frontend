@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
   ArrowUpRight,
   ArrowDownRight,
   Wallet,

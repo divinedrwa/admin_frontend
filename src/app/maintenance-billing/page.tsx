@@ -105,6 +105,7 @@ export default function MaintenanceBillingPage() {
   const [cycles, setCycles] = useState<BillingCycleRow[]>([]);
   const [residentCount, setResidentCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [actionBusy, setActionBusy] = useState(false);
   const [users, setUsers] = useState<
     Array<{
       id: string;
@@ -428,6 +429,7 @@ export default function MaintenanceBillingPage() {
       showToast("Select cycle and new end date", "error");
       return;
     }
+    setActionBusy(true);
     try {
       await api.post(`/v1/admin/cycles/${reopenId}/reopen`, {
         paymentEndDate: new Date(reopenEnd).toISOString(),
@@ -436,6 +438,8 @@ export default function MaintenanceBillingPage() {
       await loadCycles();
     } catch (err: unknown) {
       showToast(parseApiError(err, "Reopen failed").message, "error");
+    } finally {
+      setActionBusy(false);
     }
   }
 
@@ -444,6 +448,7 @@ export default function MaintenanceBillingPage() {
       showToast("Fill cash payment fields", "error");
       return;
     }
+    setActionBusy(true);
     try {
       await api.post("/v1/admin/payments/mark-cash", {
         userId: cashUserId,
@@ -454,6 +459,8 @@ export default function MaintenanceBillingPage() {
       await loadCycles();
     } catch (err: unknown) {
       showToast(parseApiError(err, "Could not save").message, "error");
+    } finally {
+      setActionBusy(false);
     }
   }
 
@@ -462,6 +469,7 @@ export default function MaintenanceBillingPage() {
       showToast("Select cycle and resident", "error");
       return;
     }
+    setActionBusy(true);
     try {
       await api.post("/v1/admin/cycles/waive-late-fee", {
         cycleId: waiveCycleId,
@@ -471,6 +479,8 @@ export default function MaintenanceBillingPage() {
       await loadCycles();
     } catch (err: unknown) {
       showToast(parseApiError(err, "Could not waive").message, "error");
+    } finally {
+      setActionBusy(false);
     }
   }
 
@@ -960,8 +970,8 @@ export default function MaintenanceBillingPage() {
                   value={reopenEnd}
                   onChange={(e) => setReopenEnd(e.target.value)}
                 />
-                <button type="button" className="btn btn-primary w-full text-sm" onClick={() => void doReopen()}>
-                  Apply
+                <button type="button" disabled={actionBusy} className="btn btn-primary w-full text-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => void doReopen()}>
+                  {actionBusy ? "Applying…" : "Apply"}
                 </button>
                 </div>
               </div>
@@ -988,8 +998,8 @@ export default function MaintenanceBillingPage() {
                   value={cashAmount}
                   onChange={(e) => setCashAmount(e.target.value)}
                 />
-                <button type="button" className="btn btn-success w-full text-sm" onClick={() => void doCash()}>
-                  Record cash
+                <button type="button" disabled={actionBusy} className="btn btn-success w-full text-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => void doCash()}>
+                  {actionBusy ? "Recording…" : "Record cash"}
                 </button>
                 </div>
               </div>
@@ -1009,8 +1019,8 @@ export default function MaintenanceBillingPage() {
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
-                <button type="button" className="btn btn-primary w-full text-sm bg-pending-solid hover:bg-pending-solid hover:opacity-90" onClick={() => void doWaive()}>
-                  Waive
+                <button type="button" disabled={actionBusy} className="btn btn-primary w-full text-sm bg-pending-solid hover:bg-pending-solid hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => void doWaive()}>
+                  {actionBusy ? "Waiving…" : "Waive"}
                 </button>
                 </div>
               </div>

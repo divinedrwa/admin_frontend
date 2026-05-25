@@ -87,7 +87,7 @@ export default function VisitorsPage() {
           })),
         );
       })
-      .catch((err) => { if (!signal?.aborted) showToast("Failed to load visitors", "error"); else throw err; })
+      .catch((err) => { if (!signal?.aborted) showToast("Failed to load visitors", "error"); })
       .finally(() => setLoading(false));
   }, [filter]);
 
@@ -102,14 +102,14 @@ export default function VisitorsPage() {
           ),
         ),
       )
-      .catch((err) => { if (!signal?.aborted) showToast("Failed to load villas", "error"); else throw err; });
+      .catch((err) => { if (!signal?.aborted) showToast("Failed to load villas", "error"); });
   };
 
   const loadGates = (signal?: AbortSignal) => {
     api
       .get("/gates", { signal })
       .then((response) => setGates(response.data.gates ?? []))
-      .catch((err) => { if (!signal?.aborted) showToast("Failed to load gates", "error"); else throw err; });
+      .catch((err) => { if (!signal?.aborted) showToast("Failed to load gates", "error"); });
   };
 
   useEffect(() => {
