@@ -120,6 +120,9 @@ export default function MaintenanceManagementPage() {
   const [showExcludeModal, setShowExcludeModal] = useState(false);
   const [excludeTarget, setExcludeTarget] = useState<ResidentRow | null>(null);
   const [excludeReason, setExcludeReason] = useState("");
+  const [showUnpaidModal, setShowUnpaidModal] = useState(false);
+  const [unpaidTarget, setUnpaidTarget] = useState<ResidentRow | null>(null);
+  const [unpaidReason, setUnpaidReason] = useState("");
   const [rowEdit, setRowEdit] = useState<{
     villaId: string;
     villaNumber: string;
@@ -498,6 +501,33 @@ export default function MaintenanceManagementPage() {
     }
   }
 
+  function openUnpaidModal(row: ResidentRow) {
+    setUnpaidTarget(row);
+    setUnpaidReason("");
+    setShowUnpaidModal(true);
+  }
+
+  async function submitReversePayment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!unpaidTarget || !selectedMaintenanceCycleId) return;
+    try {
+      setLoading(true);
+      await api.post("/maintenance-management/reverse-payment", {
+        villaId: unpaidTarget.villaId,
+        maintenanceCollectionCycleId: selectedMaintenanceCycleId,
+        reason: unpaidReason.trim() || undefined,
+      });
+      setShowUnpaidModal(false);
+      setUnpaidTarget(null);
+      await loadGrid(selectedCycleId);
+      showToast(`Payment reversed for Villa ${unpaidTarget.villaNumber}`, "success");
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to reverse payment").message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const formatCurrency = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
   return (
@@ -793,18 +823,26 @@ export default function MaintenanceManagementPage() {
                           >
                             Edit
                           </button>
-                          {r.status !== "PAID" && (
+                          <button
+                            type="button"
+                            onClick={() => openMarkPaid(r)}
+                            disabled={!cycleEditable || loading}
+                            className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
+                          >
+                            Mark paid
+                          </button>
+                          {(r.status === "PAID" || r.status === "PARTIAL") && (
                             <button
                               type="button"
-                              onClick={() => openMarkPaid(r)}
+                              onClick={() => openUnpaidModal(r)}
                               disabled={!cycleEditable || loading}
-                              className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
+                              className="text-denied-fg hover:text-brand-danger font-medium disabled:opacity-40"
                             >
-                              Mark paid
+                              Mark Unpaid
                             </button>
                           )}
-                          {r.status === "PAID" && (
-                            <span className="text-fg-secondary text-xs">Receipt: {r.receiptNumber || "—"}</span>
+                          {r.receiptNumber && (
+                            <span className="text-fg-tertiary text-xs">({r.receiptNumber})</span>
                           )}
                           <button
                             type="button"
@@ -1199,6 +1237,55 @@ export default function MaintenanceManagementPage() {
                     onClick={() => {
                       setShowExcludeModal(false);
                       setExcludeTarget(null);
+                    }}
+                    className="btn btn-ghost flex-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+      </Modal>
+      {/* ── Reverse Payment (Mark Unpaid) modal ── */}
+      <Modal open={showUnpaidModal && !!unpaidTarget} onClose={() => { setShowUnpaidModal(false); setUnpaidTarget(null); }}>
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-lg font-semibold">Reverse Payment</h2>
+            </div>
+            <div className="card-body">
+              <div className="bg-denied-bg border border-denied-bg rounded-lg p-3 text-sm text-denied-fg mb-4">
+                <p className="font-medium mb-1">This will delete all payment records for this cycle</p>
+                <p className="text-xs">
+                  Villa <strong>{unpaidTarget?.villaNumber}</strong> ({unpaidTarget?.ownerName}) will be reset
+                  to PENDING/OVERDUE. Any overpayment credit from this cycle will also be removed.
+                  This action cannot be undone — you will need to re-enter payments manually.
+                </p>
+              </div>
+              <form onSubmit={submitReversePayment} className="space-y-3">
+                <div>
+                  <label className="block text-sm text-fg-primary mb-1">Reason (optional)</label>
+                  <textarea
+                    value={unpaidReason}
+                    onChange={(e) => setUnpaidReason(e.target.value)}
+                    placeholder="e.g. Payment bounced, incorrect entry, duplicate payment"
+                    className="input w-full"
+                    rows={2}
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn bg-brand-danger text-white hover:opacity-90 flex-1 disabled:opacity-50"
+                  >
+                    Reverse Payment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUnpaidModal(false);
+                      setUnpaidTarget(null);
                     }}
                     className="btn btn-ghost flex-1"
                   >
