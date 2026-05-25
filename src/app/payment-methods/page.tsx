@@ -470,17 +470,17 @@ export default function PaymentMethodsPage() {
 
                     <button
                       onClick={() => openEdit(m)}
-                      className="btn btn-ghost p-2"
-                      title="Edit"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-surface-border bg-surface px-3 py-1.5 text-sm font-medium text-fg-secondary hover:bg-brand-primary-light hover:text-brand-primary transition-colors"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
                     </button>
                     <button
                       onClick={() => handleDelete(m)}
-                      className="btn btn-ghost p-2 text-brand-danger"
-                      title="Delete"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-brand-danger/20 bg-surface px-3 py-1.5 text-sm font-medium text-brand-danger hover:bg-brand-danger/10 transition-colors"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
                     </button>
                   </div>
                 </div>
