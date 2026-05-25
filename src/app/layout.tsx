@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toast } from "@/components/Toast";
 import { ThemeProvider } from "@/theme/ThemeProvider";
+import { QueryProvider } from "@/lib/QueryProvider";
 import { ThemeFlashPrevention } from "@/theme/flash-prevention";
 import { lightTheme } from "@/theme/tokens";
 
@@ -35,10 +36,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <ThemeProvider>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-          <Toast />
+          <QueryProvider>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+            <Toast />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>
