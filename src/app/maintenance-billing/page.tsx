@@ -235,35 +235,40 @@ export default function MaintenanceBillingPage() {
     void loadAudit().catch(() => showToast("Could not load audit logs", "error"));
   }, [tab, loadAudit]);
 
-  useEffect(() => {
-    if (tab !== "residents") return;
+  const loadResidents = useCallback(async () => {
     const params: Record<string, string> = {};
     if (filterMonth) params.cycleMonth = filterMonth;
     if (filterStatus) params.status = filterStatus;
     if (sortBy) params.sortBy = sortBy;
     setResidentsLoading(true);
-    void api
-      .get("/v1/admin/residents/payments", { params })
-      .then((r) => {
-        const rows = sortByVillaNumber(
-          (r.data.rows ?? []) as ResidentRow[],
-          (row) => {
-            return typeof row.flat === "string" ? row.flat : null;
-          },
-        );
-        setResidentRows(rows);
-        const t = r.data.totals ?? {};
-        setResidentTotals({
-          totalExpected: Number(t.totalExpected ?? 0),
-          totalCollected: Number(t.totalCollected ?? 0),
-          totalShortfall: Number(t.totalShortfall ?? 0),
-          totalAdvanceCredit: Number(t.totalAdvanceCredit ?? 0),
-        });
-        setLastSyncedAt(new Date());
-      })
-      .catch(() => showToast("Could not load residents", "error"))
-      .finally(() => setResidentsLoading(false));
-  }, [tab, filterMonth, filterStatus, sortBy]);
+    try {
+      const r = await api.get("/v1/admin/residents/payments", { params });
+      const rows = sortByVillaNumber(
+        (r.data.rows ?? []) as ResidentRow[],
+        (row) => {
+          return typeof row.flat === "string" ? row.flat : null;
+        },
+      );
+      setResidentRows(rows);
+      const t = r.data.totals ?? {};
+      setResidentTotals({
+        totalExpected: Number(t.totalExpected ?? 0),
+        totalCollected: Number(t.totalCollected ?? 0),
+        totalShortfall: Number(t.totalShortfall ?? 0),
+        totalAdvanceCredit: Number(t.totalAdvanceCredit ?? 0),
+      });
+      setLastSyncedAt(new Date());
+    } catch {
+      showToast("Could not load residents", "error");
+    } finally {
+      setResidentsLoading(false);
+    }
+  }, [filterMonth, filterStatus, sortBy]);
+
+  useEffect(() => {
+    if (tab !== "residents") return;
+    void loadResidents();
+  }, [tab, loadResidents]);
 
   const cycleOptions = useMemo(() => cycles.map((c) => ({ id: c.id, label: `${c.cycleKey} · ${c.title}` })), [cycles]);
 
@@ -456,7 +461,7 @@ export default function MaintenanceBillingPage() {
         amountPaid: Number(cashAmount),
       });
       showToast("Cash payment recorded", "success");
-      await loadCycles();
+      await Promise.all([loadCycles(), tab === "residents" ? loadResidents() : Promise.resolve()]);
     } catch (err: unknown) {
       showToast(parseApiError(err, "Could not save").message, "error");
     } finally {
@@ -476,7 +481,7 @@ export default function MaintenanceBillingPage() {
         userId: waiveUserId,
       });
       showToast("Late fee waived", "success");
-      await loadCycles();
+      await Promise.all([loadCycles(), tab === "residents" ? loadResidents() : Promise.resolve()]);
     } catch (err: unknown) {
       showToast(parseApiError(err, "Could not waive").message, "error");
     } finally {

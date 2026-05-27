@@ -84,6 +84,7 @@ function ComplaintsPageInner() {
     try {
       await api.patch(`/complaints/${id}/status`, { status: newStatus });
       showToast("Status updated", "success");
+      await loadComplaints(initialOffset);
     } catch {
       // Rollback
       if (prev) setComplaints((list) => list.map((c) => (c.id === id ? { ...c, status: prev } : c)));
