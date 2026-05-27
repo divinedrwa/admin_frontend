@@ -73,7 +73,7 @@ function ComplaintsPageInner() {
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    loadComplaints(newOffset);
+    // Don't call loadComplaints here — the URL change triggers useEffect
   };
 
   async function updateStatus(id: string, newStatus: string) {
@@ -84,7 +84,8 @@ function ComplaintsPageInner() {
     try {
       await api.patch(`/complaints/${id}/status`, { status: newStatus });
       showToast("Status updated", "success");
-      await loadComplaints(initialOffset);
+      // Reload at the current page offset (from pgMeta, not the closure)
+      loadComplaints(pgMeta.offset);
     } catch {
       // Rollback
       if (prev) setComplaints((list) => list.map((c) => (c.id === id ? { ...c, status: prev } : c)));

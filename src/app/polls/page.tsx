@@ -83,7 +83,7 @@ function PollsPageInner() {
     const controller = new AbortController();
     loadPolls(initialOffset, controller.signal);
     return () => controller.abort();
-  }, [loadPolls]);
+  }, [loadPolls, initialOffset]);
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());

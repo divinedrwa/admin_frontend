@@ -158,7 +158,7 @@ function GuardShiftsPageInner() {
     loadGates(controller.signal);
     loadGuards(controller.signal);
     return () => controller.abort();
-  }, [loadShifts]);
+  }, [loadShifts, initialOffset]);
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());

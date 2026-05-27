@@ -112,7 +112,7 @@ function NoticesPageInner() {
     const controller = new AbortController();
     loadNotices(initialOffset, controller.signal);
     return () => controller.abort();
-  }, [loadNotices]);
+  }, [loadNotices, initialOffset]);
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());

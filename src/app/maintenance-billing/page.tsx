@@ -8,7 +8,7 @@ import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type BillingCycleRow = {
   id: string;
@@ -193,6 +193,7 @@ export default function MaintenanceBillingPage() {
     setLastSyncedAt(new Date());
   }, [loadCycles, loadUsers, loadFinancialYears]);
 
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     let cancelled = false;
     async function boot() {
@@ -206,8 +207,14 @@ export default function MaintenanceBillingPage() {
       }
     }
     void boot();
+    // Auto-refresh every 60 s so admin sees updated payment counts
+    // without manual reload after a resident pays.
+    pollRef.current = setInterval(() => {
+      void refreshCoreData().catch(() => {});
+    }, 60_000);
     return () => {
       cancelled = true;
+      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [refreshCoreData]);
 
@@ -296,12 +303,16 @@ export default function MaintenanceBillingPage() {
       });
       showToast("Billing cycle created successfully", "success");
       setCreateOpen(false);
-      setForm((prev) => ({
-        ...prev,
+      setForm({
+        financialYearId: form.financialYearId,
         cycleMonth: "",
         title: "",
         amount: "",
-      }));
+        paymentStart: "",
+        paymentEnd: "",
+        lateFee: "0",
+        graceDays: "5",
+      });
       try {
         await Promise.all([loadCycles(), loadFinancialYears()]);
       } catch {
@@ -416,6 +427,7 @@ export default function MaintenanceBillingPage() {
   }
 
   function openEdit(c: BillingCycleRow) {
+    setCreateOpen(false); // Ensure create form is closed when editing
     setEditId(c.id);
     setForm({
       financialYearId: c.financialYearId ?? "",
@@ -685,6 +697,7 @@ export default function MaintenanceBillingPage() {
                     lateFee: "0",
                     graceDays: "5",
                   });
+                  setEditId(null); // Ensure edit form is closed when creating
                   setCreateOpen(true);
                 }}
               >
