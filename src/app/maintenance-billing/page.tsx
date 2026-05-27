@@ -460,6 +460,13 @@ export default function MaintenanceBillingPage() {
         cycleId: cashCycleId,
         amountPaid: Number(cashAmount),
       });
+      try {
+        await api.post(
+          `/maintenance-management/collection/billing-cycles/${cashCycleId}/sync`,
+        );
+      } catch {
+        // Collection cycle may not exist yet; mark-cash still updated billing ledger.
+      }
       showToast("Cash payment recorded", "success");
       await Promise.all([loadCycles(), tab === "residents" ? loadResidents() : Promise.resolve()]);
     } catch (err: unknown) {
