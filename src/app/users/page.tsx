@@ -9,6 +9,7 @@ import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { sortByVillaNumber } from "@/utils/villaSort";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type MaintenanceBillingRole = "PRIMARY" | "EXCLUDED";
 
@@ -106,6 +107,7 @@ function UsersPageInner() {
   const [selectedResidentIds, setSelectedResidentIds] = useState<Set<string>>(new Set());
   const [bulkDeletingResidents, setBulkDeletingResidents] = useState(false);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const { confirm, ConfirmUI } = useConfirm();
 
   const abortRef = useRef<AbortController | null>(null);
   const initialOffset = Number(searchParams.get("offset")) || 0;
@@ -453,7 +455,7 @@ function UsersPageInner() {
   };
 
   const handleDelete = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+    if (!(await confirm({ title: "Delete user", message: "Are you sure you want to delete this user?", confirmLabel: "Delete" }))) return;
 
     try {
       await api.delete(`/users/${userId}`);
@@ -475,7 +477,7 @@ function UsersPageInner() {
   const handleBulkDeleteResidents = async () => {
     const ids = Array.from(selectedResidentIds);
     if (ids.length === 0) return;
-    if (!confirm(`Permanently delete ${ids.length} resident account(s)? This cannot be undone.`)) {
+    if (!(await confirm({ title: "Delete selected residents", message: `Permanently delete ${ids.length} resident account(s)? This cannot be undone.`, confirmLabel: "Delete" }))) {
       return;
     }
     setBulkDeletingResidents(true);
@@ -1048,6 +1050,7 @@ function UsersPageInner() {
           </>)}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

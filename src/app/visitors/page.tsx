@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type VisitorVilla = {
   villa: {
@@ -53,7 +54,8 @@ export default function VisitorsPage() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deletingVisitorId, setDeletingVisitorId] = useState<string | null>(null);
-  
+  const { confirm, ConfirmUI } = useConfirm();
+
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -138,7 +140,7 @@ export default function VisitorsPage() {
   };
 
   const handleDelete = async (visitorId: string) => {
-    if (!window.confirm("Are you sure you want to delete this visitor record? This action cannot be undone.")) {
+    if (!(await confirm({ title: "Delete visitor", message: "Are you sure you want to delete this visitor record? This action cannot be undone.", confirmLabel: "Delete" }))) {
       return;
     }
 
@@ -496,7 +498,7 @@ export default function VisitorsPage() {
           </div>
         )}
 
-        <div className="table-wrapper">
+        <div className="table-wrapper overflow-x-auto">
           {loading ? (
             <div className="loading-state">
               <div className="loading-spinner w-10 h-10"></div>
@@ -589,6 +591,7 @@ export default function VisitorsPage() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

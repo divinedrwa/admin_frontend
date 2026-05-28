@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 type Asset = {
@@ -40,6 +41,7 @@ export default function AssetsPage() {
   const [condFilter, setCondFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const { confirm, ConfirmUI } = useConfirm();
 
   const [form, setForm] = useState({
     name: "", category: "", location: "", serialNumber: "",
@@ -105,7 +107,7 @@ export default function AssetsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this asset?")) return;
+    if (!(await confirm({ title: "Delete asset", message: "Delete this asset?", confirmLabel: "Delete" }))) return;
     await api.delete(`/assets/${id}`);
     load();
   };
@@ -248,6 +250,7 @@ export default function AssetsPage() {
           </div>
         )}
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

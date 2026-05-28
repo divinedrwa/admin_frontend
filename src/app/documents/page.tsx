@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { parseApiError } from "@/utils/errorHandler";
 
 type Document = {
@@ -27,6 +28,7 @@ export default function DocumentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
+  const { confirm, ConfirmUI } = useConfirm();
   
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,7 +100,7 @@ export default function DocumentsPage() {
   };
 
   const handleDelete = async (documentId: string) => {
-    if (!window.confirm("Are you sure you want to delete this document? This action cannot be undone.")) {
+    if (!(await confirm({ title: "Delete document", message: "Are you sure you want to delete this document? This action cannot be undone.", confirmLabel: "Delete" }))) {
       return;
     }
 
@@ -409,6 +411,7 @@ export default function DocumentsPage() {
           </div>
         )}
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

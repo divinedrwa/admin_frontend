@@ -126,7 +126,7 @@ api.interceptors.response.use(
         }
 
         // Refresh failed or not applicable — clear session and redirect.
-        console.warn(`Authentication failed (${status}) on ${url ?? "unknown endpoint"}: ${message}`);
+        // Session expired — silently redirect to login.
         localStorage.removeItem("token");
         localStorage.removeItem(TENANT_REFRESH_TOKEN_KEY);
         clearPlatformViewSession();
@@ -140,15 +140,7 @@ api.interceptors.response.use(
         }
       }
 
-      // Handle authorization errors (403)
-      if (status === 403) {
-        console.warn(`Access forbidden (${status}) on ${url ?? "unknown endpoint"}: ${message}`);
-      }
-
-      // Handle server errors
-      if (status >= 500) {
-        console.error(`Server error (${status}) on ${url ?? "unknown endpoint"}: ${message}`);
-      }
+      // 403 and 5xx are handled by the calling code via parseApiError().
     }
     return Promise.reject(error);
   }

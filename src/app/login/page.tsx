@@ -16,6 +16,7 @@ import {
 import { api, setTenantSocietyIdFromLogin } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { LOGIN_SUCCESS_TOAST } from "@/lib/branding";
 
 type SocietyRow = { id: string; name: string; address?: string | null };
 const ENABLE_DEMO_LOGIN = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "1";
@@ -120,7 +121,7 @@ function LoginPageInner() {
         localStorage.setItem("refresh_token", response.data.refreshToken);
       }
       setTenantSocietyIdFromLogin(response.data?.user);
-      showToast("Login successful! Welcome to GatePass+", "success");
+      showToast(LOGIN_SUCCESS_TOAST, "success");
       router.push("/dashboard");
     } catch (error: unknown) {
       const message = getFriendlyLoginError(error);

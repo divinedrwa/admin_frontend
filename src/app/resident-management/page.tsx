@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { parseApiError } from "@/utils/errorHandler";
@@ -65,6 +66,7 @@ export default function ResidentManagementPage() {
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
   const [moveOutDate, setMoveOutDate] = useState(new Date().toISOString().split("T")[0]);
   const [moveOutReason, setMoveOutReason] = useState("");
+  const { confirm, ConfirmUI } = useConfirm();
 
   // Fetch residents
   const fetchResidents = async (signal?: AbortSignal) => {
@@ -153,7 +155,7 @@ export default function ResidentManagementPage() {
   };
 
   const handleReactivate = async (residentId: string) => {
-    if (!confirm("Are you sure you want to reactivate this resident?")) return;
+    if (!(await confirm({ title: "Reactivate resident", message: "Are you sure you want to reactivate this resident?", variant: "primary", confirmLabel: "Reactivate" }))) return;
 
     try {
       setLoading(true);
@@ -478,6 +480,7 @@ export default function ResidentManagementPage() {
           </div>
         )}
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

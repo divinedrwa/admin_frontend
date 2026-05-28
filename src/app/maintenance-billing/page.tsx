@@ -5,6 +5,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
@@ -106,6 +107,7 @@ export default function MaintenanceBillingPage() {
   const [residentCount, setResidentCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState(false);
+  const { confirm, ConfirmUI } = useConfirm();
   const [users, setUsers] = useState<
     Array<{
       id: string;
@@ -378,7 +380,7 @@ export default function MaintenanceBillingPage() {
   }
 
   async function deleteFinancialYear(row: FinancialYearOption) {
-    const yes = window.confirm(`Delete financial year ${row.label}?`);
+    const yes = await confirm({ title: "Delete financial year", message: `Delete financial year ${row.label}?`, confirmLabel: "Delete" });
     if (!yes) return;
     try {
       await api.delete(`/v1/admin/financial-years/${row.id}`);
@@ -1221,6 +1223,7 @@ export default function MaintenanceBillingPage() {
           </div>
         </div>
       </Modal>
+      {ConfirmUI}
     </AppShell>
   );
 }

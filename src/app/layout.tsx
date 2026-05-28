@@ -6,10 +6,11 @@ import { ThemeProvider } from "@/theme/ThemeProvider";
 import { QueryProvider } from "@/lib/QueryProvider";
 import { ThemeFlashPrevention } from "@/theme/flash-prevention";
 import { lightTheme } from "@/theme/tokens";
+import { ADMIN_PAGE_TITLE, ADMIN_PAGE_DESCRIPTION } from "@/lib/branding";
 
 export const metadata: Metadata = {
-  title: "GatePass+ Admin",
-  description: "GatePass+ admin dashboard for housing societies",
+  title: ADMIN_PAGE_TITLE,
+  description: ADMIN_PAGE_DESCRIPTION,
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

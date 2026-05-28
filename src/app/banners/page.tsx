@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { parseApiError } from "@/utils/errorHandler";
 
 type Banner = {
@@ -33,6 +34,7 @@ export default function BannersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [deletingBannerId, setDeletingBannerId] = useState<string | null>(null);
+  const { confirm, ConfirmUI } = useConfirm();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -102,7 +104,7 @@ export default function BannersPage() {
   };
 
   const handleDelete = async (bannerId: string) => {
-    if (!window.confirm("Are you sure you want to delete this banner? This action cannot be undone.")) {
+    if (!(await confirm({ title: "Delete banner", message: "Are you sure you want to delete this banner? This action cannot be undone.", confirmLabel: "Delete" }))) {
       return;
     }
 
@@ -465,6 +467,7 @@ export default function BannersPage() {
           </div>
         )}
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

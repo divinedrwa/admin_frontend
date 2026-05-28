@@ -9,6 +9,7 @@ import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type Poll = {
   id: string;
@@ -45,6 +46,7 @@ function PollsPageInner() {
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [deletingPollId, setDeletingPollId] = useState<string | null>(null);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const { confirm, ConfirmUI } = useConfirm();
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,7 +136,7 @@ function PollsPageInner() {
   };
 
   const handleDelete = async (pollId: string) => {
-    if (!window.confirm("Are you sure you want to delete this poll? This action cannot be undone.")) {
+    if (!(await confirm({ title: "Delete poll", message: "Are you sure you want to delete this poll? This action cannot be undone.", confirmLabel: "Delete" }))) {
       return;
     }
 
@@ -508,6 +510,7 @@ function PollsPageInner() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type Vendor = { id: string; name: string; category: string };
 type Contract = {
@@ -43,6 +44,7 @@ export default function VendorContractsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const { confirm, ConfirmUI } = useConfirm();
 
   const [form, setForm] = useState({
     vendorId: "",
@@ -116,7 +118,7 @@ export default function VendorContractsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this contract?")) return;
+    if (!(await confirm({ title: "Delete contract", message: "Delete this contract?", confirmLabel: "Delete" }))) return;
     await api.delete(`/vendor-contracts/${id}`);
     load();
   };
@@ -250,6 +252,7 @@ export default function VendorContractsPage() {
           </div>
         )}
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

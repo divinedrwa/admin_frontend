@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Modal } from '@/components/Modal';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
 import { lightTheme } from "@/theme/tokens";
@@ -46,6 +47,7 @@ export default function ExpenseCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
+  const { confirm, ConfirmUI } = useConfirm();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -92,7 +94,7 @@ export default function ExpenseCategoriesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+    if (!(await confirm({ title: 'Delete category', message: 'Are you sure you want to delete this category?', confirmLabel: 'Delete' }))) return;
 
     try {
       await api.delete(`/expenses/categories/${id}`);
@@ -389,6 +391,7 @@ export default function ExpenseCategoriesPage() {
             </div>
           </div>
       </Modal>
+      {ConfirmUI}
     </div>
   );
 }

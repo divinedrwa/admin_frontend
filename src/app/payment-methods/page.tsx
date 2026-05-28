@@ -18,6 +18,7 @@ import { AppShell } from "@/components/AppShell";
 import { Modal } from "@/components/Modal";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type PaymentMethod = {
   id: string;
@@ -83,6 +84,8 @@ export default function PaymentMethodsPage() {
   // Edit form state
   const [editName, setEditName] = useState("");
   const [editConfig, setEditConfig] = useState<Record<string, string>>({});
+
+  const { confirm, ConfirmUI } = useConfirm();
 
   // QR upload
   const fileRef = useRef<HTMLInputElement>(null);
@@ -198,7 +201,7 @@ export default function PaymentMethodsPage() {
   // ── Delete ──────────────────────────────────────────────────────
 
   const handleDelete = async (m: PaymentMethod) => {
-    if (!confirm(`Delete "${m.displayName}"?`)) return;
+    if (!(await confirm({ title: "Delete payment method", message: `Delete "${m.displayName}"?`, confirmLabel: "Delete" }))) return;
     try {
       await api.delete(`/payment-methods/${m.id}`);
       showToast("Payment method deleted", "success");
@@ -586,6 +589,7 @@ export default function PaymentMethodsPage() {
           )}
         </Modal>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { sortByVillaNumber } from "@/utils/villaSort";
 
 type StaffAssignment = {
@@ -55,6 +56,7 @@ export default function StaffPage() {
     villaIds: []
   });
   const [submitting, setSubmitting] = useState(false);
+  const { confirm, ConfirmUI } = useConfirm();
 
   const loadStaff = () => {
     setLoading(true);
@@ -156,7 +158,7 @@ export default function StaffPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this staff member?")) return;
+    if (!(await confirm({ title: "Delete staff member", message: "Are you sure you want to delete this staff member?", confirmLabel: "Delete" }))) return;
 
     try {
       await api.delete(`/staff/${id}`);
@@ -380,6 +382,7 @@ export default function StaffPage() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

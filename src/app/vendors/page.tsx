@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 /** Must match Prisma `VendorCategory` (see GET /vendors). */
 type VendorCategoryId =
@@ -64,6 +65,7 @@ function VendorsPageInner() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const { confirm, ConfirmUI } = useConfirm();
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
@@ -171,7 +173,7 @@ function VendorsPageInner() {
   };
 
   const handleDelete = async (vendorId: string) => {
-    if (!confirm("Are you sure you want to delete this vendor?")) return;
+    if (!(await confirm({ title: "Delete vendor", message: "Are you sure you want to delete this vendor?", confirmLabel: "Delete" }))) return;
 
     try {
       await api.delete(`/vendors/${vendorId}`);
@@ -393,6 +395,7 @@ function VendorsPageInner() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

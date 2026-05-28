@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type ResidentOption = {
   id: string;
@@ -83,6 +84,7 @@ function NoticesPageInner() {
   const [residentOptions, setResidentOptions] = useState<ResidentOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const { confirm, ConfirmUI } = useConfirm();
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
@@ -197,7 +199,7 @@ function NoticesPageInner() {
   };
 
   const handleDelete = async (noticeId: string) => {
-    if (!confirm("Are you sure you want to delete this notice?")) return;
+    if (!(await confirm({ title: "Delete notice", message: "Are you sure you want to delete this notice?", confirmLabel: "Delete" }))) return;
 
     try {
       await api.delete(`/notices/${noticeId}`);
@@ -488,6 +490,7 @@ function NoticesPageInner() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

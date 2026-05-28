@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type GuardPatrol = {
   id: string;
@@ -44,6 +45,7 @@ export default function GuardPatrolsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editingPatrol, setEditingPatrol] = useState<GuardPatrol | null>(null);
   const [deletingPatrolId, setDeletingPatrolId] = useState<string | null>(null);
+  const { confirm, ConfirmUI } = useConfirm();
   const [formData, setFormData] = useState({
     guardId: "",
     gateId: "",
@@ -116,7 +118,7 @@ export default function GuardPatrolsPage() {
   };
 
   const handleDelete = async (patrolId: string) => {
-    if (!window.confirm("Are you sure you want to delete this patrol? This action cannot be undone.")) {
+    if (!(await confirm({ title: "Delete patrol", message: "Are you sure you want to delete this patrol? This action cannot be undone.", confirmLabel: "Delete" }))) {
       return;
     }
 
@@ -407,6 +409,7 @@ export default function GuardPatrolsPage() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

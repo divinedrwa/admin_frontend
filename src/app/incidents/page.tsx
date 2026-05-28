@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type Incident = {
   id: string;
@@ -29,7 +30,8 @@ export default function IncidentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editingIncident, setEditingIncident] = useState<Incident | null>(null);
   const [deletingIncidentId, setDeletingIncidentId] = useState<string | null>(null);
-  
+  const { confirm, ConfirmUI } = useConfirm();
+
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
@@ -109,7 +111,7 @@ export default function IncidentsPage() {
   };
 
   const handleDelete = async (incidentId: string) => {
-    if (!window.confirm("Are you sure you want to delete this incident? This action cannot be undone.")) {
+    if (!(await confirm({ title: "Delete incident", message: "Are you sure you want to delete this incident? This action cannot be undone.", confirmLabel: "Delete" }))) {
       return;
     }
 
@@ -413,6 +415,7 @@ export default function IncidentsPage() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

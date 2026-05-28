@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
 
@@ -21,6 +22,7 @@ export default function PreApprovedVisitorsPage() {
   const [visitors, setVisitors] = useState<PreApprovedVisitor[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { confirm, ConfirmUI } = useConfirm();
 
   useEffect(() => {
     fetchVisitors();
@@ -40,7 +42,7 @@ export default function PreApprovedVisitorsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Remove this pre-approved visitor?")) return;
+    if (!(await confirm({ title: "Remove visitor", message: "Remove this pre-approved visitor?", confirmLabel: "Remove" }))) return;
     
     try {
       await api.delete(`/pre-approved-visitors/${id}`);
@@ -103,6 +105,7 @@ export default function PreApprovedVisitorsPage() {
           </div>
         )}
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

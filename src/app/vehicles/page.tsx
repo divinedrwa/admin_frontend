@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { sortByVillaNumber } from "@/utils/villaSort";
 
 type Vehicle = {
@@ -75,6 +76,7 @@ function VehiclesPageInner() {
   const [submitting, setSubmitting] = useState(false);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const [searchQuery, setSearchQuery] = useState("");
+  const { confirm, ConfirmUI } = useConfirm();
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
@@ -249,7 +251,7 @@ function VehiclesPageInner() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this vehicle?")) return;
+    if (!(await confirm({ title: "Delete vehicle", message: "Are you sure you want to delete this vehicle?", confirmLabel: "Delete" }))) return;
 
     try {
       await api.delete(`/vehicles/${id}`);
@@ -552,6 +554,7 @@ function VehiclesPageInner() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

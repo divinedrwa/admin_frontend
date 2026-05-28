@@ -9,6 +9,7 @@ import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { sortByVillaNumber } from "@/utils/villaSort";
+import { useConfirm } from "@/components/ConfirmDialog";
 import {
   inferCanonicalTierIndex,
   occupantUnitCodeForFloorIndex,
@@ -133,6 +134,7 @@ function VillasPageInner() {
   const [primaryResidentId, setPrimaryResidentId] = useState<string | null>(null);
   const [primaryResidentName, setPrimaryResidentName] = useState<string | null>(null);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const { confirm, ConfirmUI } = useConfirm();
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
   const loadVillas = useCallback((offset = initialOffset, signal?: AbortSignal) => {
@@ -457,7 +459,7 @@ function VillasPageInner() {
   };
 
   const handleDelete = async (villaId: string) => {
-    if (!confirm("Are you sure you want to delete this villa?")) return;
+    if (!(await confirm({ title: "Delete villa", message: "Are you sure you want to delete this villa?", confirmLabel: "Delete" }))) return;
 
     try {
       await api.delete(`/villas/${villaId}`);
@@ -480,9 +482,11 @@ function VillasPageInner() {
     const ids = Array.from(selectedVillaIds);
     if (ids.length === 0) return;
     if (
-      !confirm(
-        `Delete ${ids.length} villa(s)? Villas with active residents cannot be removed until residents are moved out.`,
-      )
+      !(await confirm({
+        title: "Delete selected villas",
+        message: `Delete ${ids.length} villa(s)? Villas with active residents cannot be removed until residents are moved out.`,
+        confirmLabel: "Delete",
+      }))
     ) {
       return;
     }
@@ -977,6 +981,7 @@ function VillasPageInner() {
           </>)}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

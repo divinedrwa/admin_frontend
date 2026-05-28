@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type GuardShift = {
   id: string;
@@ -95,6 +96,7 @@ function GuardShiftsPageInner() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const { confirm, ConfirmUI } = useConfirm();
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
@@ -297,7 +299,7 @@ function GuardShiftsPageInner() {
   };
 
   const handleDelete = async (shiftId: string) => {
-    if (!confirm("Are you sure you want to delete this shift?")) return;
+    if (!(await confirm({ title: "Delete shift", message: "Are you sure you want to delete this shift?", confirmLabel: "Delete" }))) return;
 
     try {
       await api.delete(`/guard-shifts/${shiftId}`);
@@ -621,6 +623,7 @@ function GuardShiftsPageInner() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

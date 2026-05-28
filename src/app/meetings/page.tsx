@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { Plus, Pencil, Trash2, Eye } from "lucide-react";
 
 type Meeting = {
@@ -46,6 +47,7 @@ export default function MeetingsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const { confirm, ConfirmUI } = useConfirm();
 
   const [form, setForm] = useState({
     title: "", type: "GENERAL", status: "SCHEDULED", scheduledAt: "",
@@ -103,7 +105,7 @@ export default function MeetingsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this meeting?")) return;
+    if (!(await confirm({ title: "Delete meeting", message: "Delete this meeting?", confirmLabel: "Delete" }))) return;
     await api.delete(`/meetings/${id}`);
     load();
   };
@@ -261,6 +263,7 @@ export default function MeetingsPage() {
           </div>
         )}
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

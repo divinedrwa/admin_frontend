@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type Parcel = {
   id: string;
@@ -50,6 +51,7 @@ function ParcelsPageInner() {
   const [editingParcel, setEditingParcel] = useState<Parcel | null>(null);
   const [deletingParcelId, setDeletingParcelId] = useState<string | null>(null);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const { confirm, ConfirmUI } = useConfirm();
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -150,7 +152,7 @@ function ParcelsPageInner() {
   };
 
   const handleDelete = async (parcelId: string) => {
-    if (!window.confirm("Are you sure you want to delete this parcel record? This action cannot be undone.")) {
+    if (!(await confirm({ title: "Delete parcel", message: "Are you sure you want to delete this parcel record? This action cannot be undone.", confirmLabel: "Delete" }))) {
       return;
     }
 
@@ -394,6 +396,7 @@ function ParcelsPageInner() {
           )}
         </div>
       </div>
+      {ConfirmUI}
     </AppShell>
   );
 }

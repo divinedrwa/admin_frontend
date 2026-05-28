@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { parseApiError } from "@/utils/errorHandler";
@@ -55,6 +56,7 @@ function ExpensesPageInner() {
   const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
   const [loading, setLoading] = useState(true);
   const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const { confirm, ConfirmUI } = useConfirm();
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -160,7 +162,7 @@ function ExpensesPageInner() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+    if (!(await confirm({ title: 'Delete expense', message: 'Are you sure you want to delete this expense?', confirmLabel: 'Delete' }))) return;
     
     try {
       await api.delete(`/expenses/${id}`);
@@ -561,6 +563,7 @@ function ExpensesPageInner() {
           Manage Categories →
         </Link>
       </div>
+      {ConfirmUI}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Download, Edit, FileText, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { parseApiError } from "@/utils/errorHandler";
 import { lightTheme } from "@/theme/tokens";
 
@@ -33,6 +34,7 @@ export default function ExpenseDetailPage() {
   const [expense, setExpense] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, ConfirmUI } = useConfirm();
 
   useEffect(() => {
     if (!id) return;
@@ -68,7 +70,7 @@ export default function ExpenseDetailPage() {
   }, [id]);
 
   async function handleDelete() {
-    if (!id || !confirm("Delete this expense permanently?")) return;
+    if (!id || !(await confirm({ title: "Delete expense", message: "Delete this expense permanently?", confirmLabel: "Delete" }))) return;
     try {
       await api.delete(`/expenses/${id}`);
       showToast("Expense deleted", "success");
@@ -347,6 +349,7 @@ export default function ExpenseDetailPage() {
           </div>
         )}
       </div>
+      {ConfirmUI}
     </div>
   );
 }

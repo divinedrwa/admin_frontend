@@ -48,6 +48,7 @@ import { showToast } from "./Toast";
 import { useState } from "react";
 import { clearPlatformViewSession } from "@/lib/platformViewSession";
 import { api, clearTenantSocietyId } from "@/lib/api";
+import { APP_NAME } from "@/lib/branding";
 
 import type { LucideIcon } from "lucide-react";
 
@@ -214,7 +215,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             <div className="flex items-center space-x-3">
               <Image
                 src="/app-icon.png"
-                alt="GatePass+"
+                alt={APP_NAME}
                 width={38}
                 height={38}
                 className="rounded-xl ring-1 ring-white/10"
@@ -224,7 +225,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">
                   Admin Workspace
                 </p>
-                <h2 className="text-lg font-bold leading-tight text-white">GatePass+</h2>
+                <h2 className="text-lg font-bold leading-tight text-white">{APP_NAME}</h2>
                 <p className="text-xs text-white/60">Operations dashboard</p>
               </div>
             </div>
@@ -232,7 +233,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           {collapsed && (
             <Image
               src="/app-icon.png"
-              alt="GatePass+"
+              alt={APP_NAME}
               width={32}
               height={32}
               className="mx-auto rounded-xl ring-1 ring-white/10"

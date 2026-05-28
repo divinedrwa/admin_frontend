@@ -95,7 +95,7 @@ export function handleApiError(error: unknown, customMessage?: string) {
   // Auth errors are handled by the api.ts response interceptor (logout +
   // redirect). Don't double up with a toast.
   if (parsed.status === 401 || parsed.status === 403) {
-    console.error("Authentication/Authorization error:", parsed.message);
+    // Auth errors handled by api.ts interceptor (redirect to login).
     return;
   }
 

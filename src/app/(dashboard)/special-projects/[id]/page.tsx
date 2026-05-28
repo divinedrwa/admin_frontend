@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Briefcase, ChevronDown, 
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { AdminPageHeader } from '@/components/AdminPageHeader';
 import { Modal } from '@/components/Modal';
 import { parseApiError } from '@/utils/errorHandler';
@@ -88,6 +89,7 @@ export default function SpecialProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [summary, setSummary] = useState<ProjectSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const { confirm, ConfirmUI } = useConfirm();
 
   // Payment modal
   const [paymentModal, setPaymentModal] = useState<{ contribId: string; villaNumber: string } | null>(null);
@@ -178,7 +180,7 @@ export default function SpecialProjectDetailPage() {
   };
 
   const deletePayment = async (contribId: string, paymentId: string) => {
-    if (!confirm('Remove this payment?')) return;
+    if (!(await confirm({ title: 'Remove payment', message: 'Remove this payment?', confirmLabel: 'Remove' }))) return;
     try {
       await api.delete(`/special-projects/${projectId}/contributions/${contribId}/payments/${paymentId}`);
       showToast('Payment removed', 'success');
@@ -210,7 +212,7 @@ export default function SpecialProjectDetailPage() {
   };
 
   const deleteExpense = async (expId: string) => {
-    if (!confirm('Delete this expense?')) return;
+    if (!(await confirm({ title: 'Delete expense', message: 'Delete this expense?', confirmLabel: 'Delete' }))) return;
     try {
       await api.delete(`/special-projects/${projectId}/expenses/${expId}`);
       showToast('Expense deleted', 'success');
@@ -232,7 +234,7 @@ export default function SpecialProjectDetailPage() {
   };
 
   const deleteProject = async () => {
-    if (!confirm('Delete this project? This cannot be undone.')) return;
+    if (!(await confirm({ title: 'Delete project', message: 'Delete this project? This cannot be undone.', confirmLabel: 'Delete' }))) return;
     try {
       await api.delete(`/special-projects/${projectId}`);
       showToast('Project deleted', 'success');
@@ -590,6 +592,7 @@ export default function SpecialProjectDetailPage() {
           </div>
         </div>
       </Modal>
+      {ConfirmUI}
     </div>
   );
 }

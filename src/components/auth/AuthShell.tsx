@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { APP_NAME, AUTH_OVERLINE, COPYRIGHT } from "@/lib/branding";
 
 type AuthShellFeature = {
   icon: ReactNode;
@@ -39,10 +40,10 @@ export function AuthShell({
             <div className="auth-hero-card">
               <div className="auth-brand-lockup">
                 <div className="auth-brand-mark">
-                  <Image src="/app-icon.png" alt="GatePass+" width={44} height={44} />
+                  <Image src="/app-icon.png" alt={APP_NAME} width={44} height={44} />
                 </div>
               <div>
-                <p className="auth-brand-overline">GatePass+ Access</p>
+                <p className="auth-brand-overline">{AUTH_OVERLINE}</p>
                 <p className="auth-brand-name">Secure admin workspace</p>
               </div>
             </div>
@@ -79,7 +80,7 @@ export function AuthShell({
 
           {children}
 
-          <p className="auth-footer-note">© 2026 GatePass+. All rights reserved.</p>
+          <p className="auth-footer-note">{COPYRIGHT}</p>
         </section>
       </div>
     </main>
