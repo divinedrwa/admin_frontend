@@ -115,7 +115,7 @@ function InviteAcceptContent() {
       };
       if (phone.trim()) payload.phone = phone.trim();
       if (
-        verified.invitation.role === "RESIDENT" &&
+        (verified.invitation.role === "RESIDENT" || verified.invitation.role === "RESIDENT_CUM_ADMIN") &&
         !verified.invitation.villaId &&
         !verified.invitation.villa?.id &&
         villaId.trim()
@@ -215,7 +215,7 @@ function InviteAcceptContent() {
                     <p>Role: {verified.invitation.role}</p>
                   </div>
 
-                  {verified.invitation.role === "RESIDENT" &&
+                  {(verified.invitation.role === "RESIDENT" || verified.invitation.role === "RESIDENT_CUM_ADMIN") &&
                     (verified.invitation.villa ?? verified.invitation.villaId) && (
                       <div className="flex items-start gap-2">
                         <Home className="mt-0.5 h-4 w-4 text-fg-tertiary" />
@@ -322,7 +322,7 @@ function InviteAcceptContent() {
             )}
           </div>
 
-          {verified?.invitation.role === "RESIDENT" &&
+          {(verified?.invitation.role === "RESIDENT" || verified?.invitation.role === "RESIDENT_CUM_ADMIN") &&
             !verified.invitation.villaId &&
             !verified.invitation.villa?.id && (
               <div className="auth-field">

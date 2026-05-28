@@ -26,7 +26,7 @@ type VillaResident = {
 };
 
 function pickPrimaryResident(villa: Villa): VillaResident | null {
-  const residents = (villa.users ?? []).filter((u) => u.role === "RESIDENT") as VillaResident[];
+  const residents = (villa.users ?? []).filter((u) => u.role === "RESIDENT" || u.role === "RESIDENT_CUM_ADMIN") as VillaResident[];
   if (residents.length === 0) return null;
   const ownerEmail = villa.ownerEmail?.trim().toLowerCase();
   if (ownerEmail) {

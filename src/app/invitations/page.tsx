@@ -31,7 +31,7 @@ export default function InvitationsAdminPage() {
   const [rows, setRows] = useState<InvitationRow[]>([]);
   const [villas, setVillas] = useState<Villa[]>([]);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<"ADMIN" | "RESIDENT" | "GUARD">("RESIDENT");
+  const [role, setRole] = useState<"ADMIN" | "RESIDENT" | "GUARD" | "RESIDENT_CUM_ADMIN">("RESIDENT");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [creating, setCreating] = useState(false);
@@ -89,7 +89,7 @@ export default function InvitationsAdminPage() {
         phone: p ?? null,
         email: em ?? null,
       };
-      if (role === "RESIDENT" && selectedVillaId) {
+      if ((role === "RESIDENT" || role === "RESIDENT_CUM_ADMIN") && selectedVillaId) {
         body.villaId = selectedVillaId;
       }
       const { data } = await api.post("/invitations", body);
@@ -157,16 +157,17 @@ export default function InvitationsAdminPage() {
                 onChange={(e) => {
                   const r = e.target.value as typeof role;
                   setRole(r);
-                  if (r !== "RESIDENT") setSelectedVillaId("");
+                  if (r !== "RESIDENT" && r !== "RESIDENT_CUM_ADMIN") setSelectedVillaId("");
                 }}
               >
                 <option value="RESIDENT">Resident</option>
+                <option value="RESIDENT_CUM_ADMIN">Resident + Admin</option>
                 <option value="GUARD">Guard</option>
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
             <div className="sm:col-span-2 text-sm text-fg-secondary">
-              {role === "RESIDENT" ? (
+              {(role === "RESIDENT" || role === "RESIDENT_CUM_ADMIN") ? (
                 <div className="space-y-2">
                   <p>Optional: attach a villa so the resident does not need to enter an id at signup.</p>
                   {villas.length > 0 ? (
@@ -268,8 +269,8 @@ export default function InvitationsAdminPage() {
                           : "—"}
                       </td>
                       <td className="table-td">
-                        <span className={`badge ${r.role === "ADMIN" ? "badge-primary" : r.role === "GUARD" ? "badge-success" : "badge-info"}`}>
-                          {r.role}
+                        <span className={`badge ${r.role === "ADMIN" || r.role === "RESIDENT_CUM_ADMIN" ? "badge-primary" : r.role === "GUARD" ? "badge-success" : "badge-info"}`}>
+                          {r.role === "RESIDENT_CUM_ADMIN" ? "RESIDENT + ADMIN" : r.role}
                         </span>
                       </td>
                       <td className="table-td">

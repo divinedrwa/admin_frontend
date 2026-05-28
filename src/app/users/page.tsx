@@ -18,7 +18,7 @@ type User = {
   name: string;
   email: string;
   phone: string | null;
-  role: "ADMIN" | "RESIDENT" | "GUARD";
+  role: "ADMIN" | "RESIDENT" | "GUARD" | "RESIDENT_CUM_ADMIN";
   residentType?: "OWNER" | "TENANT" | "FAMILY_MEMBER" | null;
   maintenanceBillingRole?: MaintenanceBillingRole | null;
   villaId: string | null;
@@ -51,7 +51,7 @@ type UserForm = {
   email: string;
   phone: string;
   password: string;
-  role: "ADMIN" | "RESIDENT" | "GUARD";
+  role: "ADMIN" | "RESIDENT" | "GUARD" | "RESIDENT_CUM_ADMIN";
   residentType: "OWNER" | "TENANT" | "FAMILY_MEMBER";
   maintenanceBillingRole: MaintenanceBillingRole;
   villaId: string;
@@ -59,6 +59,10 @@ type UserForm = {
   moveInDate: string;
   isActive: boolean;
 };
+
+function isResidentLike(role: string): boolean {
+  return role === "RESIDENT" || role === "ADMIN" || role === "RESIDENT_CUM_ADMIN";
+}
 
 function firstUnitIdForVilla(villas: Villa[], villaId: string): string {
   const list = villas.find((v) => v.id === villaId)?.units ?? [];
@@ -232,7 +236,7 @@ function UsersPageInner() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const needsVilla = formData.role === "RESIDENT" || formData.role === "ADMIN";
+    const needsVilla = isResidentLike(formData.role);
     if (needsVilla && !formData.villaId) {
       showToast("Please select a property (villa)", "error");
       return;
@@ -262,7 +266,7 @@ function UsersPageInner() {
         if (formData.password.trim().length >= 8) {
           payload.password = formData.password.trim();
         }
-        if (formData.role === "RESIDENT" || formData.role === "ADMIN") {
+        if (isResidentLike(formData.role)) {
           payload.residentType = formData.residentType;
           payload.villaId = formData.villaId || null;
           if (unitIdForPayload) payload.unitId = unitIdForPayload;
@@ -286,7 +290,7 @@ function UsersPageInner() {
           payload.phone = trimmedPhone;
         }
 
-        if (formData.role === "RESIDENT" || formData.role === "ADMIN") {
+        if (isResidentLike(formData.role)) {
           payload.residentType = formData.residentType;
           payload.villaId = formData.villaId;
           payload.unitId = unitIdForPayload;
@@ -427,7 +431,7 @@ function UsersPageInner() {
     }
   };
 
-  const residentsList = users.filter((u) => u.role === "RESIDENT" || u.role === "ADMIN");
+  const residentsList = users.filter((u) => isResidentLike(u.role));
 
   const toggleResidentSelected = (id: string) => {
     setSelectedResidentIds((prev) => {
@@ -504,6 +508,7 @@ function UsersPageInner() {
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
       case "ADMIN":
+      case "RESIDENT_CUM_ADMIN":
         return "badge badge-primary";
       case "RESIDENT":
         return "badge badge-info";
@@ -564,7 +569,7 @@ function UsersPageInner() {
                 <button
                   type="button"
                   onClick={handleExportResidentsCsv}
-                  disabled={exportingResidents || !users.some((u) => u.role === "RESIDENT" || u.role === "ADMIN")}
+                  disabled={exportingResidents || !users.some((u) => isResidentLike(u.role))}
                   className="text-sm font-medium bg-surface border border-approved-bg text-fg-primary px-3 py-2 rounded hover:bg-approved-bg disabled:opacity-50 disabled:cursor-not-allowed text-center"
                 >
                   {exportingResidents ? "Exporting…" : "Export residents"}
@@ -758,13 +763,14 @@ function UsersPageInner() {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        role: e.target.value as "ADMIN" | "RESIDENT" | "GUARD"
+                        role: e.target.value as "ADMIN" | "RESIDENT" | "GUARD" | "RESIDENT_CUM_ADMIN"
                       })
                     }
                     className="input"
                   >
                     <option value="ADMIN">Admin</option>
                     <option value="RESIDENT">Resident</option>
+                    <option value="RESIDENT_CUM_ADMIN">Resident + Admin</option>
                     <option value="GUARD">Guard</option>
                   </select>
                 </div>
@@ -783,7 +789,7 @@ function UsersPageInner() {
                   </div>
                 )}
 
-                {(formData.role === "RESIDENT" || formData.role === "ADMIN") && (
+                {(isResidentLike(formData.role)) && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-fg-primary mb-1">
@@ -811,7 +817,7 @@ function UsersPageInner() {
                         Assign Villa *
                       </label>
                       <select
-                        required={formData.role === "RESIDENT" || formData.role === "ADMIN"}
+                        required={isResidentLike(formData.role)}
                         value={formData.villaId}
                         onChange={(e) => {
                           const vid = e.target.value;
@@ -838,7 +844,7 @@ function UsersPageInner() {
                         Unit / floor *
                       </label>
                       <select
-                        required={(formData.role === "RESIDENT" || formData.role === "ADMIN") && Boolean(formData.villaId)}
+                        required={(isResidentLike(formData.role)) && Boolean(formData.villaId)}
                         disabled={!formData.villaId}
                         value={formData.unitId}
                         onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
@@ -861,7 +867,7 @@ function UsersPageInner() {
                       </label>
                       <input
                         type="date"
-                        required={formData.role === "RESIDENT" || formData.role === "ADMIN"}
+                        required={isResidentLike(formData.role)}
                         value={formData.moveInDate}
                         onChange={(e) => setFormData({ ...formData, moveInDate: e.target.value })}
                         className="input"
@@ -899,7 +905,7 @@ function UsersPageInner() {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  disabled={submitting || ((formData.role === "RESIDENT" || formData.role === "ADMIN") && villas.length === 0)}
+                  disabled={submitting || ((isResidentLike(formData.role)) && villas.length === 0)}
                   className="btn btn-primary"
                 >
                   {submitting ? (editingUser ? "Saving..." : "Creating...") : editingUser ? "Save changes" : "Create User"}
@@ -965,7 +971,7 @@ function UsersPageInner() {
                   sortedUsers.map((user) => (
                     <tr key={user.id} className="table-row">
                       <td className="table-td align-middle">
-                        {(user.role === "RESIDENT" || user.role === "ADMIN") ? (
+                        {(isResidentLike(user.role)) ? (
                           <input
                             type="checkbox"
                             checked={selectedResidentIds.has(user.id)}
@@ -994,12 +1000,12 @@ function UsersPageInner() {
                         {user.villa ? `${user.villa.villaNumber}` : "-"}
                       </td>
                       <td className="table-td text-xs">
-                        {(user.role === "RESIDENT" || user.role === "ADMIN")
+                        {(isResidentLike(user.role))
                           ? user.unit?.label ?? (user.unitId || user.linkedUnitId ? "—" : "—")
                           : "—"}
                       </td>
                       <td className="table-td">
-                        {(user.role === "RESIDENT" || user.role === "ADMIN")
+                        {(isResidentLike(user.role))
                           ? user.maintenanceBillingRole === "EXCLUDED"
                             ? "Excluded"
                             : "Primary"
