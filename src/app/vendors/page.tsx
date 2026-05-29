@@ -1,44 +1,18 @@
 "use client";
 
 import { Plus, Wrench } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-/** Must match Prisma `VendorCategory` (see GET /vendors). */
-type VendorCategoryId =
-  | "PLUMBER"
-  | "ELECTRICIAN"
-  | "CARPENTER"
-  | "PAINTER"
-  | "CLEANER"
-  | "SECURITY"
-  | "OTHER";
-
-type Vendor = {
-  id: string;
-  name: string;
-  category: VendorCategoryId;
-  phone: string;
-  email: string | null;
-  description: string | null;
-  /** API may omit — always coerce before controlled inputs */
-  isApproved?: boolean | null;
-};
-
-type VendorForm = {
-  name: string;
-  category: VendorCategoryId;
-  phone: string;
-  email: string;
-  description: string;
-  isApproved: boolean;
-};
+import { useVendors } from "@/hooks/useVendors";
+import { Vendor, VendorForm, VendorCategoryId } from "@/types/vendor";
 
 export default function VendorsPage() {
   return (
@@ -51,8 +25,7 @@ export default function VendorsPage() {
 function VendorsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [formData, setFormData] = useState<VendorForm>({
@@ -64,45 +37,23 @@ function VendorsPageInner() {
     isApproved: true
   });
   const [submitting, setSubmitting] = useState(false);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const { confirm, ConfirmUI } = useConfirm();
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadVendors = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/vendors?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setVendors(response.data.vendors ?? []);
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load vendors";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadVendors(initialOffset, controller.signal);
-    return () => controller.abort();
-  }, [loadVendors, initialOffset]);
+  const { data: vendorData, isLoading: loading } = useVendors({ limit: 50, offset: initialOffset });
+  const vendors = vendorData?.vendors ?? [];
+  const pgMeta = {
+    total: vendorData?.total ?? 0,
+    limit: vendorData?.limit ?? 50,
+    offset: vendorData?.offset ?? 0,
+  };
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    loadVendors(newOffset);
   };
 
   const handleOpenForm = (vendor?: Vendor) => {
@@ -158,7 +109,7 @@ function VendorsPageInner() {
       }
 
       handleCloseForm();
-      loadVendors(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["vendors"] });
     } catch (error: unknown) {
       const data = (error as { response?: { data?: { message?: string; issues?: { path?: (string | number)[]; message?: string }[] } } })?.response?.data;
       let message = data?.message ?? "Failed to save vendor";
@@ -178,11 +129,9 @@ function VendorsPageInner() {
     try {
       await api.delete(`/vendors/${vendorId}`);
       showToast("Vendor deleted successfully", "success");
-      loadVendors(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["vendors"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to delete vendor";
+      const message = parseApiError(error, "Failed to delete vendor").message;
       showToast(message, "error");
     }
   };

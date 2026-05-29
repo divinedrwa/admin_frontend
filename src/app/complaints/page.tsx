@@ -1,28 +1,18 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
+import { Complaint } from "@/types/complaint";
+import { useComplaints } from "@/hooks/useComplaints";
 
 const COMPLAINT_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const;
-
-type Complaint = {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  createdAt: string;
-  villa: {
-    villaNumber: string;
-    block: string;
-    ownerName: string;
-  };
-};
 
 export default function ComplaintsPage() {
   return (
@@ -35,67 +25,41 @@ export default function ComplaintsPage() {
 function ComplaintsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadComplaints = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/complaints?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setComplaints(response.data.complaints ?? []);
-        setOpenCount(response.data.openCount ?? 0);
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load complaints", "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadComplaints(initialOffset, controller.signal);
-    return () => controller.abort();
-  }, [loadComplaints, initialOffset]);
+  const queryParams = useMemo(() => ({ limit: 50, offset: initialOffset }), [initialOffset]);
+  const { data, isLoading: loading } = useComplaints(queryParams);
+  const complaints = data?.complaints ?? [];
+  const openCount = data?.openCount ?? 0;
+  const pgMeta = {
+    total: data?.total ?? 0,
+    limit: data?.limit ?? 50,
+    offset: data?.offset ?? 0,
+  };
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    // Don't call loadComplaints here — the URL change triggers useEffect
+    // Don't manually refetch — the URL change updates initialOffset which updates queryParams and triggers React Query
   };
 
   async function updateStatus(id: string, newStatus: string) {
-    const prev = complaints.find((c) => c.id === id)?.status;
-    // Optimistic update
-    setComplaints((list) => list.map((c) => (c.id === id ? { ...c, status: newStatus } : c)));
     setUpdatingId(id);
     try {
       await api.patch(`/complaints/${id}/status`, { status: newStatus });
       showToast("Status updated", "success");
-      // Reload at the current page offset (from pgMeta, not the closure)
-      loadComplaints(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["complaints"] });
     } catch {
-      // Rollback
-      if (prev) setComplaints((list) => list.map((c) => (c.id === id ? { ...c, status: prev } : c)));
       showToast("Failed to update status", "error");
     } finally {
       setUpdatingId(null);
     }
   }
-
-  const [openCount, setOpenCount] = useState(0);
 
   return (
     <AppShell title="Complaints">

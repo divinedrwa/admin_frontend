@@ -1,28 +1,21 @@
 "use client";
 
 import { CarFront, Plus, Search } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { sortByVillaNumber } from "@/utils/villaSort";
-
-type Vehicle = {
-  id: string;
-  vehicleNumber: string;
-  vehicleType?: "TWO_WHEELER" | "FOUR_WHEELER" | "BICYCLE" | "OTHER" | string | null;
-  model: string;
-  color: string;
-  parkingSlot: string;
-  villa: {
-    villaNumber: string;
-    block: string;
-  };
-};
+import { useVehicles } from "@/hooks/useVehicles";
+import { useVillas } from "@/hooks/useVillas";
+import { Vehicle, VehicleForm } from "@/types/vehicle";
+import { VillaOption } from "@/types/villa";
 
 function formatVehicleType(vehicleType: Vehicle["vehicleType"]): string {
   const raw = typeof vehicleType === "string" ? vehicleType.trim() : "";
@@ -32,22 +25,6 @@ function formatVehicleType(vehicleType: Vehicle["vehicleType"]): string {
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
-
-type Villa = {
-  id: string;
-  villaNumber: string;
-  block: string;
-  ownerName: string;
-};
-
-type VehicleForm = {
-  vehicleNumber: string;
-  vehicleType: "TWO_WHEELER" | "FOUR_WHEELER" | "BICYCLE" | "OTHER";
-  model: string;
-  color: string;
-  parkingSlot: string;
-  villaId: string;
-};
 
 export default function VehiclesPage() {
   return (
@@ -60,9 +37,7 @@ export default function VehiclesPage() {
 function VehiclesPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [villas, setVillas] = useState<Villa[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [formData, setFormData] = useState<VehicleForm>({
@@ -74,72 +49,39 @@ function VehiclesPageInner() {
     villaId: ""
   });
   const [submitting, setSubmitting] = useState(false);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const [searchQuery, setSearchQuery] = useState("");
   const { confirm, ConfirmUI } = useConfirm();
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadVehicles = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/vehicles?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setVehicles(
-          sortByVillaNumber(
-            (response.data.vehicles ?? []) as Vehicle[],
-            (v) => v.villa?.villaNumber ?? null,
-          ),
-        );
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load vehicles";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
+  const { data: vehicleData, isLoading: loading } = useVehicles({ limit: 50, offset: initialOffset });
+  const vehicles = useMemo(
+    () => sortByVillaNumber(
+      (vehicleData?.vehicles ?? []) as Vehicle[],
+      (v) => v.villa?.villaNumber ?? null,
+    ),
+    [vehicleData?.vehicles],
+  );
+  const pgMeta = {
+    total: vehicleData?.total ?? 0,
+    limit: vehicleData?.limit ?? 50,
+    offset: vehicleData?.offset ?? 0,
+  };
 
-  const loadVillas = useCallback((signal?: AbortSignal) => {
-    api
-      .get("/villas", { signal })
-      .then((response) =>
-        setVillas(
-          sortByVillaNumber(
-            (response.data.villas ?? []) as Villa[],
-            (v) => v.villaNumber,
-          ),
-        ),
-      )
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load villas";
-        showToast(message, "error");
-      });
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadVehicles(initialOffset, controller.signal);
-    loadVillas(controller.signal);
-    return () => controller.abort();
-  }, [loadVehicles, loadVillas, initialOffset]);
+  const { data: villaData } = useVillas();
+  const villas = useMemo(
+    () => sortByVillaNumber(
+      (villaData?.villas ?? []) as VillaOption[],
+      (v) => v.villaNumber,
+    ),
+    [villaData?.villas],
+  );
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    loadVehicles(newOffset);
   };
 
   /* ---- Summary stats ---- */
@@ -236,10 +178,10 @@ function VehiclesPageInner() {
       }
 
       handleCloseForm();
-      loadVehicles(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
     } catch (error: unknown) {
-      const data = (error as { response?: { data?: { message?: string; issues?: { path?: (string | number)[]; message?: string }[] } } })?.response?.data;
-      let message = data?.message ?? (editingVehicle ? "Failed to update vehicle" : "Failed to register vehicle");
+      const data = (error as { response?: { data?: { issues?: { path?: (string | number)[]; message?: string }[] } } })?.response?.data;
+      let message = parseApiError(error, editingVehicle ? "Failed to update vehicle" : "Failed to register vehicle").message;
       const firstIssue = data?.issues?.[0];
       if (firstIssue?.path?.length && firstIssue.message) {
         message = `${message}: ${firstIssue.path.join(".")} — ${firstIssue.message}`;
@@ -256,12 +198,9 @@ function VehiclesPageInner() {
     try {
       await api.delete(`/vehicles/${id}`);
       showToast("Vehicle deleted successfully", "success");
-      loadVehicles(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to delete vehicle";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Failed to delete vehicle").message, "error");
     }
   };
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { CalendarRange, Plus } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { Pagination } from "@/components/Pagination";
@@ -10,28 +11,8 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-type AmenityBooking = {
-  id: string;
-  startTime: string;
-  endTime: string;
-  status: string;
-  totalPrice?: number;
-  amenity?: {
-    name: string;
-    type: string;
-  } | null;
-  resident?: {
-    name: string;
-  } | null;
-};
-
-type Amenity = {
-  id: string;
-  name: string;
-  type: string;
-  pricePerHour?: number;
-};
+import { useAmenityBookings, useAmenities } from "@/hooks/useAmenities";
+import { AmenityBooking } from "@/types/amenity";
 
 type Resident = {
   id: string;
@@ -49,21 +30,24 @@ export default function AmenityBookingsPage() {
 function AmenityBookingsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [bookings, setBookings] = useState<AmenityBooking[]>([]);
-  const [amenities, setAmenities] = useState<Amenity[]>([]);
+  const queryClient = useQueryClient();
   const [residents, setResidents] = useState<Resident[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingBooking, setEditingBooking] = useState<AmenityBooking | null>(null);
   const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const { confirm, ConfirmUI } = useConfirm();
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [formData, setFormData] = useState({
     amenityId: "",
@@ -74,70 +58,38 @@ function AmenityBookingsPageInner() {
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadBookings = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/amenity-bookings?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setBookings(response.data.bookings ?? []);
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load bookings", "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
+  const bookingQueryParams = useMemo(() => ({
+    limit: 50,
+    offset: initialOffset,
+    search: debouncedSearch || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+  }), [initialOffset, debouncedSearch, statusFilter]);
 
-  const loadDropdownData = (signal?: AbortSignal) => {
-    api
-      .get("/amenities", { signal })
-      .then((response) => setAmenities(response.data.amenities ?? []))
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load amenities", "error");
-      });
-
-    api
-      .get("/users?role=RESIDENT", { signal })
-      .then((response) => setResidents(response.data.users ?? []))
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load residents", "error");
-      });
+  const { data: bookingsData, isLoading: loading } = useAmenityBookings(bookingQueryParams);
+  const bookings = bookingsData?.bookings ?? [];
+  const pgMeta = {
+    total: bookingsData?.total ?? 0,
+    limit: bookingsData?.limit ?? 50,
+    offset: bookingsData?.offset ?? 0,
   };
 
+  const { data: amenitiesData } = useAmenities();
+  const amenities = amenitiesData?.amenities ?? [];
+
+  // Residents dropdown still loaded manually (no dedicated hook)
   useEffect(() => {
-    const controller = new AbortController();
-    loadBookings(initialOffset, controller.signal);
-    loadDropdownData(controller.signal);
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadBookings]);
+    api
+      .get("/users?role=RESIDENT")
+      .then((response) => setResidents(response.data.users ?? []))
+      .catch(() => showToast("Failed to load residents", "error"));
+  }, []);
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    loadBookings(newOffset);
   };
-
-  // Filter and search logic (client-side within current page)
-  const filteredBookings = bookings.filter((booking) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesAmenity = (booking.amenity?.name?.toLowerCase() ?? "").includes(query);
-      const matchesResident = (booking.resident?.name?.toLowerCase() ?? "").includes(query);
-      if (!matchesAmenity && !matchesResident) return false;
-    }
-    if (statusFilter !== "all" && booking.status !== statusFilter) return false;
-    return true;
-  });
 
   const statusCounts = {
     PENDING: bookings.filter((b) => b.status === "PENDING").length,
@@ -152,13 +104,11 @@ function AmenityBookingsPageInner() {
     try {
       await api.patch(`/amenity-bookings/${bookingId}/status`, { status });
       showToast("Status updated", "success");
-      loadBookings(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["amenityBookings"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to update status";
+      const message = parseApiError(error, "Failed to update status").message;
       showToast(message, "error");
-      loadBookings(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["amenityBookings"] });
     } finally {
       setUpdatingStatusId(null);
     }
@@ -206,7 +156,7 @@ function AmenityBookingsPageInner() {
     try {
       await api.delete(`/amenity-bookings/${bookingId}`);
       showToast("Booking deleted successfully", "success");
-      loadBookings(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["amenityBookings"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete booking").message;
       showToast(message, "error");
@@ -252,7 +202,7 @@ function AmenityBookingsPageInner() {
       }
 
       handleCloseForm();
-      loadBookings(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["amenityBookings"] });
     } catch (error: unknown) {
       const message = parseApiError(error, editingBooking ? "Failed to update booking" : "Failed to book amenity").message;
       showToast(message, "error");
@@ -313,7 +263,7 @@ function AmenityBookingsPageInner() {
             </div>
           </div>
           <div className="mt-3 text-sm text-fg-secondary">
-            Showing {filteredBookings.length} of {bookings.length} bookings on this page
+            Showing {bookings.length} of {pgMeta.total} bookings
           </div>
         </div>
 
@@ -432,7 +382,7 @@ function AmenityBookingsPageInner() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading bookings...</p>
             </div>
-          ) : filteredBookings.length === 0 && pgMeta.total === 0 ? (
+          ) : bookings.length === 0 && pgMeta.total === 0 ? (
             <div className="empty-state">
               <span className="empty-state-icon">📅</span>
               <p className="empty-state-title">No bookings found</p>
@@ -456,7 +406,7 @@ function AmenityBookingsPageInner() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredBookings.map((booking) => (
+                    {bookings.map((booking) => (
                       <tr key={booking.id} className="table-row">
                         <td className="table-td">
                           <div className="font-medium text-fg-primary">{booking.amenity?.name || "N/A"}</div>

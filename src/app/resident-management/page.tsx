@@ -10,7 +10,8 @@ import {
   UserX,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
@@ -19,113 +20,50 @@ import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
-
-type Resident = {
-  id: string;
-  username: string | null;
-  name: string;
-  email: string;
-  phone: string | null;
-  villaId: string | null;
-  villa: {
-    villaNumber: string;
-    block: string;
-  } | null;
-  type: "Owner" | "Tenant" | "Family";
-  moveInDate: string | null;
-  moveOutDate: string | null;
-  isActive: boolean;
-  daysSinceMove: number;
-  createdAt: string;
-};
-
-type Statistics = {
-  totalResidents: number;
-  activeResidents: number;
-  inactiveResidents: number;
-  owners: number;
-  tenants: number;
-  newThisMonth: number;
-  movedOutThisMonth: number;
-  occupancyRate: number;
-};
+import { useResidents } from "@/hooks/useResidentManagement";
+import { Resident, ResidentStatistics } from "@/types/resident";
 
 export default function ResidentManagementPage() {
-  const [residents, setResidents] = useState<Resident[]>([]);
-  const [filteredResidents, setFilteredResidents] = useState<Resident[]>([]);
-  const [statistics, setStatistics] = useState<Statistics | null>(null);
-  const [loading, setLoading] = useState(false);
-  
+  const queryClient = useQueryClient();
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "owner" | "tenant">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Move-out modal
   const [showMoveOutModal, setShowMoveOutModal] = useState(false);
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
   const [moveOutDate, setMoveOutDate] = useState(new Date().toISOString().split("T")[0]);
   const [moveOutReason, setMoveOutReason] = useState("");
+  const [mutating, setMutating] = useState(false);
   const { confirm, ConfirmUI } = useConfirm();
 
-  // Fetch residents
-  const fetchResidents = async (signal?: AbortSignal) => {
-    try {
-      setLoading(true);
-      const response = await api.get("/resident-management/overview", { signal });
-      const rows = sortByVillaNumber(
-        (response.data.residents ?? []) as Resident[],
-        (r) => r.villa?.villaNumber ?? null,
-      );
-      setResidents(rows);
-      setFilteredResidents(rows);
-      setStatistics(response.data.statistics);
-    } catch (error: unknown) {
-      if ((error as { name?: string }).name === "CanceledError") return;
-      showToast(parseApiError(error, "Failed to load residents").message, "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Build query params for server-side filtering
+  const residentQueryParams = useMemo(() => {
+    const p: Record<string, unknown> = {};
+    if (debouncedSearch) p.search = debouncedSearch;
+    if (statusFilter !== "all") p.status = statusFilter;
+    if (typeFilter !== "all") p.type = typeFilter;
+    return p;
+  }, [debouncedSearch, statusFilter, typeFilter]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchResidents(controller.signal);
-    return () => controller.abort();
-  }, []);
-
-  // Apply filters
-  useEffect(() => {
-    let filtered = residents;
-
-    // Status filter
-    if (statusFilter === "active") {
-      filtered = filtered.filter((r) => r.isActive);
-    } else if (statusFilter === "inactive") {
-      filtered = filtered.filter((r) => !r.isActive);
-    }
-
-    // Type filter
-    if (typeFilter === "owner") {
-      filtered = filtered.filter((r) => r.type === "Owner");
-    } else if (typeFilter === "tenant") {
-      filtered = filtered.filter((r) => r.type === "Tenant");
-    }
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (r) =>
-          r.name.toLowerCase().includes(query) ||
-          r.email.toLowerCase().includes(query) ||
-          (r.villa?.villaNumber.toLowerCase().includes(query)) ||
-          (r.username && r.username.toLowerCase().includes(query))
-      );
-    }
-
-    setFilteredResidents(filtered);
-  }, [statusFilter, typeFilter, searchQuery, residents]);
+  // Fetch residents via React Query
+  const { data: residentData, isLoading: loading } = useResidents(residentQueryParams);
+  const residents = useMemo(
+    () => sortByVillaNumber(
+      (residentData?.residents ?? []) as Resident[],
+      (r) => r.villa?.villaNumber ?? null,
+    ),
+    [residentData?.residents],
+  );
+  const statistics: ResidentStatistics | null = residentData?.statistics ?? null;
 
   const handleMoveOut = (resident: Resident) => {
     setSelectedResident(resident);
@@ -136,7 +74,7 @@ export default function ResidentManagementPage() {
     if (!selectedResident) return;
 
     try {
-      setLoading(true);
+      setMutating(true);
       await api.post("/resident-management/move-out", {
         userId: selectedResident.id,
         moveOutDate: new Date(moveOutDate).toISOString(),
@@ -146,11 +84,11 @@ export default function ResidentManagementPage() {
       showToast("Move-out processed successfully", "success");
       setShowMoveOutModal(false);
       setMoveOutReason("");
-      fetchResidents();
+      queryClient.invalidateQueries({ queryKey: ["resident-management"] });
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to process move-out").message, "error");
     } finally {
-      setLoading(false);
+      setMutating(false);
     }
   };
 
@@ -158,14 +96,14 @@ export default function ResidentManagementPage() {
     if (!(await confirm({ title: "Reactivate resident", message: "Are you sure you want to reactivate this resident?", variant: "primary", confirmLabel: "Reactivate" }))) return;
 
     try {
-      setLoading(true);
+      setMutating(true);
       await api.patch(`/resident-management/${residentId}/reactivate`);
       showToast("Resident reactivated successfully", "success");
-      fetchResidents();
+      queryClient.invalidateQueries({ queryKey: ["resident-management"] });
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to reactivate resident").message, "error");
     } finally {
-      setLoading(false);
+      setMutating(false);
     }
   };
 
@@ -299,7 +237,7 @@ export default function ResidentManagementPage() {
         </div>
 
         <div className="text-sm text-fg-secondary">
-          Showing {filteredResidents.length} of {residents.length} residents
+          Showing {residents.length} residents
         </div>
       </div>
 
@@ -317,7 +255,7 @@ export default function ResidentManagementPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredResidents.map((resident) => (
+            {residents.map((resident) => (
               <tr key={resident.id} className="table-row">
                 <td className="table-td">
                   <div>
@@ -402,7 +340,7 @@ export default function ResidentManagementPage() {
           </tbody>
         </table>
 
-        {filteredResidents.length === 0 && (
+        {residents.length === 0 && (
           <div className="empty-state">
             <span className="empty-state-icon">🏠</span>
             <p className="empty-state-title">No residents found</p>
@@ -452,10 +390,10 @@ export default function ResidentManagementPage() {
               <div className="flex space-x-3">
                 <button
                   onClick={submitMoveOut}
-                  disabled={loading}
+                  disabled={mutating}
                   className="btn btn-danger flex-1"
                 >
-                  {loading ? "Processing..." : "Confirm Move-out"}
+                  {mutating ? "Processing..." : "Confirm Move-out"}
                 </button>
                 <button
                   onClick={() => {
@@ -471,7 +409,7 @@ export default function ResidentManagementPage() {
           </div>
       </Modal>
 
-        {loading && !showMoveOutModal && (
+        {mutating && !showMoveOutModal && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
             <div className="bg-surface rounded-lg p-6">
               <div className="loading-spinner w-8 h-8 mx-auto"></div>

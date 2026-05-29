@@ -1,45 +1,20 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
-
-type SOSAlert = {
-  id: string;
-  emergencyType: string;
-  message: string | null;
-  status: string;
-  villa: {
-    villaNumber: string;
-    ownerName: string;
-    block: string | null;
-  };
-  user: {
-    name: string;
-    phone: string | null;
-  };
-  responseTime: number | null;
-  createdAt: string;
-  acknowledgedAt: string | null;
-  resolvedAt: string | null;
-};
-
-type Villa = {
-  id: string;
-  villaNumber: string;
-  block: string | null;
-  ownerName: string;
-};
+import { useSosAlerts } from "@/hooks/useSosAlerts";
+import { useVillas } from "@/hooks/useVillas";
+import { VillaOption } from "@/types/villa";
 
 export default function SOSAlertsPage() {
-  const [alerts, setAlerts] = useState<SOSAlert[]>([]);
-  const [villas, setVillas] = useState<Villa[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"all" | "active" | "resolved">("all");
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -49,46 +24,19 @@ export default function SOSAlertsPage() {
     message: ""
   });
 
-  const loadAlerts = useCallback((signal?: AbortSignal) => {
-    setLoading(true);
-    const endpoint = filter === "active" ? "/sos-alerts/active" : "/sos-alerts";
-    api
-      .get(endpoint, { signal })
-      .then((response) => setAlerts(response.data.alerts ?? []))
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load SOS alerts";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  }, [filter]);
+  // useSosAlerts only supports "all" | "active", so pass "active" only when filter is "active"
+  const queryFilter = filter === "active" ? "active" : "all";
+  const { data: alertData, isLoading: loading } = useSosAlerts(queryFilter, { refetchInterval: 30000 });
+  const alerts = alertData?.alerts ?? [];
 
-  const loadVillas = (signal?: AbortSignal) => {
-    api
-      .get("/villas", { signal })
-      .then((response) =>
-        setVillas(
-          sortByVillaNumber(
-            (response.data.villas ?? []) as Villa[],
-            (v) => v.villaNumber,
-          ),
-        ),
-      )
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load villas", "error");
-      });
-  };
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadAlerts(controller.signal);
-    loadVillas(controller.signal);
-    const interval = setInterval(() => loadAlerts(), 30000); // Refresh every 30 seconds
-    return () => { controller.abort(); clearInterval(interval); };
-  }, [loadAlerts]);
+  const { data: villaData } = useVillas();
+  const villas = useMemo(
+    () => sortByVillaNumber(
+      (villaData?.villas ?? []) as VillaOption[],
+      (v) => v.villaNumber,
+    ),
+    [villaData?.villas],
+  );
 
   const handleOpenForm = () => {
     setFormData({
@@ -123,7 +71,7 @@ export default function SOSAlertsPage() {
       await api.post("/sos-alerts", payload);
       showToast("SOS Alert created successfully", "success");
       handleCloseForm();
-      loadAlerts();
+      queryClient.invalidateQueries({ queryKey: ["sos-alerts"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to create SOS alert").message;
       showToast(message, "error");
@@ -136,11 +84,9 @@ export default function SOSAlertsPage() {
     try {
       await api.patch(`/sos-alerts/${alertId}/acknowledge`);
       showToast("Alert acknowledged", "success");
-      loadAlerts();
+      queryClient.invalidateQueries({ queryKey: ["sos-alerts"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to acknowledge alert";
+      const message = parseApiError(error, "Failed to acknowledge alert").message;
       showToast(message, "error");
     }
   };
@@ -149,11 +95,9 @@ export default function SOSAlertsPage() {
     try {
       await api.patch(`/sos-alerts/${alertId}/start`);
       showToast("Marked in progress", "success");
-      loadAlerts();
+      queryClient.invalidateQueries({ queryKey: ["sos-alerts"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to start response";
+      const message = parseApiError(error, "Failed to start response").message;
       showToast(message, "error");
     }
   };
@@ -162,11 +106,9 @@ export default function SOSAlertsPage() {
     try {
       await api.patch(`/sos-alerts/${alertId}/resolve`);
       showToast("Alert resolved", "success");
-      loadAlerts();
+      queryClient.invalidateQueries({ queryKey: ["sos-alerts"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to resolve alert";
+      const message = parseApiError(error, "Failed to resolve alert").message;
       showToast(message, "error");
     }
   };
@@ -283,7 +225,7 @@ export default function SOSAlertsPage() {
               + Create Alert (Test)
             </button>
             <button
-              onClick={() => loadAlerts()}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["sos-alerts"] })}
               className="btn btn-ghost"
             >
               Refresh

@@ -12,6 +12,7 @@ import {
   rememberSocietyAdminPassword,
 } from "@/lib/superAdminStoredCredentials";
 import { cssVar } from "@/theme/tokens";
+import { parseApiError } from "@/utils/errorHandler";
 
 type SocietyAdminSummary = {
   id: string;
@@ -138,9 +139,7 @@ export default function SuperAdminConsolePage() {
       setNewAddress("");
       await loadSocieties();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Could not create society";
+      const message = parseApiError(error, "Could not create society").message;
       showToast(message, "error");
     } finally {
       setCreatingSoc(false);
@@ -175,9 +174,7 @@ export default function SuperAdminConsolePage() {
       setAdminPhone("");
       await loadSocieties();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Could not create admin user";
+      const message = parseApiError(error, "Could not create admin user").message;
       showToast(message, "error");
     } finally {
       setCreatingAdmin(false);
@@ -214,9 +211,7 @@ export default function SuperAdminConsolePage() {
       setDetailLoading(false);
       router.push("/dashboard");
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Could not open society admin dashboard";
+      const message = parseApiError(error, "Could not open society admin dashboard").message;
       showToast(message, "error");
     } finally {
       setOpeningTenantSession(false);
@@ -244,9 +239,7 @@ export default function SuperAdminConsolePage() {
       setEditRow(null);
       await loadSocieties();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Could not update society";
+      const message = parseApiError(error, "Could not update society").message;
       showToast(message, "error");
     } finally {
       setSavingEdit(false);
@@ -272,9 +265,7 @@ export default function SuperAdminConsolePage() {
       setDeleteConfirmText("");
       await loadSocieties();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Could not delete society";
+      const message = parseApiError(error, "Could not delete society").message;
       showToast(message, "error");
     } finally {
       setDeleting(false);
@@ -292,9 +283,7 @@ export default function SuperAdminConsolePage() {
       showToast(`Archived "${s.name}"`, "success");
       await loadSocieties();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Could not archive society";
+      const message = parseApiError(error, "Could not archive society").message;
       showToast(message, "error");
     } finally {
       setArchivingId(null);
@@ -310,9 +299,7 @@ export default function SuperAdminConsolePage() {
       showToast(`Restored "${s.name}" — set to ACTIVE in Edit to re-enable logins`, "success");
       await loadSocieties();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Could not restore society";
+      const message = parseApiError(error, "Could not restore society").message;
       showToast(message, "error");
     } finally {
       setArchivingId(null);

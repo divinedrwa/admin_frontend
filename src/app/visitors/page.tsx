@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DoorOpen, UserPlus, Users } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
@@ -9,47 +10,14 @@ import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-type VisitorVilla = {
-  villa: {
-    villaNumber: string;
-    block: string;
-  };
-};
-
-type Visitor = {
-  id: string;
-  name: string;
-  phone: string;
-  purpose: string;
-  visitorType: string;
-  vehicleNumber: string | null;
-  checkInAt: string;
-  checkOutAt: string | null;
-  villaVisits: VisitorVilla[];
-  gate: {
-    name: string;
-  } | null;
-};
-
-type Villa = {
-  id: string;
-  villaNumber: string;
-  block: string;
-  ownerName: string;
-};
-
-type Gate = {
-  id: string;
-  name: string;
-  location: string;
-};
+import { useVisitors } from "@/hooks/useVisitors";
+import { useVillas } from "@/hooks/useVillas";
+import { useGates } from "@/hooks/useGates";
+import { Visitor } from "@/types/visitor";
+import { VillaOption } from "@/types/villa";
 
 export default function VisitorsPage() {
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [villas, setVillas] = useState<Villa[]>([]);
-  const [gates, setGates] = useState<Gate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"all" | "active">("all");
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -58,9 +26,15 @@ export default function VisitorsPage() {
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -72,55 +46,30 @@ export default function VisitorsPage() {
     gateId: ""
   });
 
-  const loadVisitors = useCallback((signal?: AbortSignal) => {
-    setLoading(true);
-    const endpoint = filter === "active" ? "/visitors/active/list" : "/visitors";
-    api
-      .get(endpoint, { signal })
-      .then((response) => {
-        const list = (response.data.visitors ?? []) as Visitor[];
-        setVisitors(
-          list.map((v) => ({
-            ...v,
-            villaVisits: sortByVillaNumber(
-              v.villaVisits ?? [],
-              (vv) => vv.villa?.villaNumber ?? null,
-            ),
-          })),
-        );
-      })
-      .catch((_err) => { if (!signal?.aborted) showToast("Failed to load visitors", "error"); })
-      .finally(() => setLoading(false));
-  }, [filter]);
+  const visitorQueryParams = useMemo(() => {
+    const p: Record<string, unknown> = {};
+    if (debouncedSearch) p.search = debouncedSearch;
+    if (typeFilter !== "all") p.visitorType = typeFilter;
+    return p;
+  }, [debouncedSearch, typeFilter]);
 
-  const loadVillas = (signal?: AbortSignal) => {
-    api
-      .get("/villas", { signal })
-      .then((response) =>
-        setVillas(
-          sortByVillaNumber(
-            (response.data.villas ?? []) as Villa[],
-            (v) => v.villaNumber,
-          ),
-        ),
-      )
-      .catch((_err) => { if (!signal?.aborted) showToast("Failed to load villas", "error"); });
-  };
+  const { data: visitorsData, isLoading: loading } = useVisitors(filter, visitorQueryParams);
+  const visitors = ((visitorsData?.visitors ?? []) as Visitor[]).map((v) => ({
+    ...v,
+    villaVisits: sortByVillaNumber(
+      v.villaVisits ?? [],
+      (vv) => vv.villa?.villaNumber ?? null,
+    ),
+  }));
 
-  const loadGates = (signal?: AbortSignal) => {
-    api
-      .get("/gates", { signal })
-      .then((response) => setGates(response.data.gates ?? []))
-      .catch((_err) => { if (!signal?.aborted) showToast("Failed to load gates", "error"); });
-  };
+  const { data: villasData } = useVillas();
+  const villas = sortByVillaNumber(
+    ((villasData?.villas ?? []) as VillaOption[]),
+    (v) => v.villaNumber,
+  );
 
-  useEffect(() => {
-    const ac = new AbortController();
-    loadVisitors(ac.signal);
-    loadVillas(ac.signal);
-    loadGates(ac.signal);
-    return () => ac.abort();
-  }, [loadVisitors]);
+  const { data: gatesData } = useGates();
+  const gates = gatesData?.gates ?? [];
 
   const handleOpenForm = () => {
     setFormData({
@@ -130,7 +79,7 @@ export default function VisitorsPage() {
       visitorType: "GUEST",
       vehicleNumber: "",
       villaIds: [],
-      gateId: gates[0]?.id || ""
+      gateId: (gates[0] as { id: string } | undefined)?.id || ""
     });
     setShowForm(true);
   };
@@ -148,7 +97,7 @@ export default function VisitorsPage() {
     try {
       await api.delete(`/visitors/${visitorId}`);
       showToast("Visitor record deleted successfully", "success");
-      loadVisitors();
+      queryClient.invalidateQueries({ queryKey: ["visitors"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete visitor").message;
       showToast(message, "error");
@@ -201,7 +150,7 @@ export default function VisitorsPage() {
       await api.post("/visitors", payload);
       showToast("Visitor checked in successfully", "success");
       handleCloseForm();
-      loadVisitors();
+      queryClient.invalidateQueries({ queryKey: ["visitors"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to check in visitor").message;
       showToast(message, "error");
@@ -239,27 +188,9 @@ export default function VisitorsPage() {
 
   const activeCount = visitors.filter((v) => !v.checkOutAt).length;
 
-  // Filter and search logic
-  const filteredVisitors = visitors.filter((visitor) => {
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesName = visitor.name.toLowerCase().includes(query);
-      const matchesPhone = visitor.phone.toLowerCase().includes(query);
-      if (!matchesName && !matchesPhone) return false;
-    }
-
-    // Type filter
-    if (typeFilter !== "all" && visitor.visitorType !== typeFilter) {
-      return false;
-    }
-
-    return true;
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(filteredVisitors.length / itemsPerPage);
-  const paginatedVisitors = filteredVisitors.slice(
+  // Pagination (applied to server-filtered results)
+  const totalPages = Math.ceil(visitors.length / itemsPerPage);
+  const paginatedVisitors = visitors.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -267,7 +198,7 @@ export default function VisitorsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, typeFilter, filter]);
+  }, [debouncedSearch, typeFilter, filter]);
 
   return (
     <AppShell title="Visitor Management">
@@ -327,7 +258,7 @@ export default function VisitorsPage() {
 
           <div className="mt-4 flex justify-between items-center text-sm">
             <span className="text-fg-secondary">
-              Showing {paginatedVisitors.length} of {filteredVisitors.length} visitors
+              Showing {paginatedVisitors.length} of {visitors.length} visitors
             </span>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">
@@ -520,7 +451,7 @@ export default function VisitorsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredVisitors.length === 0 ? (
+                {visitors.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="table-td">
                       <div className="empty-state">

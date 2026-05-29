@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Modal } from "@/components/Modal";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -33,44 +34,49 @@ export default function GuardOperationsPage() {
   const [garbageEvent, setGarbageEvent] = useState<GarbageEvent | null>(null);
   const [_loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [waterToggleOpen, setWaterToggleOpen] = useState(false);
+  const [waterToggleReason, setWaterToggleReason] = useState("");
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback((signal?: AbortSignal) => {
     Promise.all([
-      api.get("/water-supply/status"),
-      api.get("/garbage-collection/active"),
+      api.get("/water-supply/status", { signal }),
+      api.get("/garbage-collection/active", { signal }),
     ])
       .then(([waterRes, garbageRes]) => {
         setWaterStatus(waterRes.data.status ?? []);
         setGarbageEvent(garbageRes.data.isInside ? garbageRes.data.event : null);
       })
       .catch((error: unknown) => {
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load data";
-        showToast(message, "error");
+        if ((error as { name?: string }).name === "CanceledError") return;
+        showToast(parseApiError(error, "Failed to load data").message, "error");
       })
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
     const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [loadData]);
 
-  const handleToggleWater = async () => {
+  const confirmWaterToggle = async () => {
     if (waterStatus.length === 0) return;
     const gate = waterStatus[0];
     const turnOn = gate.status !== "ON";
-    const reason = window.prompt("Reason for status change (optional):") ?? undefined;
     try {
       setActionLoading(true);
       await api.post("/water-supply/toggle", {
         gateId: gate.gateId,
         turnedOn: turnOn,
-        reason: reason || undefined,
+        reason: waterToggleReason || undefined,
       });
       showToast(`Water supply turned ${turnOn ? "ON" : "OFF"}`, "success");
+      setWaterToggleOpen(false);
+      setWaterToggleReason("");
       loadData();
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to toggle water supply").message, "error");
@@ -228,7 +234,7 @@ export default function GuardOperationsPage() {
           <div className="flex gap-3">
             <button
               className="btn btn-primary"
-              onClick={handleToggleWater}
+              onClick={() => { setWaterToggleReason(""); setWaterToggleOpen(true); }}
               disabled={actionLoading}
             >
               Toggle Water Supply
@@ -259,6 +265,34 @@ export default function GuardOperationsPage() {
           </div>
         </div>
       </div>
+
+      <Modal open={waterToggleOpen} onClose={() => setWaterToggleOpen(false)}>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-fg-primary">Toggle water supply</h3>
+          </div>
+          <div className="card-body space-y-3">
+            <p className="text-sm text-fg-secondary">
+              Water will be turned <strong>{waterStatus[0]?.status === "ON" ? "OFF" : "ON"}</strong> for {waterStatus[0]?.gate ?? "the gate"}.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-fg-primary mb-1">Reason (optional)</label>
+              <input
+                value={waterToggleReason}
+                onChange={(e) => setWaterToggleReason(e.target.value)}
+                className="input"
+                placeholder="e.g. Scheduled maintenance"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" className="btn btn-ghost text-sm" onClick={() => setWaterToggleOpen(false)}>Cancel</button>
+              <button type="button" className="btn btn-primary text-sm" disabled={actionLoading} onClick={() => void confirmWaterToggle()}>
+                {actionLoading ? "Saving…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </AppShell>
   );
 }

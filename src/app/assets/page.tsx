@@ -52,12 +52,14 @@ export default function AssetsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), pageSize: "20" });
+      const limit = 20;
+      const offset = (page - 1) * limit;
+      const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
       if (catFilter) params.set("category", catFilter);
       if (condFilter) params.set("condition", condFilter);
       const { data } = await api.get(`/assets?${params}`);
       setAssets(data.assets);
-      setTotalPages(data.totalPages || 1);
+      setTotalPages(Math.ceil((data.total || 1) / limit));
     } catch { /* ignore */ } finally { setLoading(false); }
   }, [page, catFilter, condFilter]);
 

@@ -1,31 +1,19 @@
 "use client";
 
 import { Plus, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-type Incident = {
-  id: string;
-  title: string;
-  description: string;
-  severity: string;
-  location?: string;
-  photoUrl?: string;
-  resolvedAt?: string;
-  createdAt: string;
-  guard: {
-    name: string;
-  };
-};
+import { Incident } from "@/types/incident";
+import { useIncidents } from "@/hooks/useIncidents";
 
 export default function IncidentsPage() {
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingIncident, setEditingIncident] = useState<Incident | null>(null);
@@ -34,44 +22,30 @@ export default function IncidentsPage() {
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
-  
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const incidentQueryParams = useMemo(() => {
+    const p: Record<string, unknown> = {};
+    if (debouncedSearch) p.search = debouncedSearch;
+    if (severityFilter !== "all") p.severity = severityFilter;
+    return p;
+  }, [debouncedSearch, severityFilter]);
+
+  const { data, isLoading: loading } = useIncidents(incidentQueryParams);
+  const incidents = data?.incidents ?? [];
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     severity: "MEDIUM",
     location: "",
     photoUrl: ""
-  });
-
-  const loadIncidents = (signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get("/incidents", { signal })
-      .then((response) => setIncidents(response.data.incidents ?? []))
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load incidents", "error");
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadIncidents(controller.signal);
-    return () => controller.abort();
-  }, []);
-
-  // Filter and search logic
-  const filteredIncidents = incidents.filter((incident) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesTitle = incident.title.toLowerCase().includes(query);
-      const matchesDesc = incident.description.toLowerCase().includes(query);
-      if (!matchesTitle && !matchesDesc) return false;
-    }
-    if (severityFilter !== "all" && incident.severity !== severityFilter) return false;
-    return true;
   });
 
   const severityCounts = {
@@ -119,7 +93,7 @@ export default function IncidentsPage() {
     try {
       await api.delete(`/incidents/${incidentId}`);
       showToast("Incident deleted successfully", "success");
-      loadIncidents();
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete incident").message;
       showToast(message, "error");
@@ -156,7 +130,7 @@ export default function IncidentsPage() {
       }
 
       handleCloseForm();
-      loadIncidents();
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
     } catch (error: unknown) {
       const message = parseApiError(error, editingIncident ? "Failed to update incident" : "Failed to report incident").message;
       showToast(message, "error");
@@ -227,7 +201,7 @@ export default function IncidentsPage() {
             </div>
           </div>
           <div className="mt-3 text-sm text-fg-secondary">
-            Showing {filteredIncidents.length} of {incidents.length} incidents
+            Showing {incidents.length} incidents
           </div>
         </div>
 
@@ -338,7 +312,7 @@ export default function IncidentsPage() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading incidents...</p>
             </div>
-          ) : filteredIncidents.length === 0 ? (
+          ) : incidents.length === 0 ? (
             <div className="card">
               <div className="empty-state">
                 <span className="empty-state-icon">🔒</span>
@@ -349,7 +323,7 @@ export default function IncidentsPage() {
               </div>
             </div>
           ) : (
-            filteredIncidents.map((incident) => (
+            incidents.map((incident) => (
               <div
                 key={incident.id}
                 className="card !rounded-2xl p-6 border-l-4 !border-l-brand-danger"

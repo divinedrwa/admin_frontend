@@ -1,46 +1,19 @@
 "use client";
 
 import { BellRing, Megaphone, Plus } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-type ResidentOption = {
-  id: string;
-  name: string;
-  email: string;
-  villa?: { villaNumber: string | null; block: string | null } | null;
-};
-
-type Notice = {
-  id: string;
-  title: string;
-  content: string;
-  fileUrl: string | null;
-  createdAt: string;
-  category?: string;
-  priority?: string;
-  isUrgent?: boolean;
-  recipients?: Array<{
-    userId: string;
-    user: { id: string; name: string; email: string; villa?: { villaNumber: string | null; block: string | null } };
-  }>;
-};
-
-type NoticeForm = {
-  title: string;
-  content: string;
-  fileUrl: string;
-  category: string;
-  priority: string;
-  isUrgent: boolean;
-  recipientUserIds: string[];
-};
+import { useNotices } from "@/hooks/useNotices";
+import { NoticeForm } from "@/types/notice";
+import { ResidentOption } from "@/types/resident";
 
 const NOTICE_CATEGORIES = [
   { value: "GENERAL", label: "General" },
@@ -69,8 +42,7 @@ export default function NoticesPage() {
 function NoticesPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<NoticeForm>({
     title: "",
@@ -83,45 +55,23 @@ function NoticesPageInner() {
   });
   const [residentOptions, setResidentOptions] = useState<ResidentOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const { confirm, ConfirmUI } = useConfirm();
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadNotices = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/notices?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setNotices(response.data.notices ?? []);
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load notices";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadNotices(initialOffset, controller.signal);
-    return () => controller.abort();
-  }, [loadNotices, initialOffset]);
+  const { data: noticesData, isLoading: loading } = useNotices({ limit: 50, offset: initialOffset });
+  const notices = noticesData?.notices ?? [];
+  const pgMeta = {
+    total: noticesData?.total ?? 0,
+    limit: noticesData?.limit ?? 50,
+    offset: noticesData?.offset ?? 0,
+  };
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    loadNotices(newOffset);
   };
 
   useEffect(() => {
@@ -184,7 +134,7 @@ function NoticesPageInner() {
       await api.post("/notices", payload);
       showToast("Notice posted successfully. Residents will be notified.", "success");
       handleCloseForm();
-      loadNotices(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["notices"] });
     } catch (error: unknown) {
       const data = (error as { response?: { data?: { message?: string; issues?: { path?: (string | number)[]; message?: string }[] } } })?.response?.data;
       let message = data?.message ?? "Failed to post notice";
@@ -204,11 +154,9 @@ function NoticesPageInner() {
     try {
       await api.delete(`/notices/${noticeId}`);
       showToast("Notice deleted successfully", "success");
-      loadNotices(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["notices"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to delete notice";
+      const message = parseApiError(error, "Failed to delete notice").message;
       showToast(message, "error");
     }
   };

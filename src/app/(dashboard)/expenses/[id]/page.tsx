@@ -11,15 +11,6 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { parseApiError } from "@/utils/errorHandler";
 import { lightTheme } from "@/theme/tokens";
 
-type ApiError = {
-  response?: {
-    status?: number;
-    data?: {
-      message?: string;
-    };
-  };
-};
-
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -39,13 +30,14 @@ export default function ExpenseDetailPage() {
   useEffect(() => {
     if (!id) return;
 
+    const controller = new AbortController();
     let cancelled = false;
 
     (async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get(`/expenses/${id}`);
+        const res = await api.get(`/expenses/${id}`, { signal: controller.signal });
         if (!res?.data) {
           setExpense(null);
           setError("Could not load this expense.");
@@ -54,10 +46,10 @@ export default function ExpenseDetailPage() {
         const data = res.data;
         if (!cancelled) setExpense(data);
       } catch (err: unknown) {
-        const apiError = err as ApiError;
+        if ((err as { name?: string }).name === "CanceledError") return;
         if (!cancelled) {
           setExpense(null);
-          setError(apiError.response?.status === 404 ? "Expense not found." : "Could not load this expense.");
+          setError(parseApiError(err).status === 404 ? "Expense not found." : "Could not load this expense.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -66,6 +58,7 @@ export default function ExpenseDetailPage() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [id]);
 

@@ -1,52 +1,22 @@
 "use client";
 
 import { BriefcaseBusiness, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { sortByVillaNumber } from "@/utils/villaSort";
-
-type StaffAssignment = {
-  id: string;
-  villa: {
-    villaNumber: string;
-    block: string;
-  };
-  startDate: string;
-  isActive: boolean;
-};
-
-type Staff = {
-  id: string;
-  name: string;
-  type: "MAID" | "COOK" | "DRIVER" | "GUARD" | "OTHER";
-  phone: string;
-  isActive: boolean;
-  assignments: StaffAssignment[];
-};
-
-type Villa = {
-  id: string;
-  villaNumber: string;
-  block: string;
-  ownerName: string;
-};
-
-type StaffForm = {
-  name: string;
-  type: "MAID" | "COOK" | "DRIVER" | "GUARD" | "OTHER";
-  phone: string;
-  address: string;
-  villaIds: string[];
-};
+import { useStaff } from "@/hooks/useStaff";
+import { useVillas } from "@/hooks/useVillas";
+import { Staff, StaffForm } from "@/types/staff";
+import { VillaOption } from "@/types/villa";
 
 export default function StaffPage() {
-  const [staff, setStaff] = useState<Staff[]>([]);
-  const [villas, setVillas] = useState<Villa[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<StaffForm>({
     name: "",
@@ -58,55 +28,26 @@ export default function StaffPage() {
   const [submitting, setSubmitting] = useState(false);
   const { confirm, ConfirmUI } = useConfirm();
 
-  const loadStaff = () => {
-    setLoading(true);
-    api
-      .get("/staff")
-      .then((response) => {
-        const list = (response.data.staff ?? []) as Staff[];
-        setStaff(
-          list.map((s) => ({
-            ...s,
-            assignments: sortByVillaNumber(
-              s.assignments ?? [],
-              (a) => a.villa?.villaNumber ?? null,
-            ),
-          })),
-        );
-      })
-      .catch((error: unknown) => {
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load staff";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  };
+  const { data: staffData, isLoading: loading } = useStaff();
+  const staff = useMemo(() => {
+    const list = (staffData?.staff ?? []) as Staff[];
+    return list.map((s) => ({
+      ...s,
+      assignments: sortByVillaNumber(
+        s.assignments ?? [],
+        (a) => a.villa?.villaNumber ?? null,
+      ),
+    }));
+  }, [staffData?.staff]);
 
-  const loadVillas = () => {
-    api
-      .get("/villas")
-      .then((response) =>
-        setVillas(
-          sortByVillaNumber(
-            (response.data.villas ?? []) as Villa[],
-            (v) => v.villaNumber,
-          ),
-        ),
-      )
-      .catch((error: unknown) => {
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load villas";
-        showToast(message, "error");
-      });
-  };
-
-  useEffect(() => {
-    loadStaff();
-    loadVillas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { data: villaData } = useVillas();
+  const villas = useMemo(
+    () => sortByVillaNumber(
+      (villaData?.villas ?? []) as VillaOption[],
+      (v) => v.villaNumber,
+    ),
+    [villaData?.villas],
+  );
 
   const handleOpenForm = () => {
     setFormData({
@@ -146,12 +87,9 @@ export default function StaffPage() {
       await api.post("/staff", formData);
       showToast("Staff registered successfully", "success");
       handleCloseForm();
-      loadStaff();
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to register staff";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Failed to register staff").message, "error");
     } finally {
       setSubmitting(false);
     }
@@ -163,12 +101,9 @@ export default function StaffPage() {
     try {
       await api.delete(`/staff/${id}`);
       showToast("Staff deleted successfully", "success");
-      loadStaff();
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to delete staff";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Failed to delete staff").message, "error");
     }
   };
 

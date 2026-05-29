@@ -4,18 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 const BOOKING_STATUSES = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"] as const;
 
 type CalendarTab = "calendar" | "amenities";
-
-type ApiError = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-};
 
 type CalendarOverview = {
   summary: {
@@ -69,39 +62,42 @@ export default function AmenityBookingCalendarPage() {
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   );
 
-  const fetchOverview = useCallback(async () => {
+  const fetchOverview = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
       const response = await api.get(
-        `/amenity-booking-calendar/overview?startDate=${startDate}&endDate=${endDate}`
+        `/amenity-booking-calendar/overview?startDate=${startDate}&endDate=${endDate}`,
+        { signal }
       );
       setOverview(response.data);
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch overview");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch overview").message);
     } finally {
       setLoading(false);
     }
   }, [endDate, startDate]);
 
-  const fetchAmenities = useCallback(async () => {
+  const fetchAmenities = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/amenity-booking-calendar/amenities`);
+      const response = await api.get(`/amenity-booking-calendar/amenities`, { signal });
       setAmenities(response.data.amenities);
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch amenities");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch amenities").message);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (activeTab === "calendar") void fetchOverview();
-    else if (activeTab === "amenities") void fetchAmenities();
+    const controller = new AbortController();
+    if (activeTab === "calendar") void fetchOverview(controller.signal);
+    else if (activeTab === "amenities") void fetchAmenities(controller.signal);
+    return () => controller.abort();
   }, [activeTab, fetchAmenities, fetchOverview]);
 
   const formatDateTime = (dt: string) => {
@@ -121,10 +117,7 @@ export default function AmenityBookingCalendarPage() {
       showToast("Booking status updated", "success");
       await fetchOverview();
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to update status";
-      showToast(msg, "error");
+      showToast(parseApiError(err, "Failed to update status").message, "error");
       await fetchOverview();
     } finally {
       setUpdatingStatusId(null);

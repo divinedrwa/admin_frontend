@@ -5,9 +5,9 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
-import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useConfirm } from "@/components/ConfirmDialog";
 import {
@@ -15,16 +15,9 @@ import {
   occupantUnitCodeForFloorIndex,
   suggestedOccupantUnitDefinitions,
 } from "@/lib/occupantUnitCodes";
-
-type VillaResident = {
-  id: string;
-  name: string;
-  role: string;
-  email?: string | null;
-  residentType?: string | null;
-  unitId?: string | null;
-  unit?: { id: string; unitCode: string; label: string } | null;
-};
+import { Villa, VillaResident, VillaUnit, VillaForm, UnitRow } from "@/types/villa";
+import { VillaFormModal } from "./components/VillaFormModal";
+import { VillasTable } from "./components/VillasTable";
 
 function pickPrimaryResident(villa: Villa): VillaResident | null {
   const residents = (villa.users ?? []).filter((u) => u.role === "RESIDENT" || u.role === "RESIDENT_CUM_ADMIN") as VillaResident[];
@@ -54,49 +47,6 @@ function ensureTierInUnitRows(
   }
   return [...rows, { unitCode: tier.unitCode, label: tier.label }];
 }
-
-type UnitRow = {
-  unitCode: string;
-  label: string;
-};
-
-type VillaUnit = {
-  id: string;
-  unitCode: string;
-  label: string;
-  isDefault: boolean;
-  sortOrder?: number;
-};
-
-type Villa = {
-  id: string;
-  propertyId?: string;
-  villaNumber: string;
-  floors: number;
-  area: number;
-  block: string;
-  ownerName: string;
-  ownerEmail: string;
-  ownerPhone: string;
-  monthlyMaintenance: number;
-  units?: VillaUnit[];
-  billingAccount?: { id: string; scope: string };
-  users: VillaResident[];
-  _count: {
-    users: number;
-  };
-};
-
-type VillaForm = {
-  villaNumber: string;
-  floors: string;
-  area: string;
-  block: string;
-  ownerName: string;
-  ownerEmail: string;
-  ownerPhone: string;
-  monthlyMaintenance: string;
-};
 
 export default function VillasPage() {
   return (
@@ -152,11 +102,10 @@ function VillasPageInner() {
       .catch((error: unknown) => {
         if ((error as { name?: string }).name === "CanceledError") return;
         const status = (error as { response?: { status?: number } })?.response?.status;
-        const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
 
         // Only show error toast for non-auth errors
         if (status !== 401 && status !== 403) {
-          showToast(message ?? "Failed to load villas", "error");
+          showToast(parseApiError(error, "Failed to load villas").message, "error");
         }
       })
       .finally(() => setLoading(false));
@@ -172,12 +121,8 @@ function VillasPageInner() {
 
   useEffect(() => {
     const controller = new AbortController();
-    // Small delay to ensure token is loaded from localStorage
-    const timer = setTimeout(() => {
-      loadVillas(initialOffset, controller.signal);
-    }, 100);
-
-    return () => { clearTimeout(timer); controller.abort(); };
+    loadVillas(initialOffset, controller.signal);
+    return () => { controller.abort(); };
   }, [loadVillas, initialOffset]);
 
   const handleOpenForm = (villa?: Villa) => {
@@ -332,10 +277,7 @@ function VillasPageInner() {
       handleCloseForm();
       loadVillas();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to save villa";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Failed to save villa").message, "error");
     } finally {
       setSubmitting(false);
     }
@@ -353,10 +295,7 @@ function VillasPageInner() {
       window.URL.revokeObjectURL(url);
       showToast("Villas exported", "success");
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Export failed";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Export failed").message, "error");
     } finally {
       setExportingCsv(false);
     }
@@ -401,24 +340,22 @@ function VillasPageInner() {
               `Line ${c.line}: ${c.username} / ${c.email}` +
               (c.temporaryPassword != null ? ` — temp password: ${c.temporaryPassword}` : ""),
           )
-          .join("\n");
-        alert(`Save these generated owner passwords:\n\n${credLines}`);
+          .join("; ");
+        showToast(`Generated owner passwords: ${credLines}`, "info");
       }
       if (data.errors?.length) {
         const preview = data.errors
-          .slice(0, 8)
+          .slice(0, 5)
           .map((x) => `Line ${x.line}: ${x.message}`)
-          .join("\n");
-        alert(
-          `${preview}${data.errors.length > 8 ? `\n… and ${data.errors.length - 8} more` : ""}`,
+          .join("; ");
+        showToast(
+          `${preview}${data.errors.length > 5 ? ` … and ${data.errors.length - 5} more` : ""}`,
+          "error",
         );
       }
       loadVillas();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Import failed";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Import failed").message, "error");
     } finally {
       setImportingCsv(false);
     }
@@ -471,10 +408,7 @@ function VillasPageInner() {
       });
       loadVillas();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to delete villa";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Failed to delete villa").message, "error");
     }
   };
 
@@ -500,10 +434,7 @@ function VillasPageInner() {
       } catch (error: unknown) {
         const villa = villas.find((v) => v.id === id);
         const label = villa?.villaNumber ?? id;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Delete failed";
-        failures.push(`${label}: ${message}`);
+        failures.push(`${label}: ${parseApiError(error, "Delete failed").message}`);
       }
     }
     setSelectedVillaIds(new Set());
@@ -513,7 +444,7 @@ function VillasPageInner() {
       showToast(`Deleted ${deleted} villa(s)`, "success");
     } else {
       showToast(`Deleted ${deleted}. ${failures.length} failed.`, "error");
-      alert(failures.slice(0, 12).join("\n") + (failures.length > 12 ? `\n… and ${failures.length - 12} more` : ""));
+      showToast(failures.slice(0, 5).join("; ") + (failures.length > 5 ? ` … and ${failures.length - 5} more` : ""), "error");
     }
   };
 
@@ -589,263 +520,22 @@ function VillasPageInner() {
         </div>
 
         {showForm && (
-          <div className="card">
-            <div className="card-header">
-              <h2 className="text-xl font-bold text-fg-primary">
-                {editingVilla ? "Edit Villa" : "Create New Villa"}
-              </h2>
-            </div>
-            <div className="card-body">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-fg-primary mb-1">
-                    Villa Number *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.villaNumber}
-                    onChange={(e) => setFormData({ ...formData, villaNumber: e.target.value })}
-                    className="input"
-                    placeholder="e.g., V-001, V-002"
-                    disabled={!!editingVilla}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-fg-primary mb-1">
-                    Floors *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    max="10"
-                    value={formData.floors}
-                    onChange={(e) => setFormData({ ...formData, floors: e.target.value })}
-                    className="input"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-fg-primary mb-1">
-                    Block
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.block}
-                    onChange={(e) => setFormData({ ...formData, block: e.target.value })}
-                    className="input"
-                    placeholder="e.g., A, B, C"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-fg-primary mb-1">
-                    Area (sq. ft.) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="0.01"
-                    value={formData.area}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    className="input"
-                    placeholder="e.g., 1500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-fg-primary mb-1">
-                    Monthly Maintenance (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="0.01"
-                    value={formData.monthlyMaintenance}
-                    onChange={(e) => setFormData({ ...formData, monthlyMaintenance: e.target.value })}
-                    className="input"
-                    placeholder="e.g., 5000"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-3">Owner Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-fg-primary mb-1">
-                      Owner Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.ownerName}
-                      onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                      className="input"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-fg-primary mb-1">
-                      Owner Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.ownerEmail}
-                      onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                      className="input"
-                      placeholder="owner@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-fg-primary mb-1">
-                    Owner Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.ownerPhone}
-                    onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
-                    className="input"
-                    placeholder="+91 9876543210"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t pt-4 space-y-3">
-                <h3 className="text-lg font-medium">Occupant units / floors *</h3>
-                <p className="text-xs text-fg-secondary">
-                  Each row is one occupant unit (code + label). Edit freely, add or remove rows, then save.
-                  Leave empty on create to auto-generate from the Floors count (e.g. V12_GF, V12_FF).
-                  {primaryResidentId
-                    ? " The floor selector sets which unit the primary resident (owner) uses; saving updates them automatically."
-                    : " Add an owner login (email on import or Users page) to assign a floor from here."}
-                </p>
-                <div className="flex flex-wrap gap-2 items-end">
-                  <div className="min-w-[260px] flex-1 max-w-lg">
-                    <label className="block text-xs text-fg-secondary mb-0.5">
-                      Assigned floor (from Floors)
-                      {primaryResidentName ? ` — ${primaryResidentName}` : ""}
-                    </label>
-                    <select
-                      className="w-full border border-surface-border rounded px-2 py-1.5 text-sm bg-surface"
-                      value={assignedFloorTier}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setAssignedFloorTier(v);
-                        if (!v) return;
-                        const idx = parseInt(v, 10);
-                        const tier = quickAddTiers[idx];
-                        if (!tier) return;
-                        setUnitRows((prev) => ensureTierInUnitRows(prev, tier));
-                      }}
-                    >
-                      <option value="">
-                        {primaryResidentId ? "Not set / custom unit" : "Choose a floor tier…"}
-                      </option>
-                      {quickAddTiers.map((tier, idx) => (
-                        <option key={`tier-${idx}`} value={String(idx)}>
-                          {tier.label} ({tier.unitCode})
-                        </option>
-                      ))}
-                    </select>
-                    {primaryResidentId && assignedFloorTier === "" && (
-                      <p className="text-[11px] text-fg-secondary mt-1">
-                        Resident uses a custom unit — pick a tier above to reassign, or edit rows below.
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {unitRows.map((row, idx) => (
-                    <div key={`unit-${idx}`} className="flex flex-wrap gap-2 items-end">
-                      <div className="flex-1 min-w-[120px]">
-                        <label className="block text-xs text-fg-secondary mb-0.5">Unit code</label>
-                        <input
-                          type="text"
-                          className="w-full border border-surface-border rounded px-2 py-1.5 text-sm"
-                          value={row.unitCode}
-                          onChange={(e) => {
-                            const next = [...unitRows];
-                            next[idx] = { ...next[idx]!, unitCode: e.target.value };
-                            setUnitRows(next);
-                          }}
-                          placeholder="e.g. V12_GF"
-                        />
-                      </div>
-                      <div className="flex-[2] min-w-[160px]">
-                        <label className="block text-xs text-fg-secondary mb-0.5">Label</label>
-                        <input
-                          type="text"
-                          className="w-full border border-surface-border rounded px-2 py-1.5 text-sm"
-                          value={row.label}
-                          onChange={(e) => {
-                            const next = [...unitRows];
-                            next[idx] = { ...next[idx]!, label: e.target.value };
-                            setUnitRows(next);
-                          }}
-                          placeholder="e.g. Ground floor"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        className="text-sm text-brand-danger hover:underline px-2"
-                        onClick={() => setUnitRows(unitRows.filter((_, i) => i !== idx))}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="text-sm text-brand-primary hover:underline"
-                  onClick={() => {
-                    const vn = formData.villaNumber.trim() || "VILLA";
-                    const floors = parseInt(formData.floors, 10) || 1;
-                    const used = new Set(unitRows.map((r) => r.unitCode.trim().toUpperCase()).filter(Boolean));
-                    const nextTier = suggestedOccupantUnitDefinitions(vn, floors).find(
-                      (t) => !used.has(t.unitCode.toUpperCase()),
-                    );
-                    setUnitRows((prev) => [
-                      ...prev,
-                      nextTier
-                        ? { unitCode: nextTier.unitCode, label: nextTier.label }
-                        : { unitCode: "", label: "" },
-                    ]);
-                  }}
-                >
-                  + Add unit
-                </button>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn btn-primary"
-                >
-                  {submitting ? "Saving..." : editingVilla ? "Update property" : "Create property"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCloseForm}
-                  className="btn btn-ghost"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-            </div>
-          </div>
+          <VillaFormModal
+            editingVilla={!!editingVilla}
+            formData={formData}
+            setFormData={setFormData}
+            unitRows={unitRows}
+            setUnitRows={setUnitRows}
+            assignedFloorTier={assignedFloorTier}
+            setAssignedFloorTier={setAssignedFloorTier}
+            primaryResidentId={primaryResidentId}
+            primaryResidentName={primaryResidentName}
+            quickAddTiers={quickAddTiers}
+            submitting={submitting}
+            onSubmit={handleSubmit}
+            onClose={handleCloseForm}
+            ensureTierInUnitRows={ensureTierInUnitRows}
+          />
         )}
 
         {selectedVillaIds.size > 0 && (
@@ -874,112 +564,18 @@ function VillasPageInner() {
           </div>
         )}
 
-        <div className="table-wrapper">
-          {loading ? (
-            <div className="loading-state">
-              <div className="loading-spinner w-10 h-10"></div>
-              <p className="loading-state-text">Loading villas...</p>
-            </div>
-          ) : (<>
-            <table className="table">
-              <thead className="table-head">
-                <tr>
-                  <th scope="col" className="table-th w-10">
-                    {villas.length > 0 ? (
-                      <input
-                        type="checkbox"
-                        checked={
-                          villas.length > 0 &&
-                          villas.every((v) => selectedVillaIds.has(v.id))
-                        }
-                        onChange={toggleSelectAllVillas}
-                        className="rounded border-surface-border"
-                        aria-label="Select all villas"
-                      />
-                    ) : null}
-                  </th>
-                  <th scope="col" className="table-th">Villa No.</th>
-                  <th scope="col" className="table-th">Block</th>
-                  <th scope="col" className="table-th">Floors</th>
-                  <th scope="col" className="table-th">Area (sq.ft.)</th>
-                  <th scope="col" className="table-th">Owner</th>
-                  <th scope="col" className="table-th">Maintenance</th>
-                  <th scope="col" className="table-th">Units</th>
-                  <th scope="col" className="table-th">Residents</th>
-                  <th scope="col" className="table-th">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {villas.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="table-td">
-                      <div className="empty-state">
-                        <span className="empty-state-icon">🏘️</span>
-                        <p className="empty-state-title">No villas yet</p>
-                        <p className="empty-state-text">Click &quot;Add Villa&quot; above to register your first property.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  sortedVillas.map((villa) => (
-                    <tr key={villa.id} className="table-row">
-                      <td className="table-td align-middle">
-                        <input
-                          type="checkbox"
-                          checked={selectedVillaIds.has(villa.id)}
-                          onChange={() => toggleVillaSelected(villa.id)}
-                          className="rounded border-surface-border"
-                          aria-label={`Select villa ${villa.villaNumber}`}
-                        />
-                      </td>
-                      <td className="table-td font-semibold">{villa.villaNumber}</td>
-                      <td className="table-td">{villa.block || "-"}</td>
-                      <td className="table-td">{villa.floors}</td>
-                      <td className="table-td">{villa.area}</td>
-                      <td className="table-td">
-                        <div>
-                          <div className="font-medium">{villa.ownerName}</div>
-                          {villa.ownerPhone && (
-                            <div className="text-xs text-fg-secondary mt-0.5">{villa.ownerPhone}</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="table-td font-semibold text-approved-solid">₹{villa.monthlyMaintenance}</td>
-                      <td className="table-td">{villa.units?.length ?? "—"}</td>
-                      <td className="table-td">
-                        <span className="badge badge-primary">
-                          {villa._count.users} active
-                        </span>
-                      </td>
-                      <td className="table-td">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleOpenForm(villa)}
-                            className="btn btn-ghost text-xs px-2 py-1"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(villa.id)}
-                            className="btn btn-ghost text-brand-danger text-xs px-2 py-1"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-            <Pagination
-              total={pgMeta.total}
-              limit={pgMeta.limit}
-              offset={pgMeta.offset}
-              onPageChange={handlePageChange}
-            />
-          </>)}
-        </div>
+        <VillasTable
+          villas={villas}
+          sortedVillas={sortedVillas}
+          loading={loading}
+          selectedVillaIds={selectedVillaIds}
+          toggleVillaSelected={toggleVillaSelected}
+          toggleSelectAllVillas={toggleSelectAllVillas}
+          onEdit={handleOpenForm}
+          onDelete={handleDelete}
+          pgMeta={pgMeta}
+          onPageChange={handlePageChange}
+        />
       </div>
       {ConfirmUI}
     </AppShell>

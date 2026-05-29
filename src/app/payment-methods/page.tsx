@@ -19,6 +19,7 @@ import { Modal } from "@/components/Modal";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { parseApiError } from "@/utils/errorHandler";
 
 type PaymentMethod = {
   id: string;
@@ -28,10 +29,6 @@ type PaymentMethod = {
   sortOrder: number;
   config: Record<string, unknown>;
   createdAt: string;
-};
-
-type ApiError = {
-  response?: { data?: { message?: string } };
 };
 
 const TYPE_OPTIONS = [
@@ -91,21 +88,23 @@ export default function PaymentMethodsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  const fetchMethods = async () => {
+  const fetchMethods = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
-      const res = await api.get("/payment-methods");
+      const res = await api.get("/payment-methods", { signal });
       setMethods(res.data.methods ?? []);
     } catch (err) {
-      const e = err as ApiError;
-      showToast(e.response?.data?.message ?? "Failed to load payment methods", "error");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      showToast(parseApiError(err, "Failed to load payment methods").message, "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMethods();
+    const controller = new AbortController();
+    fetchMethods(controller.signal);
+    return () => controller.abort();
   }, []);
 
   // ── Create ──────────────────────────────────────────────────────
@@ -135,8 +134,7 @@ export default function PaymentMethodsPage() {
       resetCreateForm();
       fetchMethods();
     } catch (err) {
-      const e = err as ApiError;
-      showToast(e.response?.data?.message ?? "Failed to create", "error");
+      showToast(parseApiError(err, "Failed to create").message, "error");
     } finally {
       setSaving(false);
     }
@@ -177,8 +175,7 @@ export default function PaymentMethodsPage() {
       setEditingMethod(null);
       fetchMethods();
     } catch (err) {
-      const e = err as ApiError;
-      showToast(e.response?.data?.message ?? "Failed to update", "error");
+      showToast(parseApiError(err, "Failed to update").message, "error");
     } finally {
       setSaving(false);
     }
@@ -193,8 +190,7 @@ export default function PaymentMethodsPage() {
         prev.map((p) => (p.id === m.id ? { ...p, isEnabled: !p.isEnabled } : p)),
       );
     } catch (err) {
-      const e = err as ApiError;
-      showToast(e.response?.data?.message ?? "Failed to toggle", "error");
+      showToast(parseApiError(err, "Failed to toggle").message, "error");
     }
   };
 
@@ -207,8 +203,7 @@ export default function PaymentMethodsPage() {
       showToast("Payment method deleted", "success");
       fetchMethods();
     } catch (err) {
-      const e = err as ApiError;
-      showToast(e.response?.data?.message ?? "Failed to delete", "error");
+      showToast(parseApiError(err, "Failed to delete").message, "error");
     }
   };
 
@@ -221,8 +216,7 @@ export default function PaymentMethodsPage() {
       const { success, message } = res.data;
       showToast(message, success ? "success" : "error");
     } catch (err) {
-      const e = err as ApiError;
-      showToast(e.response?.data?.message ?? "Test failed", "error");
+      showToast(parseApiError(err, "Test failed").message, "error");
     } finally {
       setTesting(null);
     }
@@ -247,8 +241,7 @@ export default function PaymentMethodsPage() {
       if (fileRef.current) fileRef.current.value = "";
       fetchMethods();
     } catch (err) {
-      const e = err as ApiError;
-      showToast(e.response?.data?.message ?? "Upload failed", "error");
+      showToast(parseApiError(err, "Upload failed").message, "error");
     } finally {
       setUploading(false);
     }

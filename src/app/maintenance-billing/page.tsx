@@ -11,95 +11,19 @@ import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type BillingCycleRow = {
-  id: string;
-  cycleKey: string;
-  month?: string;
-  title: string;
-  amount: number;
-  status: string;
-  storedStatus?: string;
-  paymentWindow: string;
-  paymentStartDate: string;
-  paymentEndDate: string;
-  paidUsersCount: number;
-  pendingUsersCount: number;
-  lateFee: number;
-  gracePeriodDays: number;
-  financialYearId?: string | null;
-  financialYearLabel?: string | null;
-};
-
-type FinancialYearOption = {
-  id: string;
-  label: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-};
-
-type AuditRow = {
-  id: string;
-  adminId: string;
-  action: string;
-  entityType: string;
-  entityId: string | null;
-  metadata: unknown;
-  createdAt: string;
-};
-
-type ResidentRow = {
-  id?: string;
-  userId?: string;
-  name?: string;
-  flat?: string;
-  cycleKey?: string;
-  paymentStatus?: string;
-  expectedAmount?: number;
-  cashPaidAmount?: number;
-  effectivePaidAmount?: number;
-  paidAmount?: number;
-  deltaAmount?: number;
-  statusBadge?: string;
-  [key: string]: unknown;
-};
-type ResidentTotals = {
-  totalExpected: number;
-  totalCollected: number;
-  totalShortfall: number;
-  totalAdvanceCredit: number;
-};
-
-function utcInputValue(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-const fmtInr = (n: number) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(n) ? n : 0);
-
-function fmtDateOnly(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-IN");
-}
-
-function paymentDeltaStyles(delta: number) {
-  if (delta > 0) return "text-approved-fg font-semibold";
-  if (delta < 0) return "text-denied-fg font-semibold";
-  return "text-fg-primary font-semibold";
-}
-
-function statusBadgeStyles(status: string) {
-  if (status === "CREDIT") return "bg-approved-bg text-approved-fg border-approved-bg";
-  if (status === "DUE") return "bg-denied-bg text-denied-fg border-denied-bg";
-  if (status === "SETTLED") return "bg-surface-elevated text-fg-primary border-surface-border";
-  return "bg-surface-elevated text-fg-primary border-surface-border";
-}
+import type {
+  BillingCycleRow,
+  FinancialYearOption,
+  AuditRow,
+  ResidentRow,
+  ResidentTotals,
+  CycleFormData,
+  FyFormData,
+} from "./components/types";
+import { utcInputValue } from "./components/types";
+import { BillingCycleTab } from "./components/BillingCycleTab";
+import { ResidentsTab } from "./components/ResidentsTab";
+import { AuditLogTab } from "./components/AuditLogTab";
 
 export default function MaintenanceBillingPage() {
   const [tab, setTab] = useState<"cycles" | "residents" | "audit">("cycles");
@@ -122,7 +46,7 @@ export default function MaintenanceBillingPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [creatingCycle, setCreatingCycle] = useState(false);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CycleFormData>({
     financialYearId: "",
     cycleMonth: "",
     title: "",
@@ -132,7 +56,7 @@ export default function MaintenanceBillingPage() {
     lateFee: "0",
     graceDays: "5",
   });
-  const [fyForm, setFyForm] = useState({
+  const [fyForm, setFyForm] = useState<FyFormData>({
     label: "",
     startDate: "",
     endDate: "",
@@ -163,14 +87,14 @@ export default function MaintenanceBillingPage() {
   const [deleteTarget, setDeleteTarget] = useState<BillingCycleRow | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
-  const loadCycles = useCallback(async () => {
-    const res = await api.get("/v1/admin/cycles");
+  const loadCycles = useCallback(async (signal?: AbortSignal) => {
+    const res = await api.get("/v1/admin/cycles", { signal });
     setCycles(res.data.cycles ?? []);
     setResidentCount(res.data.residentCount ?? 0);
   }, []);
 
-  const loadUsers = useCallback(async () => {
-    const res = await api.get("/users", { params: { role: "RESIDENT", isActive: "true" } });
+  const loadUsers = useCallback(async (signal?: AbortSignal) => {
+    const res = await api.get("/users", { params: { role: "RESIDENT", isActive: "true" }, signal });
     const list = (res.data.users ?? []) as Array<{
       id: string;
       name: string;
@@ -180,29 +104,31 @@ export default function MaintenanceBillingPage() {
     setUsers(sortByVillaNumber(list, (u) => u.villa?.villaNumber ?? null));
   }, []);
 
-  const loadFinancialYears = useCallback(async () => {
-    const res = await api.get("/v1/admin/financial-years");
+  const loadFinancialYears = useCallback(async (signal?: AbortSignal) => {
+    const res = await api.get("/v1/admin/financial-years", { signal });
     setFinancialYears(res.data.financialYears ?? []);
   }, []);
 
-  const loadAudit = useCallback(async () => {
-    const res = await api.get("/v1/admin/audit-logs", { params: { limit: 100 } });
+  const loadAudit = useCallback(async (signal?: AbortSignal) => {
+    const res = await api.get("/v1/admin/audit-logs", { params: { limit: 100 }, signal });
     setAuditRows(res.data.logs ?? []);
   }, []);
 
-  const refreshCoreData = useCallback(async () => {
-    await Promise.all([loadCycles(), loadUsers(), loadFinancialYears()]);
+  const refreshCoreData = useCallback(async (signal?: AbortSignal) => {
+    await Promise.all([loadCycles(signal), loadUsers(signal), loadFinancialYears(signal)]);
     setLastSyncedAt(new Date());
   }, [loadCycles, loadUsers, loadFinancialYears]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
+    const controller = new AbortController();
     let cancelled = false;
     async function boot() {
       try {
         setLoading(true);
-        await refreshCoreData();
-      } catch {
+        await refreshCoreData(controller.signal);
+      } catch (error) {
+        if ((error as { name?: string }).name === "CanceledError") return;
         if (!cancelled) showToast("Could not load billing data", "error");
       } finally {
         if (!cancelled) setLoading(false);
@@ -216,6 +142,7 @@ export default function MaintenanceBillingPage() {
     }, 60_000);
     return () => {
       cancelled = true;
+      controller.abort();
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [refreshCoreData]);
@@ -241,17 +168,22 @@ export default function MaintenanceBillingPage() {
 
   useEffect(() => {
     if (tab !== "audit") return;
-    void loadAudit().catch(() => showToast("Could not load audit logs", "error"));
+    const controller = new AbortController();
+    void loadAudit(controller.signal).catch((error) => {
+      if ((error as { name?: string }).name === "CanceledError") return;
+      showToast("Could not load audit logs", "error");
+    });
+    return () => controller.abort();
   }, [tab, loadAudit]);
 
-  const loadResidents = useCallback(async () => {
+  const loadResidents = useCallback(async (signal?: AbortSignal) => {
     const params: Record<string, string> = {};
     if (filterMonth) params.cycleMonth = filterMonth;
     if (filterStatus) params.status = filterStatus;
     if (sortBy) params.sortBy = sortBy;
     setResidentsLoading(true);
     try {
-      const r = await api.get("/v1/admin/residents/payments", { params });
+      const r = await api.get("/v1/admin/residents/payments", { params, signal });
       const rows = sortByVillaNumber(
         (r.data.rows ?? []) as ResidentRow[],
         (row) => {
@@ -267,7 +199,8 @@ export default function MaintenanceBillingPage() {
         totalAdvanceCredit: Number(t.totalAdvanceCredit ?? 0),
       });
       setLastSyncedAt(new Date());
-    } catch {
+    } catch (error) {
+      if ((error as { name?: string }).name === "CanceledError") return;
       showToast("Could not load residents", "error");
     } finally {
       setResidentsLoading(false);
@@ -276,7 +209,9 @@ export default function MaintenanceBillingPage() {
 
   useEffect(() => {
     if (tab !== "residents") return;
-    void loadResidents();
+    const controller = new AbortController();
+    void loadResidents(controller.signal);
+    return () => controller.abort();
   }, [tab, loadResidents]);
 
   const cycleOptions = useMemo(() => cycles.map((c) => ({ id: c.id, label: `${c.cycleKey} · ${c.title}` })), [cycles]);
@@ -522,6 +457,22 @@ export default function MaintenanceBillingPage() {
     );
   }
 
+  function handleOpenCreate() {
+    const now = new Date();
+    setForm({
+      financialYearId: financialYears[0]?.id ?? "",
+      cycleMonth: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+      title: "",
+      amount: "",
+      paymentStart: utcInputValue(now),
+      paymentEnd: utcInputValue(now),
+      lateFee: "0",
+      graceDays: "5",
+    });
+    setEditId(null); // Ensure edit form is closed when creating
+    setCreateOpen(true);
+  }
+
   return (
     <AppShell title="Maintenance billing cycles">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -571,620 +522,71 @@ export default function MaintenanceBillingPage() {
         ) : null}
 
         {tab === "cycles" && (
-          <>
-            <div className="card">
-            <div className="card-header">
-              <h2 className="text-lg font-semibold text-fg-primary">
-                {fyEditId ? "Edit financial year" : "Create financial year"}
-              </h2>
-            </div>
-            <form
-              onSubmit={fyEditId ? handleUpdateFinancialYear : handleCreateFinancialYear}
-              className="card-body grid gap-4 md:grid-cols-4"
-            >
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-fg-secondary">Label</span>
-                <input
-                  className="input border rounded-lg px-3 py-2"
-                  placeholder="2026-27"
-                  value={fyForm.label}
-                  onChange={(e) => setFyForm((s) => ({ ...s, label: e.target.value }))}
-                  required
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-fg-secondary">Start date</span>
-                <input
-                  type="date"
-                  className="input border rounded-lg px-3 py-2"
-                  value={fyForm.startDate}
-                  onChange={(e) => setFyForm((s) => ({ ...s, startDate: e.target.value }))}
-                  required
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-fg-secondary">End date</span>
-                <input
-                  type="date"
-                  className="input border rounded-lg px-3 py-2"
-                  value={fyForm.endDate}
-                  onChange={(e) => setFyForm((s) => ({ ...s, endDate: e.target.value }))}
-                  required
-                />
-              </label>
-              <div className="flex items-end">
-                <div className="w-full flex gap-2">
-                  <button type="submit" className="btn btn-primary flex-1 text-sm">
-                    {fyEditId ? "Update financial year" : "Create financial year"}
-                  </button>
-                  {fyEditId && (
-                    <button
-                      type="button"
-                      className="btn btn-ghost text-sm"
-                      onClick={() => {
-                        setFyEditId(null);
-                        setFyForm({ label: "", startDate: "", endDate: "" });
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
-            </form>
-            </div>
-
-            <div className="table-wrapper">
-              <table className="table">
-                <thead className="table-head">
-                  <tr>
-                    <th scope="col" className="table-th">Label</th>
-                    <th scope="col" className="table-th">Start</th>
-                    <th scope="col" className="table-th">End</th>
-                    <th scope="col" className="table-th">Status</th>
-                    <th scope="col" className="table-th">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {financialYears.map((fy) => (
-                    <tr key={fy.id} className="table-row">
-                      <td className="table-td font-medium text-fg-primary">{fy.label}</td>
-                      <td className="table-td">{fmtDateOnly(fy.startDate)}</td>
-                      <td className="table-td">{fmtDateOnly(fy.endDate)}</td>
-                      <td className="table-td">{fy.status}</td>
-                      <td className="table-td">
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            className="text-brand-primary text-xs font-semibold hover:underline"
-                            onClick={() => openFinancialYearEdit(fy)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="text-brand-danger text-xs font-semibold hover:underline"
-                            onClick={() => void deleteFinancialYear(fy)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {financialYears.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-fg-secondary">
-                        No financial years created yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex gap-3 flex-wrap">
-              <button
-                type="button"
-                className="btn btn-primary text-sm"
-                onClick={() => {
-                  const now = new Date();
-                  setForm({
-                    financialYearId: financialYears[0]?.id ?? "",
-                    cycleMonth: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
-                    title: "",
-                    amount: "",
-                    paymentStart: utcInputValue(now),
-                    paymentEnd: utcInputValue(now),
-                    lateFee: "0",
-                    graceDays: "5",
-                  });
-                  setEditId(null); // Ensure edit form is closed when creating
-                  setCreateOpen(true);
-                }}
-              >
-                Create cycle
-              </button>
-            </div>
-
-            {createOpen && (
-              <div className="card">
-              <div className="card-header">
-                <h2 className="text-lg font-semibold text-fg-primary">New billing cycle</h2>
-              </div>
-              <form
-                onSubmit={handleCreateCycle}
-                className="card-body grid gap-4 md:grid-cols-2"
-              >
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Financial year</span>
-                  <select
-                    className="input border rounded-lg px-3 py-2 bg-surface"
-                    required
-                    value={form.financialYearId}
-                    onChange={(e) =>
-                      setForm((s) => ({
-                        ...s,
-                        financialYearId: e.target.value,
-                        cycleMonth: "",
-                      }))
-                    }
-                  >
-                    <option value="">Select financial year…</option>
-                    {financialYears.map((fy) => (
-                      <option key={fy.id} value={fy.id}>
-                        {fy.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Month</span>
-                  <select
-                    className="input border rounded-lg px-3 py-2 bg-surface"
-                    required
-                    value={form.cycleMonth}
-                    onChange={(e) => setForm((s) => ({ ...s, cycleMonth: e.target.value }))}
-                    disabled={!form.financialYearId}
-                  >
-                    <option value="">Select month…</option>
-                    {monthOptionsForSelectedFinancialYear.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Title</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    value={form.title}
-                    onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
-                    placeholder={`Maintenance ${form.cycleMonth}`}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-fg-secondary">Amount (₹)</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    required
-                    type="number"
-                    min={1}
-                    step="0.01"
-                    value={form.amount}
-                    onChange={(e) => setForm((s) => ({ ...s, amount: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Payment start (local → ISO)</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    required
-                    type="datetime-local"
-                    value={form.paymentStart}
-                    onChange={(e) => setForm((s) => ({ ...s, paymentStart: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Payment end (deadline inclusive)</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    required
-                    type="datetime-local"
-                    value={form.paymentEnd}
-                    onChange={(e) => setForm((s) => ({ ...s, paymentEnd: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Late fee (₹)</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={form.lateFee}
-                    onChange={(e) => setForm((s) => ({ ...s, lateFee: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Grace period (days)</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    type="number"
-                    min={0}
-                    value={form.graceDays}
-                    onChange={(e) => setForm((s) => ({ ...s, graceDays: e.target.value }))}
-                  />
-                </label>
-                <div className="md:col-span-2 flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={creatingCycle}
-                    className="btn btn-primary disabled:opacity-60"
-                  >
-                    {creatingCycle ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={() => setCreateOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-              </div>
-            )}
-
-            <div className="table-wrapper">
-              <table className="table">
-                <thead className="table-head">
-                  <tr>
-                    <th scope="col" className="table-th">Month</th>
-                    <th scope="col" className="table-th">Amount</th>
-                    <th scope="col" className="table-th">Status</th>
-                    <th scope="col" className="table-th">Window (UTC ISO)</th>
-                    <th scope="col" className="table-th">Paid</th>
-                    <th scope="col" className="table-th">Pending</th>
-                    <th scope="col" className="table-th"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cycles.map((c) => (
-                    <tr key={c.id} className="table-row">
-                      <td className="table-td font-medium text-fg-primary">
-                        <div>{c.cycleKey}</div>
-                        <div className="text-fg-secondary text-xs">
-                          {c.title}
-                          {c.financialYearLabel ? ` · ${c.financialYearLabel}` : ""}
-                        </div>
-                      </td>
-                      <td className="table-td">{c.amount}</td>
-                      <td className="table-td">{statusBadge(c.status)}</td>
-                      <td className="table-td max-w-[280px] text-xs text-fg-secondary truncate" title={c.paymentWindow}>
-                        {c.paymentStartDate.slice(0, 19)} → {c.paymentEndDate.slice(0, 19)}
-                      </td>
-                      <td className="table-td">{c.paidUsersCount}</td>
-                      <td className="table-td">{c.pendingUsersCount}</td>
-                      <td className="table-td">
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            className="text-brand-primary text-xs font-semibold hover:underline"
-                            onClick={() => openEdit(c)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="text-brand-danger text-xs font-semibold hover:underline"
-                            onClick={() => setDeleteTarget(c)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {cycles.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-fg-secondary">
-                        No billing cycles yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {editId && (
-              <div className="card">
-              <div className="card-header">
-                <h2 className="text-lg font-semibold text-fg-primary">Edit cycle</h2>
-              </div>
-              <form
-                onSubmit={submitEdit}
-                className="card-body grid gap-4 md:grid-cols-2"
-              >
-                <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-fg-secondary">Title</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    required
-                    value={form.title}
-                    onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Amount</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    required
-                    type="number"
-                    value={form.amount}
-                    onChange={(e) => setForm((s) => ({ ...s, amount: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Late fee</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    type="number"
-                    value={form.lateFee}
-                    onChange={(e) => setForm((s) => ({ ...s, lateFee: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Payment start</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    type="datetime-local"
-                    value={form.paymentStart}
-                    onChange={(e) => setForm((s) => ({ ...s, paymentStart: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Payment end</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    type="datetime-local"
-                    value={form.paymentEnd}
-                    onChange={(e) => setForm((s) => ({ ...s, paymentEnd: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-fg-secondary">Grace days</span>
-                  <input
-                    className="input border rounded-lg px-3 py-2"
-                    type="number"
-                    value={form.graceDays}
-                    onChange={(e) => setForm((s) => ({ ...s, graceDays: e.target.value }))}
-                  />
-                </label>
-                <div className="md:col-span-2 flex gap-3">
-                  <button type="submit" className="btn btn-primary">
-                    Save changes
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={() => setEditId(null)}>
-                    Cancel
-                  </button>
-                </div>
-              </form>
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="card">
-                <div className="card-header"><h3 className="font-semibold text-fg-primary">Reopen cycle</h3></div>
-                <div className="card-body space-y-3">
-                <p className="text-xs text-fg-secondary">Extends payment end into the future; status is recomputed on the server (UTC).</p>
-                <select
-                  className="input w-full text-sm"
-                  value={reopenId}
-                  onChange={(e) => setReopenId(e.target.value)}
-                >
-                  <option value="">Select cycle…</option>
-                  {cycleOptions.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="datetime-local"
-                  className="input w-full text-sm"
-                  value={reopenEnd}
-                  onChange={(e) => setReopenEnd(e.target.value)}
-                />
-                <button type="button" disabled={actionBusy} className="btn btn-primary w-full text-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => void doReopen()}>
-                  {actionBusy ? "Applying…" : "Apply"}
-                </button>
-                </div>
-              </div>
-
-              <div className="card">
-                <div className="card-header"><h3 className="font-semibold text-fg-primary">Mark cash paid</h3></div>
-                <div className="card-body space-y-3">
-                <select className="input w-full text-sm" value={cashCycleId} onChange={(e) => setCashCycleId(e.target.value)}>
-                  <option value="">Cycle…</option>
-                  {cycleOptions.map((o) => (
-                    <option key={o.id} value={o.id}>{o.label}</option>
-                  ))}
-                </select>
-                <select className="input w-full text-sm" value={cashUserId} onChange={(e) => setCashUserId(e.target.value)}>
-                  <option value="">Resident (primary billing)…</option>
-                  {primaryMaintenanceUsers.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name} · {u.villa?.villaNumber ?? "?"}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  placeholder="Amount"
-                  className="input w-full text-sm"
-                  value={cashAmount}
-                  onChange={(e) => setCashAmount(e.target.value)}
-                />
-                <button type="button" disabled={actionBusy} className="btn btn-success w-full text-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => void doCash()}>
-                  {actionBusy ? "Recording…" : "Record cash"}
-                </button>
-                </div>
-              </div>
-
-              <div className="card">
-                <div className="card-header"><h3 className="font-semibold text-fg-primary">Waive late fee</h3></div>
-                <div className="card-body space-y-3">
-                <select className="input w-full text-sm" value={waiveCycleId} onChange={(e) => setWaiveCycleId(e.target.value)}>
-                  <option value="">Cycle…</option>
-                  {cycleOptions.map((o) => (
-                    <option key={o.id} value={o.id}>{o.label}</option>
-                  ))}
-                </select>
-                <select className="input w-full text-sm" value={waiveUserId} onChange={(e) => setWaiveUserId(e.target.value)}>
-                  <option value="">Resident (primary billing)…</option>
-                  {primaryMaintenanceUsers.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
-                <button type="button" disabled={actionBusy} className="btn btn-primary w-full text-sm bg-pending-solid hover:bg-pending-solid hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => void doWaive()}>
-                  {actionBusy ? "Waiving…" : "Waive"}
-                </button>
-                </div>
-              </div>
-            </div>
-          </>
+          <BillingCycleTab
+            financialYears={financialYears}
+            fyForm={fyForm}
+            setFyForm={setFyForm}
+            fyEditId={fyEditId}
+            setFyEditId={setFyEditId}
+            onCreateFinancialYear={handleCreateFinancialYear}
+            onUpdateFinancialYear={handleUpdateFinancialYear}
+            onEditFinancialYear={openFinancialYearEdit}
+            onDeleteFinancialYear={(row) => void deleteFinancialYear(row)}
+            createOpen={createOpen}
+            setCreateOpen={setCreateOpen}
+            editId={editId}
+            setEditId={setEditId}
+            form={form}
+            setForm={setForm}
+            monthOptionsForSelectedFinancialYear={monthOptionsForSelectedFinancialYear}
+            creatingCycle={creatingCycle}
+            cycles={cycles}
+            onCreateCycle={handleCreateCycle}
+            onSubmitEdit={submitEdit}
+            onOpenEdit={openEdit}
+            onDeleteTarget={setDeleteTarget}
+            statusBadge={statusBadge}
+            onOpenCreate={handleOpenCreate}
+            cycleOptions={cycleOptions}
+            primaryMaintenanceUsers={primaryMaintenanceUsers}
+            reopenId={reopenId}
+            setReopenId={setReopenId}
+            reopenEnd={reopenEnd}
+            setReopenEnd={setReopenEnd}
+            cashCycleId={cashCycleId}
+            setCashCycleId={setCashCycleId}
+            cashUserId={cashUserId}
+            setCashUserId={setCashUserId}
+            cashAmount={cashAmount}
+            setCashAmount={setCashAmount}
+            waiveCycleId={waiveCycleId}
+            setWaiveCycleId={setWaiveCycleId}
+            waiveUserId={waiveUserId}
+            setWaiveUserId={setWaiveUserId}
+            actionBusy={actionBusy}
+            onReopen={() => void doReopen()}
+            onCash={() => void doCash()}
+            onWaive={() => void doWaive()}
+          />
         )}
 
         {tab === "residents" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="stat-card">
-                <div className="stat-card-label">Total expected</div>
-                <div className="stat-card-value text-base text-fg-primary">{fmtInr(residentTotals.totalExpected)}</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-card-label">Total collected</div>
-                <div className="stat-card-value text-base text-approved-fg">{fmtInr(residentTotals.totalCollected)}</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-card-label">Total shortfall</div>
-                <div className="stat-card-value text-base text-denied-fg">{fmtInr(residentTotals.totalShortfall)}</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-card-label">Total advance credit</div>
-                <div className="stat-card-value text-base text-approved-fg">{fmtInr(residentTotals.totalAdvanceCredit)}</div>
-              </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              <select
-                className="input border rounded-lg px-3 py-2 text-sm bg-surface"
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-              >
-                <option value="">All months</option>
-                {cycles.map((c) => (
-                  <option key={c.cycleKey} value={c.cycleKey}>
-                    {c.cycleKey}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="input border rounded-lg px-3 py-2 text-sm bg-surface"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="">All statuses</option>
-                <option value="PAID">Paid</option>
-                <option value="UNPAID">Unpaid</option>
-                <option value="CREDIT">Credit</option>
-                <option value="DUE">Due</option>
-                <option value="SETTLED">Settled</option>
-              </select>
-              <select
-                className="input border rounded-lg px-3 py-2 text-sm bg-surface"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="">Default sort</option>
-                <option value="highest_due">Highest due first</option>
-                <option value="highest_credit">Highest credit first</option>
-              </select>
-            </div>
-            <div className="table-wrapper relative">
-              {residentsLoading && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/60">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
-                </div>
-              )}
-              <table className="table">
-                <thead className="table-head">
-                  <tr>
-                    <th scope="col" className="table-th">Resident</th>
-                    <th scope="col" className="table-th">Unit</th>
-                    <th scope="col" className="table-th">Cycle</th>
-                    <th scope="col" className="table-th">Pay status</th>
-                    <th scope="col" className="table-th">Expected</th>
-                    <th scope="col" className="table-th">Cash paid</th>
-                    <th scope="col" className="table-th">Effective paid</th>
-                    <th scope="col" className="table-th">Delta</th>
-                    <th scope="col" className="table-th">Badge</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {residentRows.map((r) => {
-                    const delta = Number(r.deltaAmount ?? 0);
-                    const status = r.statusBadge ?? "";
-                    return (
-                    <tr key={`${r.userId ?? ""}-${r.cycleKey ?? ""}`} className="table-row">
-                      <td className="table-td">{r.name ?? ""}</td>
-                      <td className="table-td">{r.flat ?? ""}</td>
-                      <td className="table-td">{r.cycleKey ?? ""}</td>
-                      <td className="table-td">{r.paymentStatus ?? ""}</td>
-                      <td className="table-td">{fmtInr(Number(r.expectedAmount ?? 0))}</td>
-                      <td className="table-td">{fmtInr(Number(r.cashPaidAmount ?? 0))}</td>
-                      <td className="table-td">{fmtInr(Number(r.effectivePaidAmount ?? r.paidAmount ?? 0))}</td>
-                      <td className={`table-td ${paymentDeltaStyles(delta)}`}>{fmtInr(delta)}</td>
-                      <td className="table-td">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${statusBadgeStyles(status)}`}>
-                          {status || "—"}
-                        </span>
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <ResidentsTab
+            residentTotals={residentTotals}
+            filterMonth={filterMonth}
+            setFilterMonth={setFilterMonth}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            cycles={cycles}
+            residentsLoading={residentsLoading}
+            residentRows={residentRows}
+          />
         )}
 
         {tab === "audit" && (
-          <div className="table-wrapper">
-            <table className="table">
-              <thead className="table-head">
-                <tr>
-                  <th scope="col" className="table-th">When (UTC)</th>
-                  <th scope="col" className="table-th">Action</th>
-                  <th scope="col" className="table-th">Entity</th>
-                  <th scope="col" className="table-th">Meta</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditRows.map((a) => (
-                  <tr key={a.id} className="table-row">
-                    <td className="table-td whitespace-nowrap text-xs">{new Date(a.createdAt).toISOString()}</td>
-                    <td className="table-td font-mono text-xs">{a.action}</td>
-                    <td className="table-td text-xs">
-                      {a.entityType} {a.entityId ? `(${a.entityId.slice(0, 8)}…)` : ""}
-                    </td>
-                    <td className="table-td text-xs max-w-md truncate" title={JSON.stringify(a.metadata)}>
-                      {JSON.stringify(a.metadata)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <AuditLogTab auditRows={auditRows} />
         )}
       </div>
 

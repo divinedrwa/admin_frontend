@@ -1,8 +1,9 @@
 "use client";
 
 import { Plus, Vote } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { Pagination } from "@/components/Pagination";
@@ -10,23 +11,8 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-type Poll = {
-  id: string;
-  title: string;
-  description?: string;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  options: PollOption[];
-  _count?: { votes: number };
-};
-
-type PollOption = {
-  id: string;
-  optionText: string;
-  _count?: { votes: number };
-};
+import { Poll, PollOption } from "@/types/poll";
+import { usePolls } from "@/hooks/usePolls";
 
 export default function PollsPage() {
   return (
@@ -39,18 +25,22 @@ export default function PollsPage() {
 function PollsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [polls, setPolls] = useState<Poll[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [deletingPollId, setDeletingPollId] = useState<string | null>(null);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const { confirm, ConfirmUI } = useConfirm();
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "closed">("all");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -62,37 +52,25 @@ function PollsPageInner() {
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadPolls = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/polls?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setPolls(response.data.polls ?? []);
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load polls", "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadPolls(initialOffset, controller.signal);
-    return () => controller.abort();
-  }, [loadPolls, initialOffset]);
+  const queryParams = useMemo(() => {
+    const p: Record<string, unknown> = { limit: 50, offset: initialOffset };
+    if (debouncedSearch) p.search = debouncedSearch;
+    if (statusFilter !== "all") p.status = statusFilter;
+    return p;
+  }, [initialOffset, debouncedSearch, statusFilter]);
+  const { data, isLoading: loading } = usePolls(queryParams);
+  const polls = data?.polls ?? [];
+  const pgMeta = {
+    total: data?.total ?? 0,
+    limit: data?.limit ?? 50,
+    offset: data?.offset ?? 0,
+  };
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    loadPolls(newOffset);
   };
 
   const handleOpenForm = () => {
@@ -144,7 +122,7 @@ function PollsPageInner() {
     try {
       await api.delete(`/polls/${pollId}`);
       showToast("Poll deleted successfully", "success");
-      loadPolls(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["polls"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete poll").message;
       showToast(message, "error");
@@ -204,7 +182,7 @@ function PollsPageInner() {
       }
 
       handleCloseForm();
-      loadPolls(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["polls"] });
     } catch (error: unknown) {
       const message = parseApiError(error, editingPoll ? "Failed to update poll" : "Failed to create poll").message;
       showToast(message, "error");
@@ -226,19 +204,7 @@ function PollsPageInner() {
     return Math.round((optionVotes / totalVotes) * 100);
   };
 
-  // Filter and search logic (client-side within current page)
-  const filteredPolls = polls.filter((poll) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesTitle = poll.title.toLowerCase().includes(query);
-      const matchesDesc = poll.description?.toLowerCase().includes(query);
-      if (!matchesTitle && !matchesDesc) return false;
-    }
-    if (statusFilter === "active" && !poll.isActive) return false;
-    if (statusFilter === "closed" && poll.isActive) return false;
-    return true;
-  });
-
+  // Counts derived from server-filtered results
   const activeCount = polls.filter(p => p.isActive).length;
   const closedCount = polls.filter(p => !p.isActive).length;
 
@@ -288,7 +254,7 @@ function PollsPageInner() {
 
           {/* Results Count */}
           <div className="mt-3 text-sm text-fg-secondary">
-            Showing {filteredPolls.length} of {polls.length} polls on this page
+            Showing {polls.length} of {pgMeta.total} polls
           </div>
         </div>
 
@@ -416,7 +382,7 @@ function PollsPageInner() {
               <div className="loading-spinner w-10 h-10"></div>
               <p className="loading-state-text">Loading polls...</p>
             </div>
-          ) : filteredPolls.length === 0 && pgMeta.total === 0 ? (
+          ) : polls.length === 0 && pgMeta.total === 0 ? (
             <div className="card">
               <div className="empty-state">
                 <span className="empty-state-icon">📊</span>
@@ -430,7 +396,7 @@ function PollsPageInner() {
             </div>
           ) : (
             <>
-              {filteredPolls.map((poll) => (
+              {polls.map((poll) => (
                 <div key={poll.id} className="card p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">

@@ -18,6 +18,7 @@ import {
 import { publicApi } from "@/lib/publicApi";
 import { showToast } from "@/components/Toast";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { parseApiError } from "@/utils/errorHandler";
 
 type VerifyResponse = {
   valid: boolean;
@@ -133,10 +134,7 @@ function InviteAcceptContent() {
         router.push("/dashboard");
       }
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Registration failed";
-      showToast(message, "error");
+      showToast(parseApiError(err, "Registration failed").message, "error");
     } finally {
       setSubmitting(false);
     }

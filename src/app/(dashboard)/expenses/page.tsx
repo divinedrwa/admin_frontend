@@ -1,47 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { Plus, Search, Filter, Download, Edit, Trash2, Eye, Calendar, ReceiptText } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { parseApiError } from "@/utils/errorHandler";
-
-interface Expense {
-  id: string;
-  title: string;
-  description?: string;
-  amount: number;
-  netAmount: number;
-  paymentDate: string;
-  paymentMode: string;
-  paidTo: string;
-  receiptNumber?: string;
-  month?: number;
-  year?: number;
-  financialYear?: { id: string; label: string } | null;
-  status: string;
-  category: {
-    id: string;
-    name: string;
-    color?: string;
-    icon?: string;
-  };
-  attachments: unknown[];
-}
-
-interface ExpenseCategory {
-  id: string;
-  name: string;
-  icon?: string;
-  color?: string;
-}
-
-type FinancialYear = { id: string; label: string; startDate: string; endDate: string };
+import { useExpenses, useExpenseCategories, useFinancialYears } from '@/hooks/useExpenses';
+import { Expense } from '@/types/expense';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -51,11 +22,7 @@ const MONTHS = [
 function ExpensesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
-  const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
+  const queryClient = useQueryClient();
   const { confirm, ConfirmUI } = useConfirm();
 
   // Filters
@@ -67,106 +34,60 @@ function ExpensesPageInner() {
   const [selectedStatus, setSelectedStatus] = useState('APPROVED');
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('');
 
-  // Stats
-  const [stats, setStats] = useState({
-    total: 0,
-    count: 0,
-    thisMonth: 0,
-    thisYear: 0
-  });
-
-  const fetchCategories = useCallback(async (signal?: AbortSignal) => {
-    try {
-      const response = await api.get('/expenses/categories', { signal });
-      setCategories(response.data ?? []);
-    } catch (error: unknown) {
-      if ((error as { name?: string }).name === "CanceledError") return;
-      console.error('Error fetching categories:', error);
-      showToast(parseApiError(error, "Failed to fetch categories").message, 'error');
-    }
-  }, []);
-
-  const fetchFinancialYears = useCallback(async (signal?: AbortSignal) => {
-    try {
-      const response = await api.get('/v1/admin/financial-years', { signal });
-      setFinancialYears(response.data.financialYears ?? []);
-    } catch (error: unknown) {
-      if ((error as { name?: string }).name === "CanceledError") return;
-      console.error('Error fetching financial years:', error);
-    }
-  }, []);
-
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const fetchExpenses = useCallback(async (offset = initialOffset, signal?: AbortSignal) => {
-    try {
-      const params = new URLSearchParams();
-      params.append('limit', '50');
-      params.append('offset', String(offset));
-      if (selectedCategory) params.append('categoryId', selectedCategory);
-      if (selectedFyId) params.append('financialYearId', selectedFyId);
-      if (selectedMonth) params.append('month', selectedMonth);
-      if (selectedYear) params.append('year', selectedYear);
-      if (selectedStatus) params.append('status', selectedStatus);
-      if (selectedPaymentMode) params.append('paymentMode', selectedPaymentMode);
-      if (searchTerm) params.append('search', searchTerm);
+  const { data: categoriesData = [] } = useExpenseCategories();
+  const categories = categoriesData;
 
-      const response = await api.get(`/expenses?${params.toString()}`, { signal });
-      const data = response.data ?? [];
-      const serverTotal = parseInt(response.headers['x-total-count'] || '0', 10);
-      setExpenses(data);
-      setPgMeta({ total: serverTotal || data.length, limit: 50, offset });
+  const { data: financialYears = [] } = useFinancialYears();
 
-      // Calculate stats from the returned page. Note: these are accurate only
-      // when filters narrow results below one page. The entry count uses the
-      // server-provided total so it always reflects the full filtered set.
-      const total = data.reduce((sum: number, exp: Expense) => sum + exp.amount, 0);
-      const currentMonth = new Date().getMonth() + 1;
-      const currentYear = new Date().getFullYear();
-      const thisMonth = data
-        .filter((exp: Expense) => exp.month === currentMonth && exp.year === currentYear)
-        .reduce((sum: number, exp: Expense) => sum + exp.amount, 0);
-      const thisYear = data
-        .filter((exp: Expense) => exp.year === currentYear)
-        .reduce((sum: number, exp: Expense) => sum + exp.amount, 0);
+  const expensesParams = {
+    limit: 50,
+    offset: initialOffset,
+    categoryId: selectedCategory || undefined,
+    financialYearId: selectedFyId || undefined,
+    month: selectedMonth || undefined,
+    year: selectedYear || undefined,
+    status: selectedStatus || undefined,
+    paymentMode: selectedPaymentMode || undefined,
+    search: searchTerm || undefined,
+  };
 
-      setStats({
-        total,
-        count: serverTotal || data.length,
-        thisMonth,
-        thisYear
-      });
-    } catch (error: unknown) {
-      if ((error as { name?: string }).name === "CanceledError") return;
-      console.error('Error fetching expenses:', error);
-      showToast(parseApiError(error, "Failed to fetch expenses").message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [initialOffset, searchTerm, selectedCategory, selectedFyId, selectedMonth, selectedPaymentMode, selectedStatus, selectedYear]);
+  const { data: expensesData, isLoading: loading } = useExpenses(expensesParams);
+  const expenses = expensesData?.expenses ?? [];
+  const pgMeta = {
+    total: expensesData?.total ?? 0,
+    limit: expensesData?.limit ?? 50,
+    offset: expensesData?.offset ?? 0,
+  };
 
-  useEffect(() => {
-    const controller = new AbortController();
-    void fetchCategories(controller.signal);
-    void fetchFinancialYears(controller.signal);
-    void fetchExpenses(initialOffset, controller.signal);
-    return () => controller.abort();
-  }, [fetchCategories, fetchFinancialYears, fetchExpenses, initialOffset]);
+  // Calculate stats from the returned page
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const stats = {
+    total: expenses.reduce((sum: number, exp: Expense) => sum + exp.amount, 0),
+    count: pgMeta.total,
+    thisMonth: expenses
+      .filter((exp: Expense) => exp.month === currentMonth && exp.year === currentYear)
+      .reduce((sum: number, exp: Expense) => sum + exp.amount, 0),
+    thisYear: expenses
+      .filter((exp: Expense) => exp.year === currentYear)
+      .reduce((sum: number, exp: Expense) => sum + exp.amount, 0),
+  };
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    void fetchExpenses(newOffset);
   };
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: 'Delete expense', message: 'Are you sure you want to delete this expense?', confirmLabel: 'Delete' }))) return;
-    
+
     try {
       await api.delete(`/expenses/${id}`);
-      await fetchExpenses(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
       showToast('Expense deleted', 'success');
     } catch (error: unknown) {
       console.error('Error deleting expense:', error);
@@ -314,7 +235,7 @@ function ExpensesPageInner() {
                 placeholder="Search title, description, vendor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fetchExpenses()}
+                onKeyDown={(e) => e.key === 'Enter' && queryClient.invalidateQueries({ queryKey: ["expenses"] })}
                 className="input pl-10"
                 aria-label="Search expenses"
               />

@@ -68,8 +68,8 @@ type FundTrendPoint = {
 // this page so it stays as a record. Backend list endpoints return
 // `{ <domainKey>: [...], total?, limit?, ... }` after the pagination
 // rollout — see [src/lib/pagination.ts] in the backend.
-type VillasListResponse = { villas: Array<{ id: string }> };
-type UsersListResponse = { users: Array<{ id: string }> };
+type VillasListResponse = { villas: Array<{ id: string }>; total?: number };
+type UsersListResponse = { users: Array<{ id: string }>; total?: number };
 
 function buildFundSparklinePath(points: FundTrendPoint[]) {
   if (points.length === 0) return "";
@@ -250,17 +250,20 @@ export default function DashboardPage() {
       // `safeGet(api.get<T>(...))` returns `{ ok, data: AxiosResponse<T> }`,
       // so the typed body lives at `.data.data.<key>`.
       if (villasRes.ok && Array.isArray(villasRes.data.data?.villas)) {
-        setVillaCount(villasRes.data.data.villas.length);
+        const vd = villasRes.data.data;
+        setVillaCount(typeof vd.total === "number" ? vd.total : vd.villas.length);
       } else {
         countErrors.push("villas");
       }
       if (residentsRes.ok && Array.isArray(residentsRes.data.data?.users)) {
-        setResidentCount(residentsRes.data.data.users.length);
+        const rd = residentsRes.data.data;
+        setResidentCount(typeof rd.total === "number" ? rd.total : rd.users.length);
       } else {
         countErrors.push("residents");
       }
       if (guardsRes.ok && Array.isArray(guardsRes.data.data?.users)) {
-        setGuardCount(guardsRes.data.data.users.length);
+        const gd = guardsRes.data.data;
+        setGuardCount(typeof gd.total === "number" ? gd.total : gd.users.length);
       } else {
         countErrors.push("guards");
       }
@@ -416,7 +419,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void load();
-    return () => abortRef.current?.abort();
+    const interval = setInterval(() => void load(), 60_000);
+    return () => {
+      clearInterval(interval);
+      abortRef.current?.abort();
+    };
   }, [load]);
 
   const stats = useMemo(() => {
@@ -572,9 +579,9 @@ export default function DashboardPage() {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {stats.map((stat, index) => (
+          {stats.map((stat) => (
             <div
-              key={index}
+              key={stat.label}
               className="stat-card bg-surface rounded-xl border border-surface-border shadow-sm p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between gap-2">

@@ -1,8 +1,9 @@
 "use client";
 
 import { Package, Plus } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { Pagination } from "@/components/Pagination";
@@ -11,26 +12,10 @@ import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-type Parcel = {
-  id: string;
-  description: string;
-  status: "PENDING" | "COLLECTED" | "DELIVERED";
-  receivedAt: string;
-  collectedAt: string | null;
-  villa: {
-    villaNumber: string;
-    block: string;
-    ownerName: string;
-  };
-};
-
-type Villa = {
-  id: string;
-  villaNumber: string;
-  block: string;
-  ownerName: string;
-};
+import { useParcels } from "@/hooks/useParcels";
+import { useVillas } from "@/hooks/useVillas";
+import { Parcel } from "@/types/parcel";
+import { VillaOption } from "@/types/villa";
 
 export default function ParcelsPage() {
   return (
@@ -43,19 +28,22 @@ export default function ParcelsPage() {
 function ParcelsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [parcels, setParcels] = useState<Parcel[]>([]);
-  const [villas, setVillas] = useState<Villa[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingParcel, setEditingParcel] = useState<Parcel | null>(null);
   const [deletingParcelId, setDeletingParcelId] = useState<string | null>(null);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const { confirm, ConfirmUI } = useConfirm();
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "PENDING" | "COLLECTED">("all");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [formData, setFormData] = useState({
     villaId: "",
@@ -64,70 +52,38 @@ function ParcelsPageInner() {
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadParcels = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/parcels?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setParcels(response.data.parcels ?? []);
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load parcels", "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
+  const queryParams = useMemo(() => {
+    const p: Record<string, unknown> = { limit: 50, offset: initialOffset };
+    if (debouncedSearch) p.search = debouncedSearch;
+    if (statusFilter !== "all") p.status = statusFilter;
+    return p;
+  }, [initialOffset, debouncedSearch, statusFilter]);
 
-  const loadVillas = (signal?: AbortSignal) => {
-    api
-      .get("/villas", { signal })
-      .then((response) =>
-        setVillas(
-          sortByVillaNumber(
-            (response.data.villas ?? []) as Villa[],
-            (v) => v.villaNumber,
-          ),
-        ),
-      )
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load villas", "error");
-      });
+  const { data: parcelData, isLoading: loading } = useParcels(queryParams);
+  const parcels = parcelData?.parcels ?? [];
+  const pgMeta = {
+    total: parcelData?.total ?? 0,
+    limit: parcelData?.limit ?? 50,
+    offset: parcelData?.offset ?? 0,
   };
 
-  useEffect(() => {
-    const controller = new AbortController();
-    loadParcels(initialOffset, controller.signal);
-    loadVillas(controller.signal);
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadParcels]);
+  const { data: villaData } = useVillas();
+  const villas = useMemo(
+    () => sortByVillaNumber(
+      (villaData?.villas ?? []) as VillaOption[],
+      (v) => v.villaNumber,
+    ),
+    [villaData?.villas],
+  );
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    loadParcels(newOffset);
   };
 
-  // Filter and search logic (client-side within current page)
-  const filteredParcels = parcels.filter((parcel) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesVilla = parcel.villa.villaNumber.toLowerCase().includes(query);
-      const matchesDesc = parcel.description.toLowerCase().includes(query);
-      if (!matchesVilla && !matchesDesc) return false;
-    }
-    if (statusFilter !== "all" && parcel.status !== statusFilter) return false;
-    return true;
-  });
-
+  // Counts derived from server-filtered results
   const pendingCount = parcels.filter(p => p.status === "PENDING").length;
   const collectedCount = parcels.filter(p => p.status === "COLLECTED").length;
 
@@ -160,7 +116,7 @@ function ParcelsPageInner() {
     try {
       await api.delete(`/parcels/${parcelId}`);
       showToast("Parcel deleted successfully", "success");
-      loadParcels(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["parcels"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete parcel").message;
       showToast(message, "error");
@@ -193,7 +149,7 @@ function ParcelsPageInner() {
         showToast("Parcel logged successfully", "success");
       }
       handleCloseForm();
-      loadParcels(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["parcels"] });
     } catch (error: unknown) {
       const message = parseApiError(error, editingParcel ? "Failed to update parcel" : "Failed to log parcel").message;
       showToast(message, "error");
@@ -243,7 +199,7 @@ function ParcelsPageInner() {
             </div>
           </div>
           <div className="mt-3 text-sm text-fg-secondary">
-            Showing {filteredParcels.length} of {parcels.length} parcels on this page
+            Showing {parcels.length} of {pgMeta.total} parcels
           </div>
         </div>
 
@@ -335,7 +291,7 @@ function ParcelsPageInner() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredParcels.length === 0 ? (
+                  {parcels.length === 0 ? (
                     <tr>
                       <td colSpan={6}>
                         <div className="empty-state">
@@ -346,7 +302,7 @@ function ParcelsPageInner() {
                       </td>
                     </tr>
                   ) : (
-                    filteredParcels.map((parcel) => (
+                    parcels.map((parcel) => (
                       <tr key={parcel.id} className="table-row">
                         <td className="table-td">
                           {parcel.villa.villaNumber}

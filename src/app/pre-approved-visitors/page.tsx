@@ -1,53 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ShieldCheck } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
-
-type PreApprovedVisitor = {
-  id: string;
-  name: string;
-  phone: string;
-  purpose?: string | null;
-  validUntil?: string | null;
-  villa?: {
-    villaNumber: string;
-  } | null;
-};
+import { usePreApprovedVisitors } from "@/hooks/useVisitors";
+import { PreApprovedVisitor } from "@/types/visitor";
 
 export default function PreApprovedVisitorsPage() {
-  const [visitors, setVisitors] = useState<PreApprovedVisitor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+  const { data, isLoading: loading, error: queryError } = usePreApprovedVisitors();
+  const visitors = (data ?? []) as PreApprovedVisitor[];
+  const error = queryError ? String(queryError) : "";
   const { confirm, ConfirmUI } = useConfirm();
-
-  useEffect(() => {
-    fetchVisitors();
-  }, []);
-
-  const fetchVisitors = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await api.get("/pre-approved-visitors");
-      setVisitors(response.data.visitors || response.data);
-    } catch (err: unknown) {
-      setError(parseApiError(err, "Failed to fetch pre-approved visitors").message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: "Remove visitor", message: "Remove this pre-approved visitor?", confirmLabel: "Remove" }))) return;
-    
+
     try {
       await api.delete(`/pre-approved-visitors/${id}`);
       showToast("Pre-approved visitor removed", "success");
-      void fetchVisitors();
+      queryClient.invalidateQueries({ queryKey: ["preApprovedVisitors"] });
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to remove visitor").message, "error");
     }
@@ -56,6 +33,12 @@ export default function PreApprovedVisitorsPage() {
   return (
     <AppShell title="Pre-Approved Visitors">
       <div className="space-y-6">
+        <AdminPageHeader
+          eyebrow="Visitor management"
+          title="Pre-approved visitors"
+          description="Residents can pre-approve visitors via the app. Guards verify them at entry using OTP or QR scan."
+          icon={<ShieldCheck className="h-6 w-6" />}
+        />
 
         {error && (
           <div className="bg-denied-bg border border-brand-danger text-denied-fg px-4 py-3 rounded mb-4">

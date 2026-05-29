@@ -12,6 +12,7 @@ import {
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { parseApiError } from "@/utils/errorHandler";
 
 function ResetPasswordInner() {
   const router = useRouter();
@@ -99,10 +100,7 @@ function ResetPasswordInner() {
       await api.post("/auth/reset-password", { token, password });
       setSuccess(true);
     } catch (error: unknown) {
-      const msg =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Failed to reset password. The link may have expired.";
-      showToast(msg, "error");
+      showToast(parseApiError(error, "Failed to reset password. The link may have expired.").message, "error");
     } finally {
       setLoading(false);
     }

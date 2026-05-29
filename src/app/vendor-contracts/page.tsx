@@ -5,8 +5,8 @@ import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { Vendor } from "@/types/vendor";
 
-type Vendor = { id: string; name: string; category: string };
 type Contract = {
   id: string;
   title: string;
@@ -59,15 +59,18 @@ export default function VendorContractsPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), pageSize: "20" });
+      const limit = 20;
+      const offset = (page - 1) * limit;
+      const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
       if (statusFilter) params.set("status", statusFilter);
-      const { data } = await api.get(`/vendor-contracts?${params}`);
+      const { data } = await api.get(`/vendor-contracts?${params}`, { signal });
       setContracts(data.contracts);
-      setTotalPages(data.totalPages || 1);
-    } catch {
+      setTotalPages(Math.ceil((data.total || 1) / limit));
+    } catch (error) {
+      if ((error as { name?: string }).name === "CanceledError") return;
       /* ignore */
     } finally {
       setLoading(false);
@@ -75,11 +78,17 @@ export default function VendorContractsPage() {
   }, [page, statusFilter]);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   useEffect(() => {
-    api.get("/vendors?pageSize=200").then(({ data }) => setVendors(data.vendors || []));
+    const controller = new AbortController();
+    api.get("/vendors?limit=200", { signal: controller.signal }).then(({ data }) => setVendors(data.vendors || [])).catch((error) => {
+      if ((error as { name?: string }).name === "CanceledError") return;
+    });
+    return () => controller.abort();
   }, []);
 
   const resetForm = () => {

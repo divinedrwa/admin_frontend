@@ -1,56 +1,19 @@
 "use client";
 
 import { Clock3, Plus } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-type GuardShift = {
-  id: string;
-  shiftType: "MORNING" | "AFTERNOON" | "NIGHT";
-  startTime: string; // ISO datetime string
-  endTime: string; // ISO datetime string
-  recurringDaily?: boolean;
-  recurringStartMinutes?: number | null;
-  recurringEndMinutes?: number | null;
-  gate: {
-    name: string;
-    location: string;
-  };
-  guard: {
-    name: string;
-    email: string;
-  };
-};
-
-type Gate = {
-  id: string;
-  name: string;
-  location: string;
-  isActive: boolean;
-};
-
-type Guard = {
-  id: string;
-  name: string;
-  email: string;
-};
-
-type ShiftForm = {
-  guardId: string;
-  gateId: string;
-  shiftType: "MORNING" | "AFTERNOON" | "NIGHT";
-  date: string;
-  startTime: string;
-  endTime: string;
-  /** Same shift window every calendar day (no specific date). */
-  repeatDaily: boolean;
-};
+import { useGuardShifts, useGuards } from "@/hooks/useGuardShifts";
+import { useGates } from "@/hooks/useGates";
+import { ShiftForm } from "@/types/guard";
 
 /** Parse `type="date"` + `type="time"` (HH:MM or HH:MM:SS) into a local Date (no broken `…T08:00:00:00.000Z`). */
 function formatMinutesAsClock(m: number): string {
@@ -80,10 +43,7 @@ export default function GuardShiftsPage() {
 function GuardShiftsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [shifts, setShifts] = useState<GuardShift[]>([]);
-  const [gates, setGates] = useState<Gate[]>([]);
-  const [guards, setGuards] = useState<Guard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<ShiftForm>({
     guardId: "",
@@ -95,79 +55,27 @@ function GuardShiftsPageInner() {
     repeatDaily: false,
   });
   const [submitting, setSubmitting] = useState(false);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const { confirm, ConfirmUI } = useConfirm();
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const loadShifts = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/guard-shifts?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setShifts(response.data.shifts ?? []);
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load shifts";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
-
-  const loadGates = (signal?: AbortSignal) => {
-    api
-      .get("/gates", { signal })
-      .then((response) => {
-        const allGates = response.data.gates ?? [];
-        setGates(allGates.filter((g: Gate) => g.isActive));
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load gates";
-        showToast(message, "error");
-      });
+  const { data: shiftsData, isLoading: loading } = useGuardShifts({ limit: 50, offset: initialOffset });
+  const shifts = shiftsData?.shifts ?? [];
+  const pgMeta = {
+    total: shiftsData?.total ?? 0,
+    limit: shiftsData?.limit ?? 50,
+    offset: shiftsData?.offset ?? 0,
   };
 
-  const loadGuards = (signal?: AbortSignal) => {
-    api
-      .get("/users", { signal })
-      .then((response) => {
-        const allUsers = response.data.users ?? [];
-        setGuards(allUsers.filter((u: { role: string }) => u.role === "GUARD"));
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load guards";
-        showToast(message, "error");
-      });
-  };
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadShifts(initialOffset, controller.signal);
-    loadGates(controller.signal);
-    loadGuards(controller.signal);
-    return () => controller.abort();
-  }, [loadShifts, initialOffset]);
+  const { data: guards = [] } = useGuards();
+  const { data: gatesData } = useGates();
+  const gates = (gatesData?.gates ?? []).filter((g) => g.isActive);
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
     else params.delete("offset");
     router.replace(`?${params.toString()}`, { scroll: false });
-    loadShifts(newOffset);
   };
 
   const handleOpenForm = () => {
@@ -282,7 +190,7 @@ function GuardShiftsPageInner() {
       }
       showToast("Guard shift scheduled successfully", "success");
       handleCloseForm();
-      loadShifts(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["guard-shifts"] });
     } catch (error: unknown) {
       const data = (error as { response?: { data?: { message?: string; issues?: { path: (string | number)[]; message: string }[] } } })
         ?.response?.data;
@@ -304,11 +212,9 @@ function GuardShiftsPageInner() {
     try {
       await api.delete(`/guard-shifts/${shiftId}`);
       showToast("Shift deleted successfully", "success");
-      loadShifts(pgMeta.offset);
+      queryClient.invalidateQueries({ queryKey: ["guard-shifts"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to delete shift";
+      const message = parseApiError(error, "Failed to delete shift").message;
       showToast(message, "error");
     }
   };

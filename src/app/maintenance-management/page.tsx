@@ -4,67 +4,31 @@ import { Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
-import { Modal } from "@/components/Modal";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
-
-type PaymentMode = "CASH" | "UPI" | "CHEQUE" | "BANK_TRANSFER";
-type PaymentStatus = "PAID" | "PENDING" | "OVERDUE" | "PARTIAL";
-
-type FinancialYear = { id: string; label: string; status?: string };
-type CycleRow = {
-  billingCycleId: string;
-  maintenanceCollectionCycleId?: string;
-  cycleKey: string;
-  title: string;
-  periodMonth: number;
-  periodYear: number;
-  dueDate?: string;
-  status: string;
-};
-type VillaBasic = {
-  id: string;
-  villaNumber: string;
-  ownerName: string;
-  monthlyMaintenance: number;
-};
-type GridSummary = {
-  totalVillas: number;
-  paidCount: number;
-  unpaidCount: number;
-  overdueCount: number;
-  partialCount?: number;
-  excludedCount?: number;
-  totalAmount: number;
-  collectedAmount: number;
-  pendingAmount: number;
-  collectionRate: number;
-};
-type ResidentRow = {
-  villaId: string;
-  villaNumber: string;
-  block: string | null;
-  ownerName: string;
-  amount: number;
-  paidTowardCycle?: number;
-  status: PaymentStatus;
-  daysOverdue: number;
-  paymentDate: string | null;
-  receiptNumber: string | null;
-  paymentMode: PaymentMode | null;
-  snapshotId?: string;
-  advanceCredit?: number;
-  cashPaidThisCycle?: number;
-  isExcluded?: boolean;
-};
-
-type GridCycleInfo = {
-  id: string;
-  status: string;
-  title?: string;
-};
+import {
+  MaintenanceStatsCards,
+  MaintenanceTable,
+  PaymentModal,
+  CreditManagementModal,
+  ExcludeModal,
+  formatCurrency,
+  MONTHS,
+} from "./components";
+import type {
+  PaymentMode,
+  PaymentStatus,
+  FinancialYear,
+  CycleRow,
+  VillaBasic,
+  GridSummary,
+  ResidentRow,
+  GridCycleInfo,
+  PaymentFormState,
+  RowEditState,
+} from "./components";
 
 type BillingCycleApiRow = {
   id: string;
@@ -74,21 +38,6 @@ type BillingCycleApiRow = {
   paymentEndDate: string;
   status: string;
 };
-
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
 
 export default function MaintenanceManagementPage() {
   const [loading, setLoading] = useState(false);
@@ -123,13 +72,8 @@ export default function MaintenanceManagementPage() {
   const [showUnpaidModal, setShowUnpaidModal] = useState(false);
   const [unpaidTarget, setUnpaidTarget] = useState<ResidentRow | null>(null);
   const [unpaidReason, setUnpaidReason] = useState("");
-  const [rowEdit, setRowEdit] = useState<{
-    villaId: string;
-    villaNumber: string;
-    expectedStr: string;
-    paidStr: string;
-  } | null>(null);
-  const [paymentForm, setPaymentForm] = useState({
+  const [rowEdit, setRowEdit] = useState<RowEditState | null>(null);
+  const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
     villaId: "",
     villaNumber: "",
     amount: 0,
@@ -529,8 +473,6 @@ export default function MaintenanceManagementPage() {
     }
   }
 
-  const formatCurrency = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
-
   return (
     <AppShell title="Maintenance Payment Management">
       <div className="space-y-6">
@@ -630,673 +572,76 @@ export default function MaintenanceManagementPage() {
         </div>
 
         {summary && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="stat-card bg-brand-primary-light">
-              <div className="stat-card-label text-brand-primary">Total Villas</div>
-              <div className="stat-card-value text-lg text-fg-primary">{summary.totalVillas}</div>
-            </div>
-            <div className="stat-card bg-approved-bg">
-              <div className="stat-card-label text-approved-fg">Paid</div>
-              <div className="stat-card-value text-lg text-fg-primary">{summary.paidCount}</div>
-            </div>
-            <div className="stat-card bg-pending-bg">
-              <div className="stat-card-label text-pending-fg">Unpaid</div>
-              <div className="stat-card-value text-lg text-fg-primary">{summary.unpaidCount}</div>
-            </div>
-            <div className="stat-card bg-denied-bg">
-              <div className="stat-card-label text-denied-fg">Overdue</div>
-              <div className="stat-card-value text-lg text-fg-primary">{summary.overdueCount}</div>
-            </div>
-            <div className="stat-card bg-brand-primary-light">
-              <div className="stat-card-label text-brand-primary">Collection</div>
-              <div className="stat-card-value text-lg text-fg-primary">{summary.collectionRate}%</div>
-            </div>
-            {(summary.excludedCount ?? 0) > 0 && (
-              <div className="stat-card bg-surface-elevated">
-                <div className="stat-card-label text-fg-tertiary">Excluded</div>
-                <div className="stat-card-value text-lg text-fg-primary">{summary.excludedCount}</div>
-              </div>
-            )}
-          </div>
+          <MaintenanceStatsCards summary={summary} />
         )}
 
-        {/* Advance Credit explainer */}
-        {residents.length > 0 && (
-          <div className="bg-brand-primary-light border border-surface-border rounded">
-            <button
-              type="button"
-              onClick={() => setShowCreditHelp(!showCreditHelp)}
-              className="w-full px-4 py-2.5 flex items-center justify-between text-left"
-            >
-              <span className="text-sm font-medium text-fg-primary">
-                What is Advance Credit?
-              </span>
-              <span className="text-brand-primary text-xs">{showCreditHelp ? "Hide" : "Show"}</span>
-            </button>
-            {showCreditHelp && (
-              <div className="px-4 pb-3 text-sm text-fg-primary space-y-2 border-t border-surface-border pt-3">
-                <p>
-                  <strong>Advance credit</strong> is money a resident has paid in advance that hasn&apos;t been used yet.
-                  It works like a wallet balance.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div className="bg-surface rounded p-3 border border-surface-border">
-                    <div className="font-semibold mb-1">How credit is created</div>
-                    <ul className="list-disc list-inside space-y-0.5 text-info-fg">
-                      <li>Resident overpays (pays more than the monthly amount)</li>
-                      <li>Admin manually adds credit via &quot;Manage Credit&quot;</li>
-                    </ul>
-                  </div>
-                  <div className="bg-surface rounded p-3 border border-surface-border">
-                    <div className="font-semibold mb-1">How credit is used</div>
-                    <ul className="list-disc list-inside space-y-0.5 text-info-fg">
-                      <li>Click the green credit badge on any villa row</li>
-                      <li>Choose &quot;Use credit for this month&quot; to apply it</li>
-                      <li>The credit settles the pending amount (full or partial)</li>
-                    </ul>
-                  </div>
-                  <div className="bg-surface rounded p-3 border border-surface-border">
-                    <div className="font-semibold mb-1">Manual adjustments</div>
-                    <ul className="list-disc list-inside space-y-0.5 text-info-fg">
-                      <li><strong>Add credit</strong> — record advance cash received offline</li>
-                      <li><strong>Deduct credit</strong> — correct a mistake or reverse an entry</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="filter-bar flex gap-3 items-center">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as "all" | PaymentStatus | "EXCLUDED")}
-            className="input"
-          >
-            <option value="all">All status</option>
-            <option value="PAID">Paid</option>
-            <option value="PENDING">Pending</option>
-            <option value="PARTIAL">Partial</option>
-            <option value="OVERDUE">Overdue</option>
-            <option value="EXCLUDED">Excluded</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Search villa or owner..."
-            className="input flex-1"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        <div className="table-wrapper relative">
-          {gridLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/60">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
-            </div>
-          )}
-          <table className="table">
-            <thead className="table-head">
-              <tr>
-                <th scope="col" className="table-th">Villa</th>
-                <th scope="col" className="table-th">Owner</th>
-                <th scope="col" className="table-th">Amount</th>
-                <th scope="col" className="table-th">Advance Credit</th>
-                <th scope="col" className="table-th">Status</th>
-                <th scope="col" className="table-th">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredResidents.map((r) => {
-                const credit = r.advanceCredit ?? 0;
-                const remaining = r.amount - (r.paidTowardCycle ?? 0);
-                return (
-                  <tr key={r.villaId} className="table-row">
-                    <td className="table-td font-medium">{r.villaNumber}</td>
-                    <td className="table-td">{r.ownerName}</td>
-                    <td className="table-td">
-                      {r.paidTowardCycle != null && r.paidTowardCycle > 0
-                        ? `${formatCurrency(r.paidTowardCycle)} / ${formatCurrency(r.amount)}`
-                        : formatCurrency(r.amount)}
-                    </td>
-                    <td className="table-td">
-                      {credit > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => openCreditModal(r)}
-                          disabled={!cycleEditable || loading}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-approved-bg border border-approved-bg px-2.5 py-1 text-xs font-semibold text-approved-fg hover:bg-approved-bg transition-colors disabled:opacity-40"
-                          title="Click to manage this credit"
-                        >
-                          {formatCurrency(credit)}
-                          {r.status !== "PAID" && remaining > 0 && (
-                            <span className="text-approved-solid">- use it</span>
-                          )}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => openCreditModal(r)}
-                          disabled={!cycleEditable || loading}
-                          className="text-fg-tertiary hover:text-brand-primary text-xs disabled:opacity-40"
-                          title="Add advance credit"
-                        >
-                          + Add
-                        </button>
-                      )}
-                    </td>
-                    <td className="table-td">
-                      {r.isExcluded ? (
-                        <span className="badge badge-gray">EXCLUDED</span>
-                      ) : (
-                        <span className={`badge ${
-                          r.status === "PAID"
-                            ? "badge-success"
-                            : r.status === "OVERDUE"
-                              ? "badge-danger"
-                              : r.status === "PARTIAL"
-                                ? "badge-warning"
-                                : "badge-gray"
-                        }`}>
-                          {r.status}
-                        </span>
-                      )}
-                    </td>
-                    <td className="table-td">
-                      {r.isExcluded ? (
-                        <button
-                          type="button"
-                          onClick={() => includeVilla(r)}
-                          disabled={!cycleEditable || loading}
-                          className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
-                        >
-                          Include
-                        </button>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openRowEdit(r)}
-                            disabled={!cycleEditable || loading}
-                            title={!cycleEditable ? "This billing cycle is locked" : "Edit expected & collected"}
-                            className="text-fg-primary hover:text-brand-primary font-medium disabled:opacity-40"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openMarkPaid(r)}
-                            disabled={!cycleEditable || loading}
-                            className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
-                          >
-                            Mark paid
-                          </button>
-                          {(r.status === "PAID" || r.status === "PARTIAL") && (
-                            <button
-                              type="button"
-                              onClick={() => openUnpaidModal(r)}
-                              disabled={!cycleEditable || loading}
-                              className="text-denied-fg hover:text-brand-danger font-medium disabled:opacity-40"
-                            >
-                              Mark Unpaid
-                            </button>
-                          )}
-                          {r.receiptNumber && (
-                            <span className="text-fg-tertiary text-xs">({r.receiptNumber})</span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => openExcludeModal(r)}
-                            disabled={!cycleEditable || loading}
-                            className="text-fg-tertiary hover:text-denied-fg text-sm disabled:opacity-40"
-                            title="Exclude this villa from the cycle"
-                          >
-                            Exclude
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {filteredResidents.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-fg-secondary">
-                    {selectedCycleId ? "No residents found" : "Please select financial year and month"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <MaintenanceTable
+          filterStatus={filterStatus}
+          onFilterStatusChange={setFilterStatus}
+          search={search}
+          onSearchChange={setSearch}
+          filteredResidents={filteredResidents}
+          selectedCycleId={selectedCycleId}
+          gridLoading={gridLoading}
+          cycleEditable={cycleEditable}
+          loading={loading}
+          showCreditHelp={showCreditHelp}
+          onToggleCreditHelp={() => setShowCreditHelp(!showCreditHelp)}
+          hasResidents={residents.length > 0}
+          onOpenRowEdit={openRowEdit}
+          onOpenMarkPaid={openMarkPaid}
+          onOpenCreditModal={openCreditModal}
+          onOpenExcludeModal={openExcludeModal}
+          onOpenUnpaidModal={openUnpaidModal}
+          onIncludeVilla={includeVilla}
+        />
       </div>
 
-      {/* ── Row Edit modal ── */}
-      <Modal open={showRowEditModal && !!rowEdit} onClose={() => { setShowRowEditModal(false); setRowEdit(null); }}>
-          <div className="card">
-            <div className="card-header">
-              <h2 className="text-lg font-semibold">Edit villa row</h2>
-            </div>
-            <div className="card-body">
-            <p className="text-sm text-fg-secondary mb-4">
-              {rowEdit?.villaNumber} — adjust expected maintenance and recorded collected amount (manual correction).
-              If collected is more than expected, the extra will carry forward as resident advance credit.
-            </p>
-            <form onSubmit={submitRowEdit} className="space-y-3">
-              <div>
-                <label className="block text-sm text-fg-primary mb-1">Expected (₹)</label>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  required
-                  value={rowEdit?.expectedStr}
-                  onChange={(e) => setRowEdit((s) => (s ? { ...s, expectedStr: e.target.value } : s))}
-                  className="input w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-fg-primary mb-1">Collected / paid toward cycle (₹)</label>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  required
-                  value={rowEdit?.paidStr}
-                  onChange={(e) => setRowEdit((s) => (s ? { ...s, paidStr: e.target.value } : s))}
-                  className="input w-full"
-                />
-              </div>
-              <p className="text-xs text-pending-fg bg-pending-bg border border-pending-bg rounded px-2 py-1.5">
-                This updates the billing snapshot and resident billing ledger. It does not create or delete payment
-                receipt rows; use that only when you need to correct totals already posted. Any collected amount above
-                the expected cycle amount will remain as advance credit for this resident.
-              </p>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn btn-primary flex-1 disabled:opacity-50"
-                >
-                  Save row
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRowEditModal(false);
-                    setRowEdit(null);
-                  }}
-                  className="btn btn-ghost flex-1"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-            </div>
-          </div>
-      </Modal>
+      <PaymentModal
+        showPaymentModal={showPaymentModal}
+        onClosePaymentModal={() => setShowPaymentModal(false)}
+        paymentForm={paymentForm}
+        onPaymentFormChange={setPaymentForm}
+        onSubmitMarkPaid={submitMarkPaid}
+        residents={residents}
+        loading={loading}
+        showRowEditModal={showRowEditModal}
+        onCloseRowEditModal={() => { setShowRowEditModal(false); setRowEdit(null); }}
+        rowEdit={rowEdit}
+        onRowEditChange={setRowEdit}
+        onSubmitRowEdit={submitRowEdit}
+      />
 
-      {/* ── Mark Paid modal ── */}
-      <Modal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}>
-          <div className="card">
-            <div className="card-header">
-              <h2 className="text-lg font-semibold">Mark Payment as Paid</h2>
-            </div>
-            <div className="card-body">
-            <form onSubmit={submitMarkPaid} className="space-y-3">
-              {(() => {
-                const row = residents.find((r) => r.villaId === paymentForm.villaId);
-                const credit = row?.advanceCredit ?? 0;
-                return (
-                  <>
-                    <div className="text-sm text-fg-primary">Villa: {paymentForm.villaNumber}</div>
-                    {credit > 0 && (
-                      <p className="text-xs text-approved-fg bg-approved-bg border border-surface-border rounded px-2 py-1.5">
-                        This villa has {formatCurrency(credit)} advance credit. Close this modal and click
-                        the green credit badge to use it instead, or enter cash received below.
-                      </p>
-                    )}
-                    <p className="text-xs text-info-fg bg-brand-primary-light border border-surface-border rounded px-2 py-1.5">
-                      You can enter more than this month&apos;s amount. Any extra will automatically become
-                      advance credit for future months.
-                    </p>
-                  </>
-                );
-              })()}
-              <div>
-                <label className="block text-sm text-fg-primary mb-1">Amount</label>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  required
-                  value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm((p) => ({ ...p, amount: Number(e.target.value) }))}
-                  className="input w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-fg-primary mb-1">Payment date</label>
-                <input
-                  type="date"
-                  required
-                  value={paymentForm.paymentDate}
-                  onChange={(e) => setPaymentForm((p) => ({ ...p, paymentDate: e.target.value }))}
-                  className="input w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-fg-primary mb-1">Mode</label>
-                <select
-                  value={paymentForm.paymentMode}
-                  onChange={(e) =>
-                    setPaymentForm((p) => ({ ...p, paymentMode: e.target.value as PaymentMode }))
-                  }
-                  className="input w-full"
-                >
-                  <option value="CASH">Cash</option>
-                  <option value="UPI">UPI</option>
-                  <option value="CHEQUE">Cheque</option>
-                  <option value="BANK_TRANSFER">Bank transfer</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-fg-primary mb-1">Transaction ID (optional)</label>
-                <input
-                  type="text"
-                  value={paymentForm.transactionId}
-                  onChange={(e) => setPaymentForm((p) => ({ ...p, transactionId: e.target.value }))}
-                  className="input w-full"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn btn-primary flex-1 disabled:opacity-50"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentModal(false)}
-                  className="btn btn-ghost flex-1"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-            </div>
-          </div>
-      </Modal>
+      <CreditManagementModal
+        showCreditModal={showCreditModal}
+        onCloseCreditModal={() => setShowCreditModal(false)}
+        creditRow={creditRow}
+        creditAction={creditAction}
+        onCreditActionChange={setCreditAction}
+        creditAmount={creditAmount}
+        onCreditAmountChange={setCreditAmount}
+        creditRemarks={creditRemarks}
+        onCreditRemarksChange={setCreditRemarks}
+        onSubmitCreditAction={submitCreditAction}
+        selectedCycle={selectedCycle}
+        loading={loading}
+      />
 
-      {/* ── Unified Credit modal ── */}
-      <Modal open={showCreditModal && !!creditRow} onClose={() => setShowCreditModal(false)}>
-          <div className="card">
-            {/* Header with balance */}
-            <div className="card-header">
-              <h2 className="text-lg font-semibold text-fg-primary">
-                Advance Credit — Villa {creditRow?.villaNumber}
-              </h2>
-              <p className="text-sm text-fg-secondary mt-0.5">{creditRow?.ownerName}</p>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-approved-fg">
-                  {formatCurrency(creditRow?.advanceCredit ?? 0)}
-                </span>
-                <span className="text-sm text-fg-secondary">available balance</span>
-              </div>
-            </div>
-
-            {/* Action tabs */}
-            <div className="px-5 pt-4">
-              <div className="flex rounded-lg bg-surface-elevated p-1 gap-1">
-                {(creditRow?.advanceCredit ?? 0) > 0 && creditRow?.status !== "PAID" && (
-                  <button
-                    type="button"
-                    onClick={() => setCreditAction("apply")}
-                    className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      creditAction === "apply"
-                        ? "bg-surface text-approved-fg shadow-sm"
-                        : "text-fg-secondary hover:text-fg-primary"
-                    }`}
-                  >
-                    Use for this month
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setCreditAction("add")}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    creditAction === "add"
-                      ? "bg-surface text-brand-primary shadow-sm"
-                      : "text-fg-secondary hover:text-fg-primary"
-                  }`}
-                >
-                  Add credit
-                </button>
-                {(creditRow?.advanceCredit ?? 0) > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setCreditAction("deduct")}
-                    className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      creditAction === "deduct"
-                        ? "bg-surface text-denied-fg shadow-sm"
-                        : "text-fg-secondary hover:text-fg-primary"
-                    }`}
-                  >
-                    Deduct
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Action content */}
-            <form onSubmit={submitCreditAction} className="p-5 space-y-4">
-              {creditAction === "apply" && (
-                <>
-                  <div className="bg-approved-bg border border-approved-bg rounded-lg p-3 text-sm text-fg-primary">
-                    <p className="font-medium mb-1">Use credit to settle this month</p>
-                    <p className="text-approved-fg text-xs">
-                      The system will apply up to {formatCurrency(creditRow?.advanceCredit ?? 0)} from the
-                      available balance toward the {formatCurrency(Math.max(0, (creditRow?.amount ?? 0) - (creditRow?.paidTowardCycle ?? 0)))} remaining
-                      due for {selectedCycle ? `${MONTHS[selectedCycle.periodMonth - 1]} ${selectedCycle.periodYear}` : "this month"}.
-                      Any leftover credit stays in the balance for future months.
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {creditAction === "add" && (
-                <>
-                  <div className="bg-brand-primary-light border border-surface-border rounded-lg p-3 text-xs text-info-fg">
-                    Record advance money received outside the system. This amount will be added to the
-                    credit balance and can be used to settle future months.
-                  </div>
-                  <div>
-                    <label className="block text-sm text-fg-primary mb-1">Amount to add (₹)</label>
-                    <input
-                      type="number"
-                      min={0.01}
-                      step="0.01"
-                      required
-                      value={creditAmount}
-                      onChange={(e) => setCreditAmount(e.target.value)}
-                      placeholder="e.g. 5000"
-                      className="input w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-fg-primary mb-1">Reason</label>
-                    <input
-                      type="text"
-                      required
-                      value={creditRemarks}
-                      onChange={(e) => setCreditRemarks(e.target.value)}
-                      placeholder="e.g. Advance cash received for 3 months"
-                      className="input w-full"
-                    />
-                  </div>
-                </>
-              )}
-
-              {creditAction === "deduct" && (
-                <>
-                  <div className="bg-denied-bg border border-denied-bg rounded-lg p-3 text-xs text-denied-fg">
-                    Remove credit from this villa&apos;s balance. Use this to correct a mistake or reverse
-                    an incorrect entry. You cannot deduct more than the available {formatCurrency(creditRow?.advanceCredit ?? 0)}.
-                  </div>
-                  <div>
-                    <label className="block text-sm text-fg-primary mb-1">Amount to deduct (₹)</label>
-                    <input
-                      type="number"
-                      min={0.01}
-                      step="0.01"
-                      max={creditRow?.advanceCredit ?? 0}
-                      required
-                      value={creditAmount}
-                      onChange={(e) => setCreditAmount(e.target.value)}
-                      placeholder={`Max ${formatCurrency(creditRow?.advanceCredit ?? 0)}`}
-                      className="input w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-fg-primary mb-1">Reason</label>
-                    <input
-                      type="text"
-                      required
-                      value={creditRemarks}
-                      onChange={(e) => setCreditRemarks(e.target.value)}
-                      placeholder="e.g. Reversing duplicate credit entry"
-                      className="input w-full"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="flex gap-3 pt-1">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`flex-1 text-white px-4 py-2 rounded font-medium disabled:opacity-50 ${
-                    creditAction === "apply"
-                      ? "bg-approved-solid hover:bg-approved-solid hover:opacity-90"
-                      : creditAction === "add"
-                        ? "bg-brand-primary hover:bg-brand-primary-hover"
-                        : "bg-brand-danger hover:bg-brand-danger hover:opacity-90"
-                  }`}
-                >
-                  {creditAction === "apply"
-                    ? "Apply credit now"
-                    : creditAction === "add"
-                      ? "Add to balance"
-                      : "Deduct from balance"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreditModal(false)}
-                  className="btn btn-ghost flex-1"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-      </Modal>
-      {/* ── Exclude Villa modal ── */}
-      <Modal open={showExcludeModal && !!excludeTarget} onClose={() => { setShowExcludeModal(false); setExcludeTarget(null); }}>
-          <div className="card">
-            <div className="card-header">
-              <h2 className="text-lg font-semibold">Exclude Villa from Cycle</h2>
-            </div>
-            <div className="card-body">
-              <p className="text-sm text-fg-secondary mb-4">
-                Exclude <strong>{excludeTarget?.villaNumber}</strong> ({excludeTarget?.ownerName}) from this billing cycle.
-                The villa will show as EXCLUDED with ₹0 expected. It will be automatically included in the next cycle.
-              </p>
-              <form onSubmit={submitExcludeVilla} className="space-y-3">
-                <div>
-                  <label className="block text-sm text-fg-primary mb-1">Reason (optional)</label>
-                  <textarea
-                    value={excludeReason}
-                    onChange={(e) => setExcludeReason(e.target.value)}
-                    placeholder="e.g. Villa under renovation, vacant unit, courtesy waiver"
-                    className="input w-full"
-                    rows={2}
-                  />
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn bg-brand-danger text-white hover:opacity-90 flex-1 disabled:opacity-50"
-                  >
-                    Exclude Villa
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowExcludeModal(false);
-                      setExcludeTarget(null);
-                    }}
-                    className="btn btn-ghost flex-1"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-      </Modal>
-      {/* ── Reverse Payment (Mark Unpaid) modal ── */}
-      <Modal open={showUnpaidModal && !!unpaidTarget} onClose={() => { setShowUnpaidModal(false); setUnpaidTarget(null); }}>
-          <div className="card">
-            <div className="card-header">
-              <h2 className="text-lg font-semibold">Reverse Payment</h2>
-            </div>
-            <div className="card-body">
-              <div className="bg-denied-bg border border-denied-bg rounded-lg p-3 text-sm text-denied-fg mb-4">
-                <p className="font-medium mb-1">This will delete all payment records for this cycle</p>
-                <p className="text-xs">
-                  Villa <strong>{unpaidTarget?.villaNumber}</strong> ({unpaidTarget?.ownerName}) will be reset
-                  to PENDING/OVERDUE. Any overpayment credit from this cycle will also be removed.
-                  This action cannot be undone — you will need to re-enter payments manually.
-                </p>
-              </div>
-              <form onSubmit={submitReversePayment} className="space-y-3">
-                <div>
-                  <label className="block text-sm text-fg-primary mb-1">Reason (optional)</label>
-                  <textarea
-                    value={unpaidReason}
-                    onChange={(e) => setUnpaidReason(e.target.value)}
-                    placeholder="e.g. Payment bounced, incorrect entry, duplicate payment"
-                    className="input w-full"
-                    rows={2}
-                  />
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn bg-brand-danger text-white hover:opacity-90 flex-1 disabled:opacity-50"
-                  >
-                    Reverse Payment
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowUnpaidModal(false);
-                      setUnpaidTarget(null);
-                    }}
-                    className="btn btn-ghost flex-1"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-      </Modal>
+      <ExcludeModal
+        showExcludeModal={showExcludeModal}
+        onCloseExcludeModal={() => { setShowExcludeModal(false); setExcludeTarget(null); }}
+        excludeTarget={excludeTarget}
+        excludeReason={excludeReason}
+        onExcludeReasonChange={setExcludeReason}
+        onSubmitExcludeVilla={submitExcludeVilla}
+        loading={loading}
+        showUnpaidModal={showUnpaidModal}
+        onCloseUnpaidModal={() => { setShowUnpaidModal(false); setUnpaidTarget(null); }}
+        unpaidTarget={unpaidTarget}
+        unpaidReason={unpaidReason}
+        onUnpaidReasonChange={setUnpaidReason}
+        onSubmitReversePayment={submitReversePayment}
+      />
     </AppShell>
   );
 }

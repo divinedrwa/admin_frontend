@@ -4,16 +4,9 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { sortByVillaNumber } from "@/utils/villaSort";
+import { parseApiError } from "@/utils/errorHandler";
 
 type ParkingTab = "overview" | "slots" | "villas";
-
-type ApiError = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-};
 
 type VehicleRecord = {
   id: string;
@@ -87,44 +80,46 @@ export default function ParkingManagementPage() {
   const [villaVehicles, setVillaVehicles] = useState<VillaVehicles | null>(null);
 
   useEffect(() => {
-    if (activeTab === "overview") fetchOverview();
-    else if (activeTab === "slots") fetchSlotAnalysis();
-    else if (activeTab === "villas") fetchVillaVehicles();
+    const controller = new AbortController();
+    if (activeTab === "overview") fetchOverview(controller.signal);
+    else if (activeTab === "slots") fetchSlotAnalysis(controller.signal);
+    else if (activeTab === "villas") fetchVillaVehicles(controller.signal);
+    return () => controller.abort();
   }, [activeTab]);
 
-  const fetchOverview = async () => {
+  const fetchOverview = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/parking-management/overview`);
+      const response = await api.get(`/parking-management/overview`, { signal });
       setOverview(response.data);
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch overview");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch overview").message);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSlotAnalysis = async () => {
+  const fetchSlotAnalysis = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/parking-management/slot-analysis`);
+      const response = await api.get(`/parking-management/slot-analysis`, { signal });
       setSlotAnalysis(response.data);
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch slot analysis");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch slot analysis").message);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchVillaVehicles = async () => {
+  const fetchVillaVehicles = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/parking-management/villa-vehicles`);
+      const response = await api.get(`/parking-management/villa-vehicles`, { signal });
       const data = response.data as VillaVehicles;
       setVillaVehicles({
         ...data,
@@ -134,8 +129,8 @@ export default function ParkingManagementPage() {
         ),
       });
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch villa vehicles");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch villa vehicles").message);
     } finally {
       setLoading(false);
     }

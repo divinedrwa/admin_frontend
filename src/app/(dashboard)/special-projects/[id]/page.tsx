@@ -141,13 +141,14 @@ export default function SpecialProjectDetailPage() {
     }
   };
 
-  const fetchProject = useCallback(async () => {
+  const fetchProject = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
-      const res = await api.get(`/special-projects/${projectId}`);
+      const res = await api.get(`/special-projects/${projectId}`, { signal });
       setProject(res.data.project);
       setSummary(res.data.summary);
     } catch (error: unknown) {
+      if ((error as { name?: string }).name === "CanceledError") return;
       showToast(parseApiError(error, 'Failed to load project').message, 'error');
     } finally {
       setLoading(false);
@@ -155,7 +156,9 @@ export default function SpecialProjectDetailPage() {
   }, [projectId]);
 
   useEffect(() => {
-    fetchProject();
+    const controller = new AbortController();
+    fetchProject(controller.signal);
+    return () => controller.abort();
   }, [fetchProject]);
 
   const recordPayment = async () => {

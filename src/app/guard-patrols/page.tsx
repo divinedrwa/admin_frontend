@@ -1,46 +1,21 @@
 "use client";
 
 import { Plus, Route } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
-
-type GuardPatrol = {
-  id: string;
-  checkpointName: string;
-  checkpointLocation: string;
-  scheduledTime: string;
-  actualTime?: string;
-  status: string;
-  notes?: string;
-  createdAt: string;
-  guard: {
-    name: string;
-  };
-  gate: {
-    name: string;
-  };
-};
-
-type Guard = {
-  id: string;
-  name: string;
-};
-
-type Gate = {
-  id: string;
-  name: string;
-};
+import { useGuardPatrols } from "@/hooks/useGuardPatrols";
+import { useGuards } from "@/hooks/useGuardShifts";
+import { useGates } from "@/hooks/useGates";
+import { GuardPatrol } from "@/types/guard";
 
 export default function GuardPatrolsPage() {
-  const [patrols, setPatrols] = useState<GuardPatrol[]>([]);
-  const [guards, setGuards] = useState<Guard[]>([]);
-  const [gates, setGates] = useState<Gate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingPatrol, setEditingPatrol] = useState<GuardPatrol | null>(null);
@@ -55,32 +30,12 @@ export default function GuardPatrolsPage() {
     notes: ""
   });
 
-  const loadPatrols = () => {
-    setLoading(true);
-    api
-      .get("/guard-patrols")
-      .then((response) => setPatrols(response.data.patrols ?? []))
-      .catch(() => showToast("Failed to load patrols", "error"))
-      .finally(() => setLoading(false));
-  };
+  const { data: patrolsData, isLoading: loading } = useGuardPatrols();
+  const patrols = patrolsData?.patrols ?? [];
 
-  const loadDropdownData = () => {
-    api
-      .get("/users?role=GUARD")
-      .then((response) => setGuards(response.data.users ?? []))
-      .catch(() => showToast("Failed to load guards", "error"));
-
-    api
-      .get("/gates")
-      .then((response) => setGates(response.data.gates ?? []))
-      .catch(() => showToast("Failed to load gates", "error"));
-  };
-
-  useEffect(() => {
-    loadPatrols();
-    loadDropdownData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { data: guards = [] } = useGuards();
+  const { data: gatesData } = useGates();
+  const gates = gatesData?.gates ?? [];
 
   const handleOpenForm = () => {
     const now = new Date();
@@ -126,7 +81,7 @@ export default function GuardPatrolsPage() {
     try {
       await api.delete(`/guard-patrols/${patrolId}`);
       showToast("Patrol deleted successfully", "success");
-      loadPatrols();
+      queryClient.invalidateQueries({ queryKey: ["guard-patrols"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete patrol").message;
       showToast(message, "error");
@@ -169,7 +124,7 @@ export default function GuardPatrolsPage() {
       }
 
       handleCloseForm();
-      loadPatrols();
+      queryClient.invalidateQueries({ queryKey: ["guard-patrols"] });
     } catch (error: unknown) {
       const message = parseApiError(error, editingPatrol ? "Failed to update patrol" : "Failed to schedule patrol").message;
       showToast(message, "error");

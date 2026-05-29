@@ -3,14 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Bell, Radio, Send, TestTube } from "lucide-react";
 import { api } from "@/lib/api";
-
-type ApiError = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-};
+import { parseApiError } from "@/utils/errorHandler";
 
 type Diagnostics = {
   firebaseConfigured: boolean;
@@ -35,18 +28,23 @@ export default function NotificationsAdminPage() {
   const [testing, setTesting] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
-  const loadDiagnostics = useCallback(async () => {
+  const loadDiagnostics = useCallback(async (signal?: AbortSignal) => {
     setLoadingDiag(true);
     try {
-      const res = await api.get("/notifications/diagnostics");
+      const res = await api.get("/notifications/diagnostics", { signal });
       setDiagnostics(res.data);
+    } catch (error) {
+      if ((error as { name?: string }).name === "CanceledError") return;
+      setDiagnostics(null);
     } finally {
       setLoadingDiag(false);
     }
   }, []);
 
   useEffect(() => {
-    loadDiagnostics();
+    const controller = new AbortController();
+    loadDiagnostics(controller.signal);
+    return () => controller.abort();
   }, [loadDiagnostics]);
 
   async function sendBroadcast(e: React.FormEvent) {
@@ -68,8 +66,7 @@ export default function NotificationsAdminPage() {
       setBody("");
       loadDiagnostics();
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setLastResult(apiError.response?.data?.message || "Failed to send broadcast");
+      setLastResult(parseApiError(err, "Failed to send broadcast").message);
     } finally {
       setSending(false);
     }
@@ -86,8 +83,7 @@ export default function NotificationsAdminPage() {
       );
       loadDiagnostics();
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setLastResult(apiError.response?.data?.message || "Failed to send test notification");
+      setLastResult(parseApiError(err, "Failed to send test notification").message);
     } finally {
       setTesting(false);
     }
@@ -147,7 +143,7 @@ export default function NotificationsAdminPage() {
             )}
             <button
               type="button"
-              onClick={loadDiagnostics}
+              onClick={() => loadDiagnostics()}
               className="mt-3 text-sm text-brand-primary hover:underline"
             >
               Refresh

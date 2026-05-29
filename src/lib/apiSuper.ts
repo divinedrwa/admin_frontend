@@ -3,6 +3,7 @@
 import axios from "axios";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
 import { attemptTokenRefresh } from "./tokenRefresh";
+import { parseApiError } from "@/utils/errorHandler";
 
 const API_BASE_URL = getResolvedApiBaseUrl();
 
@@ -50,6 +51,10 @@ apiSuper.interceptors.response.use(
         }
       }
     }
-    return Promise.reject(error);
+    // Enrich error with parsed message (same as tenant client)
+    const enriched = Object.assign(error, {
+      parsedMessage: parseApiError(error).message,
+    });
+    return Promise.reject(enriched);
   },
 );

@@ -1,28 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Modal } from '@/components/Modal';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
 import { lightTheme } from "@/theme/tokens";
-
-interface ExpenseCategory {
-  id: string;
-  name: string;
-  description?: string;
-  type: string;
-  icon?: string;
-  color?: string;
-  isActive: boolean;
-  isRecurring: boolean;
-  defaultAmount?: number;
-  _count: {
-    expenses: number;
-  };
-}
+import { useExpenseCategoriesFull } from '@/hooks/useExpenses';
+import { ExpenseCategory } from '@/types/expense';
 
 const DEFAULT_CATEGORY_COLOR = lightTheme.state.info.solid;
 
@@ -43,8 +31,8 @@ const expenseTypes = [
 ];
 
 export default function ExpenseCategoriesPage() {
-  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: categories = [], isLoading: loading } = useExpenseCategoriesFull();
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
   const { confirm, ConfirmUI } = useConfirm();
@@ -59,22 +47,6 @@ export default function ExpenseCategoriesPage() {
     defaultAmount: 0
   });
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get('/expenses/categories');
-      setCategories(response.data ?? []);
-    } catch (error: unknown) {
-      console.error('Error fetching categories:', error);
-      showToast(parseApiError(error, "Failed to fetch expense categories").message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -84,7 +56,8 @@ export default function ExpenseCategoriesPage() {
       } else {
         await api.post('/expenses/categories', formData);
       }
-      await fetchCategories();
+      queryClient.invalidateQueries({ queryKey: ["expenseCategoriesFull"] });
+      queryClient.invalidateQueries({ queryKey: ["expenseCategories"] });
       closeModal();
       showToast(editingCategory ? 'Category updated' : 'Category created', 'success');
     } catch (error: unknown) {
@@ -98,7 +71,8 @@ export default function ExpenseCategoriesPage() {
 
     try {
       await api.delete(`/expenses/categories/${id}`);
-      await fetchCategories();
+      queryClient.invalidateQueries({ queryKey: ["expenseCategoriesFull"] });
+      queryClient.invalidateQueries({ queryKey: ["expenseCategories"] });
       showToast('Category deleted', 'success');
     } catch (error: unknown) {
       console.error('Error deleting category:', error);

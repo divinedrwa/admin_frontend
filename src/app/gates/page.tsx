@@ -1,28 +1,20 @@
 "use client";
 
 import { MapPinned, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
-
-type Gate = {
-  id: string;
-  name: string;
-  location: string;
-  isActive: boolean;
-};
-
-type GateForm = {
-  name: string;
-  location: string;
-  isActive: boolean;
-};
+import { parseApiError } from "@/utils/errorHandler";
+import { Gate, GateForm } from "@/types/gate";
+import { useGates } from "@/hooks/useGates";
 
 export default function GatesPage() {
-  const [gates, setGates] = useState<Gate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data, isLoading: loading } = useGates();
+  const gates = data?.gates ?? [];
   const [showForm, setShowForm] = useState(false);
   const [editingGate, setEditingGate] = useState<Gate | null>(null);
   const [formData, setFormData] = useState<GateForm>({
@@ -31,25 +23,6 @@ export default function GatesPage() {
     isActive: true
   });
   const [submitting, setSubmitting] = useState(false);
-
-  const loadGates = () => {
-    setLoading(true);
-    api
-      .get("/gates")
-      .then((response) => setGates(response.data.gates ?? []))
-      .catch((error: unknown) => {
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load gates";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadGates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleOpenForm = (gate?: Gate) => {
     if (gate) {
@@ -100,12 +73,9 @@ export default function GatesPage() {
       }
 
       handleCloseForm();
-      loadGates();
+      queryClient.invalidateQueries({ queryKey: ["gates"] });
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to save gate";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Failed to save gate").message, "error");
     } finally {
       setSubmitting(false);
     }

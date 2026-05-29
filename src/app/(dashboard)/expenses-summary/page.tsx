@@ -7,13 +7,12 @@ import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
 import { lightTheme } from "@/theme/tokens";
+import { FinancialYear } from '@/types/expense';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
-
-type FinancialYear = { id: string; label: string; startDate: string; endDate: string };
 
 interface CategoryBreakdown {
   categoryName: string;

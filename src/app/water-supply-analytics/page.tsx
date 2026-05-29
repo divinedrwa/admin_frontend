@@ -5,14 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
-
-type ApiError = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-};
+import { parseApiError } from "@/utils/errorHandler";
 
 type WaterSupplyOverview = {
   summary: {
@@ -80,67 +73,69 @@ export default function WaterSupplyAnalyticsPage() {
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
   const [period, setPeriod] = useState("7");
 
-  const fetchOverview = useCallback(async () => {
+  const fetchOverview = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/water-supply-analytics/overview?days=${period}`);
+      const response = await api.get(`/water-supply-analytics/overview?days=${period}`, { signal });
       setOverview(response.data);
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch overview");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch overview").message);
     } finally {
       setLoading(false);
     }
   }, [period]);
 
-  const fetchDailyUsage = useCallback(async () => {
+  const fetchDailyUsage = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/water-supply-analytics/daily-usage?days=${period}`);
+      const response = await api.get(`/water-supply-analytics/daily-usage?days=${period}`, { signal });
       setDailyUsage(response.data);
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch daily usage");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch daily usage").message);
     } finally {
       setLoading(false);
     }
   }, [period]);
 
-  const fetchHourlyPattern = useCallback(async () => {
+  const fetchHourlyPattern = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/water-supply-analytics/hourly-pattern?days=30`);
+      const response = await api.get(`/water-supply-analytics/hourly-pattern?days=30`, { signal });
       setHourlyPattern(response.data);
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch hourly pattern");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch hourly pattern").message);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchRecentEvents = useCallback(async () => {
+  const fetchRecentEvents = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError("");
-      const response = await api.get(`/water-supply-analytics/recent-events?limit=30`);
+      const response = await api.get(`/water-supply-analytics/recent-events?limit=30`, { signal });
       setRecentEvents(response.data.recentEvents);
     } catch (err: unknown) {
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch recent events");
+      if ((err as { name?: string }).name === "CanceledError") return;
+      setError(parseApiError(err, "Failed to fetch recent events").message);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (activeTab === "overview") void fetchOverview();
-    else if (activeTab === "daily") void fetchDailyUsage();
-    else if (activeTab === "hourly") void fetchHourlyPattern();
-    else if (activeTab === "recent") void fetchRecentEvents();
+    const controller = new AbortController();
+    if (activeTab === "overview") void fetchOverview(controller.signal);
+    else if (activeTab === "daily") void fetchDailyUsage(controller.signal);
+    else if (activeTab === "hourly") void fetchHourlyPattern(controller.signal);
+    else if (activeTab === "recent") void fetchRecentEvents(controller.signal);
+    return () => controller.abort();
   }, [activeTab, fetchDailyUsage, fetchHourlyPattern, fetchOverview, fetchRecentEvents]);
 
   const formatTime = (timestamp: string) => {

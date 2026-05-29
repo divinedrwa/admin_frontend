@@ -1,36 +1,20 @@
 "use client";
 
 import { Link2 } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { sortByVillaNumber } from "@/utils/villaSort";
-
-type InvitationRow = {
-  id: string;
-  role: string;
-  phone: string | null;
-  email: string | null;
-  villaId: string | null;
-  villa: { villaNumber: string; block: string | null } | null;
-  status: string;
-  expiresAt: string;
-  createdAt: string;
-  acceptedAt: string | null;
-};
-
-type Villa = {
-  id: string;
-  villaNumber: string;
-  block: string | null;
-};
+import { parseApiError } from "@/utils/errorHandler";
+import { useInvitations } from "@/hooks/useInvitations";
+import { useVillas } from "@/hooks/useVillas";
+import { VillaOption } from "@/types/villa";
 
 export default function InvitationsAdminPage() {
-  const [rows, setRows] = useState<InvitationRow[]>([]);
-  const [villas, setVillas] = useState<Villa[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [role, setRole] = useState<"ADMIN" | "RESIDENT" | "GUARD" | "RESIDENT_CUM_ADMIN">("RESIDENT");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -39,35 +23,17 @@ export default function InvitationsAdminPage() {
   const [copyToken, setCopyToken] = useState("");
   const [selectedVillaId, setSelectedVillaId] = useState("");
 
-  const load = () => {
-    setLoading(true);
-    api
-      .get("/invitations")
-      .then((res) => setRows(res.data.invitations ?? []))
-      .catch((e: unknown) => {
-        const message =
-          (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to load invitations";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  };
+  const { data: invitationData, isLoading: loading } = useInvitations();
+  const rows = invitationData?.invitations ?? [];
 
-  useEffect(() => {
-    load();
-    api
-      .get("/villas")
-      .then((res) =>
-        setVillas(
-          sortByVillaNumber(
-            (res.data.villas ?? []) as Villa[],
-            (v) => v.villaNumber,
-          ),
-        ),
-      )
-      .catch(() => {
-        /* optional */
-      });
-  }, []);
+  const { data: villaData } = useVillas();
+  const villas = useMemo(
+    () => sortByVillaNumber(
+      (villaData?.villas ?? []) as VillaOption[],
+      (v) => v.villaNumber,
+    ),
+    [villaData?.villas],
+  );
 
   const acceptBase =
     typeof window !== "undefined" ? `${window.location.origin}/invite/accept` : "";
@@ -99,14 +65,12 @@ export default function InvitationsAdminPage() {
         setLastCreatedLink(`${acceptBase}?token=${encodeURIComponent(token)}`);
         showToast("Invitation created — copy the link or token", "success");
       }
-      load();
+      queryClient.invalidateQueries({ queryKey: ["invitations"] });
       setPhone("");
       setEmail("");
       setSelectedVillaId("");
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Could not create invite";
-      showToast(message, "error");
+      showToast(parseApiError(err, "Could not create invite").message, "error");
     } finally {
       setCreating(false);
     }
@@ -116,11 +80,9 @@ export default function InvitationsAdminPage() {
     try {
       await api.patch(`/invitations/${id}/revoke`);
       showToast("Invitation revoked", "success");
-      load();
+      queryClient.invalidateQueries({ queryKey: ["invitations"] });
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Could not revoke";
-      showToast(message, "error");
+      showToast(parseApiError(err, "Could not revoke").message, "error");
     }
   };
 

@@ -6,6 +6,7 @@ import { isSocietyPublicAuthPath } from "./authRedirect";
 import { clearPlatformViewSession } from "./platformViewSession";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
 import { attemptTokenRefresh } from "./tokenRefresh";
+import { readSocietyIdFromToken } from "./jwt";
 
 const TENANT_SOCIETY_STORAGE_KEY = "tenant_society_id";
 
@@ -25,21 +26,6 @@ export function clearTenantSocietyId(): void {
   }
 }
 
-function readSocietyIdFromToken(token: string | null): string {
-  if (!token) return "";
-  const parts = token.split(".");
-  if (parts.length < 2) return "";
-  try {
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    const json = atob(padded);
-    const payload = JSON.parse(json) as { societyId?: unknown };
-    const sid = typeof payload.societyId === "string" ? payload.societyId.trim() : "";
-    return sid;
-  } catch {
-    return "";
-  }
-}
 
 export const api = axios.create({
   baseURL: API_BASE_URL

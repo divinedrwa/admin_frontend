@@ -11,7 +11,20 @@ import {
   type PlatformViewPayload,
 } from "@/lib/platformViewSession";
 
-export function AppShell({ title, children }: { title: string; children: React.ReactNode }) {
+export function AppShell({
+  title,
+  headerContent,
+  rawChildren,
+  children,
+}: {
+  /** Page title shown in the default header. Ignored when `headerContent` is provided. */
+  title: string;
+  /** Replace the default page-title header with custom content. */
+  headerContent?: React.ReactNode;
+  /** When true, children are rendered without the default max-width / padding wrapper. */
+  rawChildren?: boolean;
+  children: React.ReactNode;
+}) {
   const { isAuthenticated, isLoading } = useAuth(true);
   const router = useRouter();
   const [platformView, setPlatformView] = useState<PlatformViewPayload | null>(null);
@@ -72,55 +85,76 @@ export function AppShell({ title, children }: { title: string; children: React.R
             </div>
           </div>
         ) : null}
-        <header className="sticky top-0 z-20 border-b border-surface-border bg-surface/85 backdrop-blur-xl">
-          <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 px-4 py-4 md:px-8">
-            <div className="flex items-center gap-3 md:gap-4">
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-                className="rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary md:hidden"
-                aria-label="Open menu"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">
-                  Admin dashboard
-                </p>
-                <h1 className="text-2xl font-bold tracking-tight text-fg-primary md:text-3xl">{title}</h1>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="hidden items-center gap-2 rounded-full border border-surface-border bg-surface px-3 py-2 text-sm text-fg-secondary md:flex">
-                <CalendarDays className="h-4 w-4 text-brand-primary" />
-                <span>
-                  {new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-              <div className="hidden items-center gap-2 rounded-full border border-approved-solid/20 bg-approved-bg px-3 py-2 text-sm font-medium text-approved-fg sm:flex">
-                <Activity className="h-4 w-4" />
-                <span>System online</span>
+        {headerContent ? (
+          <div className="border-b border-surface-border bg-surface/85 backdrop-blur-xl">
+            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-4 py-3.5 md:px-8">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary md:hidden"
+                  aria-label="Open menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+                {headerContent}
               </div>
             </div>
           </div>
-        </header>
+        ) : (
+          <header className="sticky top-0 z-20 border-b border-surface-border bg-surface/85 backdrop-blur-xl">
+            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 px-4 py-4 md:px-8">
+              <div className="flex items-center gap-3 md:gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary md:hidden"
+                  aria-label="Open menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">
+                    Admin dashboard
+                  </p>
+                  <h1 className="text-2xl font-bold tracking-tight text-fg-primary md:text-3xl">{title}</h1>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="hidden items-center gap-2 rounded-full border border-surface-border bg-surface px-3 py-2 text-sm text-fg-secondary md:flex">
+                  <CalendarDays className="h-4 w-4 text-brand-primary" />
+                  <span>
+                    {new Date().toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+                <div className="hidden items-center gap-2 rounded-full border border-approved-solid/20 bg-approved-bg px-3 py-2 text-sm font-medium text-approved-fg sm:flex">
+                  <Activity className="h-4 w-4" />
+                  <span>System online</span>
+                </div>
+              </div>
+            </div>
+          </header>
+        )}
 
         <main
+          id="main-content"
           className="flex-1 overflow-y-auto scrollbar-thin"
           style={{
             background:
               "radial-gradient(circle at top right, color-mix(in srgb, var(--gp-brand-primary) 6%, transparent), transparent 20%), radial-gradient(circle at bottom left, color-mix(in srgb, var(--gp-brand-accent) 5%, transparent), transparent 24%)",
           }}
         >
-          <div className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8 md:py-8 animate-fade-in">
-            {children}
-          </div>
+          {rawChildren ? children : (
+            <div className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8 md:py-8 animate-fade-in">
+              {children}
+            </div>
+          )}
         </main>
       </div>
     </div>

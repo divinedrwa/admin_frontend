@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
+import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { LogIn, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 
 type StaffInfo = { id: string; name: string; type: string; phone: string; photo: string | null };
@@ -35,17 +37,24 @@ export default function StaffAttendancePage() {
   const [summary, setSummary] = useState({ total: 0, present: 0, absent: 0, checkedOut: 0 });
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/staff-attendance?date=${date}`);
+      const { data } = await api.get(`/staff-attendance?date=${date}`, { signal });
       setAttendance(data.attendance);
       setNotCheckedIn(data.notCheckedIn);
       setSummary(data.summary);
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (error) {
+      if ((error as { name?: string }).name === "CanceledError") return;
+      /* ignore */
+    } finally { setLoading(false); }
   }, [date]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
 
   const changeDate = (delta: number) => {
     const d = new Date(date);
@@ -58,8 +67,7 @@ export default function StaffAttendancePage() {
       await api.post("/staff-attendance/check-in", { staffId });
       load();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Check-in failed";
-      alert(msg);
+      showToast(parseApiError(err, "Check-in failed").message, "error");
     }
   };
 
@@ -68,8 +76,7 @@ export default function StaffAttendancePage() {
       await api.post(`/staff-attendance/${id}/check-out`, {});
       load();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Check-out failed";
-      alert(msg);
+      showToast(parseApiError(err, "Check-out failed").message, "error");
     }
   };
 

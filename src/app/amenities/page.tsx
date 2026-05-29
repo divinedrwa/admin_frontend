@@ -1,23 +1,15 @@
 "use client";
 
 import { Building, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
-
-/** Must match Prisma `AmenityType` (see `POST /api/amenities`). */
-type AmenityTypeId =
-  | "CLUBHOUSE"
-  | "GYM"
-  | "SWIMMING_POOL"
-  | "SPORTS_COURT"
-  | "BANQUET_HALL"
-  | "GUEST_ROOM"
-  | "PLAYGROUND"
-  | "PARKING"
-  | "OTHER";
+import { parseApiError } from "@/utils/errorHandler";
+import { Amenity, AmenityTypeId, AmenityForm } from "@/types/amenity";
+import { useAmenities } from "@/hooks/useAmenities";
 
 const AMENITY_TYPE_OPTIONS: { value: AmenityTypeId; label: string }[] = [
   { value: "CLUBHOUSE", label: "Clubhouse" },
@@ -36,29 +28,10 @@ function formatAmenityType(type: string): string {
   return found ? found.label : type;
 }
 
-type Amenity = {
-  id: string;
-  name: string;
-  /** API value; may be legacy if data predates enum alignment */
-  type: string;
-  description: string | null;
-  capacity: number | null;
-  isActive: boolean;
-  pricePerHour: number | string | null;
-};
-
-type AmenityForm = {
-  name: string;
-  type: AmenityTypeId;
-  description: string;
-  capacity: string;
-  isActive: boolean;
-  pricePerHour: string;
-};
-
 export default function AmenitiesPage() {
-  const [amenities, setAmenities] = useState<Amenity[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data, isLoading: loading } = useAmenities();
+  const amenities = data?.amenities ?? [];
   const [showForm, setShowForm] = useState(false);
   const [editingAmenity, setEditingAmenity] = useState<Amenity | null>(null);
   const [formData, setFormData] = useState<AmenityForm>({
@@ -70,25 +43,6 @@ export default function AmenitiesPage() {
     pricePerHour: "0"
   });
   const [submitting, setSubmitting] = useState(false);
-
-  const loadAmenities = () => {
-    setLoading(true);
-    api
-      .get("/amenities")
-      .then((response) => setAmenities(response.data.amenities ?? []))
-      .catch((error: unknown) => {
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load amenities";
-        showToast(message, "error");
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadAmenities();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleOpenForm = (amenity?: Amenity) => {
     if (amenity) {
@@ -149,7 +103,7 @@ export default function AmenitiesPage() {
       }
 
       handleCloseForm();
-      loadAmenities();
+      queryClient.invalidateQueries({ queryKey: ["amenities"] });
     } catch (error: unknown) {
       const data = (error as { response?: { data?: { message?: string; issues?: { path?: (string | number)[]; message?: string }[] } } })?.response?.data;
       let message = data?.message ?? "Failed to save amenity";

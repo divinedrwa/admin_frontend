@@ -6,8 +6,9 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
-type Mode = "ANY_ONE_APPROVAL" | "ALL_VILLAS_REQUIRED";
+type Mode = "ANY_ONE_APPROVAL" | "ALL_MUST_APPROVE";
 
 type SocStatus = "ACTIVE" | "INACTIVE";
 
@@ -24,7 +25,7 @@ const modeLabels: Record<Mode, { title: string; description: string }> = {
     description:
       "When a guard selects multiple flats, the first resident approval allows entry. Other flats may still see the request until it is fully resolved.",
   },
-  ALL_VILLAS_REQUIRED: {
+  ALL_MUST_APPROVE: {
     title: "Every flat must approve",
     description:
       "All selected flats must approve before the guest is allowed in. If any flat rejects, entry is denied.",
@@ -51,10 +52,7 @@ export default function VisitorGateRulesPage() {
         }
       })
       .catch((error: unknown) => {
-        const message =
-          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load settings";
-        showToast(message, "error");
+        showToast(parseApiError(error, "Failed to load settings").message, "error");
       })
       .finally(() => setLoading(false));
   };
@@ -85,10 +83,7 @@ export default function VisitorGateRulesPage() {
       showToast("Society settings saved", "success");
       load();
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Could not save";
-      showToast(message, "error");
+      showToast(parseApiError(error, "Could not save").message, "error");
     } finally {
       setSaving(false);
     }

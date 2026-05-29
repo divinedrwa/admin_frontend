@@ -1,25 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Plus, Pencil, Trash2, Eye } from "lucide-react";
-
-type Meeting = {
-  id: string;
-  title: string;
-  type: string;
-  status: string;
-  scheduledAt: string;
-  endedAt: string | null;
-  location: string | null;
-  agenda: string | null;
-  minutes: string | null;
-  attendeeCount: number | null;
-  documentUrl: string | null;
-  createdBy: { id: string; name: string };
-};
+import { Meeting } from "@/types/meeting";
+import { useMeetings } from "@/hooks/useMeetings";
 
 const TYPE_COLORS: Record<string, string> = {
   AGM: "bg-purple-100 text-purple-700",
@@ -38,15 +26,13 @@ const STATUS_COLORS: Record<string, string> = {
 const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 export default function MeetingsPage() {
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Meeting | null>(null);
   const [viewing, setViewing] = useState<Meeting | null>(null);
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const { confirm, ConfirmUI } = useConfirm();
 
   const [form, setForm] = useState({
@@ -54,19 +40,16 @@ export default function MeetingsPage() {
     location: "", agenda: "", minutes: "", attendeeCount: "",
   });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(page), pageSize: "20" });
-      if (typeFilter) params.set("type", typeFilter);
-      if (statusFilter) params.set("status", statusFilter);
-      const { data } = await api.get(`/meetings?${params}`);
-      setMeetings(data.meetings);
-      setTotalPages(data.totalPages || 1);
-    } catch { /* ignore */ } finally { setLoading(false); }
+  const queryParams = useMemo(() => {
+    const p: Record<string, unknown> = { page, pageSize: 20 };
+    if (typeFilter) p.type = typeFilter;
+    if (statusFilter) p.status = statusFilter;
+    return p;
   }, [page, typeFilter, statusFilter]);
 
-  useEffect(() => { load(); }, [load]);
+  const { data, isLoading: loading } = useMeetings(queryParams);
+  const meetings = data?.meetings ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   const resetForm = () => {
     setForm({ title: "", type: "GENERAL", status: "SCHEDULED", scheduledAt: "", location: "", agenda: "", minutes: "", attendeeCount: "" });
@@ -101,13 +84,13 @@ export default function MeetingsPage() {
       await api.post("/meetings", payload);
     }
     resetForm();
-    load();
+    queryClient.invalidateQueries({ queryKey: ["meetings"] });
   };
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: "Delete meeting", message: "Delete this meeting?", confirmLabel: "Delete" }))) return;
     await api.delete(`/meetings/${id}`);
-    load();
+    queryClient.invalidateQueries({ queryKey: ["meetings"] });
   };
 
   return (

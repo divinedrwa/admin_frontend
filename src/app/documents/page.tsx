@@ -1,39 +1,45 @@
 "use client";
 
 import { FileText, FolderOpen, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { parseApiError } from "@/utils/errorHandler";
-
-type Document = {
-  id: string;
-  title: string;
-  description?: string;
-  fileUrl: string;
-  fileType: string;
-  fileSize?: number;
-  category?: string;
-  isPublic: boolean;
-  createdAt: string;
-};
+import { Document } from "@/types/document";
+import { useDocuments } from "@/hooks/useDocuments";
 
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const { confirm, ConfirmUI } = useConfirm();
-  
+
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const docQueryParams = useMemo(() => {
+    const p: Record<string, unknown> = {};
+    if (debouncedSearch) p.search = debouncedSearch;
+    if (categoryFilter !== "all") p.category = categoryFilter;
+    return p;
+  }, [debouncedSearch, categoryFilter]);
+
+  const { data, isLoading: loading } = useDocuments(docQueryParams);
+  const documents = data?.documents ?? [];
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -41,31 +47,6 @@ export default function DocumentsPage() {
     fileType: "",
     category: "GENERAL",
     isPublic: true
-  });
-
-  const loadDocuments = () => {
-    setLoading(true);
-    api
-      .get("/documents")
-      .then((response) => setDocuments(response.data.documents ?? []))
-      .catch(() => showToast("Failed to load documents", "error"))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadDocuments();
-  }, []);
-
-  // Filter and search logic
-  const filteredDocuments = documents.filter((doc) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesTitle = doc.title.toLowerCase().includes(query);
-      const matchesDesc = doc.description?.toLowerCase().includes(query);
-      if (!matchesTitle && !matchesDesc) return false;
-    }
-    if (categoryFilter !== "all" && doc.category !== categoryFilter) return false;
-    return true;
   });
 
   const handleOpenForm = () => {
@@ -108,7 +89,7 @@ export default function DocumentsPage() {
     try {
       await api.delete(`/documents/${documentId}`);
       showToast("Document deleted successfully", "success");
-      loadDocuments();
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
     } catch (error: unknown) {
       const message = parseApiError(error, "Failed to delete document").message;
       showToast(message, "error");
@@ -146,7 +127,7 @@ export default function DocumentsPage() {
       }
 
       handleCloseForm();
-      loadDocuments();
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
     } catch (error: unknown) {
       const message = parseApiError(error, editingDocument ? "Failed to update document" : "Failed to upload document").message;
       showToast(message, "error");
@@ -216,7 +197,7 @@ export default function DocumentsPage() {
             </div>
           </div>
           <div className="mt-3 text-sm text-fg-secondary">
-            Showing {filteredDocuments.length} of {documents.length} documents
+            Showing {documents.length} documents
           </div>
         </div>
 
@@ -344,7 +325,7 @@ export default function DocumentsPage() {
             <div className="loading-spinner w-10 h-10"></div>
             <p className="loading-state-text">Loading documents...</p>
           </div>
-        ) : filteredDocuments.length === 0 ? (
+        ) : documents.length === 0 ? (
           <div className="card">
             <div className="empty-state">
               <span className="empty-state-icon">📁</span>
@@ -356,7 +337,7 @@ export default function DocumentsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDocuments.map((doc) => (
+            {documents.map((doc) => (
               <div
                 key={doc.id}
                 className="card p-6"
@@ -383,7 +364,7 @@ export default function DocumentsPage() {
 
                 <div className="space-y-2">
                   <button
-                    onClick={() => window.open(doc.fileUrl, "_blank")}
+                    onClick={() => window.open(doc.fileUrl, "_blank", "noopener,noreferrer")}
                     className="btn btn-primary w-full text-sm"
                   >
                     View Document

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
+import { parseApiError } from "@/utils/errorHandler";
 
 interface GateOverview {
   id: string;
@@ -63,14 +64,6 @@ interface DailyTrend {
   }[];
 }
 
-type ApiError = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-};
-
 export default function GateAnalyticsPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "statistics" | "peak-hours" | "trend">(
     "overview"
@@ -93,8 +86,7 @@ export default function GateAnalyticsPage() {
       setGateOverview(response.data.gates);
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "CanceledError") return;
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch gate overview");
+      setError(parseApiError(err, "Failed to fetch gate overview").message);
     } finally {
       setLoading(false);
     }
@@ -111,8 +103,7 @@ export default function GateAnalyticsPage() {
       setStatistics(response.data);
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "CanceledError") return;
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch statistics");
+      setError(parseApiError(err, "Failed to fetch statistics").message);
     } finally {
       setLoading(false);
     }
@@ -129,8 +120,7 @@ export default function GateAnalyticsPage() {
       setPeakHours(response.data);
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "CanceledError") return;
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch peak hours");
+      setError(parseApiError(err, "Failed to fetch peak hours").message);
     } finally {
       setLoading(false);
     }
@@ -147,8 +137,7 @@ export default function GateAnalyticsPage() {
       setDailyTrend(response.data);
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "CanceledError") return;
-      const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Failed to fetch daily trend");
+      setError(parseApiError(err, "Failed to fetch daily trend").message);
     } finally {
       setLoading(false);
     }

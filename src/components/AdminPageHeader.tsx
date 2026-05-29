@@ -30,9 +30,9 @@ export function AdminPageHeader({
                 {eyebrow}
               </p>
             ) : null}
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-fg-primary sm:text-3xl">
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-fg-primary sm:text-3xl">
               {title}
-            </h1>
+            </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-secondary sm:text-base">
               {description}
             </p>

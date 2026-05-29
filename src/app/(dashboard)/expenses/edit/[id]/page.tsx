@@ -8,8 +8,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
-
-type FinancialYear = { id: string; label: string; startDate: string; endDate: string };
+import { FinancialYear, ExistingAttachment } from '@/types/expense';
 
 type FormState = {
   categoryId: string;
@@ -32,15 +31,6 @@ type FormState = {
   tdsAmount: number;
   notes: string;
   tags: string[];
-};
-
-type ApiError = {
-  response?: {
-    status?: number;
-    data?: {
-      message?: string;
-    };
-  };
 };
 
 export default function EditExpensePage() {
@@ -81,7 +71,6 @@ export default function EditExpensePage() {
 
   const [tagInput, setTagInput] = useState("");
 
-  type ExistingAttachment = { id: string; fileName: string; fileUrl: string; fileType: string; fileSize: number };
   const [existingAttachments, setExistingAttachments] = useState<ExistingAttachment[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -93,6 +82,7 @@ export default function EditExpensePage() {
   useEffect(() => {
     if (!id) return;
 
+    const controller = new AbortController();
     let cancelled = false;
 
     (async () => {
@@ -100,9 +90,9 @@ export default function EditExpensePage() {
       setLoadError(null);
       try {
         const [catRes, expRes, fyRes] = await Promise.all([
-          api.get(`/expenses/categories`),
-          api.get(`/expenses/${id}`),
-          api.get('/v1/admin/financial-years'),
+          api.get(`/expenses/categories`, { signal: controller.signal }),
+          api.get(`/expenses/${id}`, { signal: controller.signal }),
+          api.get('/v1/admin/financial-years', { signal: controller.signal }),
         ]);
 
         const cats = catRes.data ?? [];
@@ -165,10 +155,10 @@ export default function EditExpensePage() {
         // Mark initial load complete so auto-sync doesn't overwrite saved values
         initialLoadDone.current = true;
       } catch (err: unknown) {
-        const apiError = err as ApiError;
+        if ((err as { name?: string }).name === "CanceledError") return;
         if (!cancelled) {
           setLoadError(
-            apiError.response?.status === 404 ? "Expense not found." : "Could not load expense."
+            parseApiError(err).status === 404 ? "Expense not found." : "Could not load expense."
           );
         }
       } finally {
@@ -178,6 +168,7 @@ export default function EditExpensePage() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [id]);
 
