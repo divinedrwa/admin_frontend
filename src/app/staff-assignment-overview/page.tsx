@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
 import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
@@ -266,18 +267,8 @@ export default function StaffAssignmentOverviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-background p-6">
+    <AppShell title="Staff Assignment Overview">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-fg-primary mb-2">
-            👷 Staff Assignment Overview
-          </h1>
-          <p className="text-fg-secondary">
-            Manage staff assignments, monitor workload, and optimize coverage
-          </p>
-        </div>
-
         {/* Tabs */}
         <div className="tabs mb-6">
             <button
@@ -902,6 +893,6 @@ export default function StaffAssignmentOverviewPage() {
           </div>
         </div>
       </Modal>
-    </div>
+    </AppShell>
   );
 }

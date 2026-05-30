@@ -50,6 +50,28 @@ export function useExpenses(params?: ExpensesParams) {
   });
 }
 
+export function useExpenseStats(params?: Omit<ExpensesParams, 'limit' | 'offset'>) {
+  return useQuery({
+    queryKey: ["expenseStats", params],
+    queryFn: async () => {
+      const qp: Record<string, string> = {};
+      if (params?.categoryId) qp.categoryId = params.categoryId;
+      if (params?.financialYearId) qp.financialYearId = params.financialYearId;
+      if (params?.month) qp.month = params.month;
+      if (params?.year) qp.year = params.year;
+      if (params?.status) qp.status = params.status;
+      if (params?.paymentMode) qp.paymentMode = params.paymentMode;
+      if (params?.search) qp.search = params.search;
+
+      const res = await api.get<{ total: number; count: number; thisMonth: number; thisYear: number }>(
+        "/expenses/stats",
+        { params: qp },
+      );
+      return res.data;
+    },
+  });
+}
+
 export function useExpenseCategories() {
   return useQuery({
     queryKey: ["expenseCategories"],

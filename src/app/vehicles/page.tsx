@@ -1,7 +1,7 @@
 "use client";
 
 import { CarFront, Plus, Search } from "lucide-react";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
@@ -50,11 +50,23 @@ function VehiclesPageInner() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const { confirm, ConfirmUI } = useConfirm();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
-  const { data: vehicleData, isLoading: loading } = useVehicles({ limit: 50, offset: initialOffset });
+  const vehicleParams = useMemo(() => {
+    const p: Record<string, unknown> = { limit: 50, offset: initialOffset };
+    if (debouncedSearch) p.search = debouncedSearch;
+    return p;
+  }, [initialOffset, debouncedSearch]);
+
+  const { data: vehicleData, isLoading: loading } = useVehicles(vehicleParams);
   const vehicles = useMemo(
     () => sortByVillaNumber(
       (vehicleData?.vehicles ?? []) as Vehicle[],
@@ -97,20 +109,11 @@ function VehiclesPageInner() {
       if (t in byType) byType[t]++;
       else byType.OTHER++;
     }
-    return { total: vehicles.length, byType };
-  }, [vehicles]);
+    return { total: pgMeta.total, byType };
+  }, [vehicles, pgMeta.total]);
 
-  /* ---- Client-side search filter ---- */
-  const filteredVehicles = useMemo(() => {
-    if (!searchQuery.trim()) return vehicles;
-    const q = searchQuery.toLowerCase().trim();
-    return vehicles.filter(
-      (v) =>
-        v.vehicleNumber.toLowerCase().includes(q) ||
-        (v.model && v.model.toLowerCase().includes(q)) ||
-        (v.villa?.villaNumber && v.villa.villaNumber.toLowerCase().includes(q)),
-    );
-  }, [vehicles, searchQuery]);
+  /* Search is now server-side; filteredVehicles = vehicles */
+  const filteredVehicles = vehicles;
 
   /* ---- Form handlers ---- */
   const handleOpenForm = (vehicle?: Vehicle) => {

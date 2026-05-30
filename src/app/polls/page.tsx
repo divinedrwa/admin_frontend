@@ -214,7 +214,7 @@ function PollsPageInner() {
         <AdminPageHeader
           eyebrow="Community engagement"
           title="Polls & voting"
-          description={`Create resident polls, track participation, and manage active or closed votes with clearer visibility.${activeCount || closedCount ? ` ${activeCount} active and ${closedCount} closed polls are currently listed.` : ""}`}
+          description={`Create resident polls, track participation, and manage active or closed votes with clearer visibility.${activeCount || closedCount ? ` ${activeCount} active and ${closedCount} closed polls on this page.` : ""}`}
           icon={<Vote className="h-6 w-6" />}
           actions={
             <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
@@ -245,9 +245,9 @@ function PollsPageInner() {
                 onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
                 className="input text-sm"
               >
-                <option value="all">All Polls ({polls.length})</option>
-                <option value="active">Active Only ({activeCount})</option>
-                <option value="closed">Closed Only ({closedCount})</option>
+                <option value="all">All Polls ({polls.length} on this page)</option>
+                <option value="active">Active Only ({activeCount} on this page)</option>
+                <option value="closed">Closed Only ({closedCount} on this page)</option>
               </select>
             </div>
           </div>

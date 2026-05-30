@@ -79,7 +79,7 @@ function AmenityBookingsPageInner() {
   // Residents dropdown still loaded manually (no dedicated hook)
   useEffect(() => {
     api
-      .get("/users?role=RESIDENT")
+      .get("/users?role=RESIDENT&limit=200")
       .then((response) => setResidents(response.data.users ?? []))
       .catch(() => showToast("Failed to load residents", "error"));
   }, []);
@@ -254,11 +254,11 @@ function AmenityBookingsPageInner() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="input"
               >
-                <option value="all">All Status ({bookings.length})</option>
-                <option value="PENDING">Pending ({statusCounts.PENDING})</option>
-                <option value="CONFIRMED">Confirmed ({statusCounts.CONFIRMED})</option>
-                <option value="COMPLETED">Completed ({statusCounts.COMPLETED})</option>
-                <option value="CANCELLED">Cancelled ({statusCounts.CANCELLED})</option>
+                <option value="all">All Status ({bookings.length} on this page)</option>
+                <option value="PENDING">Pending ({statusCounts.PENDING} on this page)</option>
+                <option value="CONFIRMED">Confirmed ({statusCounts.CONFIRMED} on this page)</option>
+                <option value="COMPLETED">Completed ({statusCounts.COMPLETED} on this page)</option>
+                <option value="CANCELLED">Cancelled ({statusCounts.CANCELLED} on this page)</option>
               </select>
             </div>
           </div>

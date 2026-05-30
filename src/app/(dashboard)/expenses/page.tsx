@@ -11,7 +11,7 @@ import { useConfirm } from '@/components/ConfirmDialog';
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { parseApiError } from "@/utils/errorHandler";
-import { useExpenses, useExpenseCategories, useFinancialYears } from '@/hooks/useExpenses';
+import { useExpenses, useExpenseStats, useExpenseCategories, useFinancialYears } from '@/hooks/useExpenses';
 import { Expense } from '@/types/expense';
 
 const MONTHS = [
@@ -61,18 +61,22 @@ function ExpensesPageInner() {
     offset: expensesData?.offset ?? 0,
   };
 
-  // Calculate stats from the returned page
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
+  // Server-side stats across all matching expenses (not just current page)
+  const statsParams = {
+    categoryId: selectedCategory || undefined,
+    financialYearId: selectedFyId || undefined,
+    month: selectedMonth || undefined,
+    year: selectedYear || undefined,
+    status: selectedStatus || undefined,
+    paymentMode: selectedPaymentMode || undefined,
+    search: searchTerm || undefined,
+  };
+  const { data: serverStats } = useExpenseStats(statsParams);
   const stats = {
-    total: expenses.reduce((sum: number, exp: Expense) => sum + exp.amount, 0),
-    count: pgMeta.total,
-    thisMonth: expenses
-      .filter((exp: Expense) => exp.month === currentMonth && exp.year === currentYear)
-      .reduce((sum: number, exp: Expense) => sum + exp.amount, 0),
-    thisYear: expenses
-      .filter((exp: Expense) => exp.year === currentYear)
-      .reduce((sum: number, exp: Expense) => sum + exp.amount, 0),
+    total: serverStats?.total ?? 0,
+    count: serverStats?.count ?? pgMeta.total,
+    thisMonth: serverStats?.thisMonth ?? 0,
+    thisYear: serverStats?.thisYear ?? 0,
   };
 
   const handlePageChange = (newOffset: number) => {
@@ -95,36 +99,52 @@ function ExpensesPageInner() {
     }
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     const escapeCsv = (v: unknown): string => {
       const s = String(v ?? "");
       return s.includes(",") || s.includes('"') || s.includes("\n")
         ? `"${s.replace(/"/g, '""')}"`
         : s;
     };
-    const headers = ['Date', 'Category', 'Title', 'Paid To', 'Amount', 'Payment Mode', 'Status'];
-    const rows = expenses.map(exp => [
-      new Date(exp.paymentDate).toLocaleDateString(),
-      exp.category.name,
-      exp.title,
-      exp.paidTo,
-      exp.amount,
-      exp.paymentMode,
-      exp.status
-    ]);
+    try {
+      // Fetch all matching expenses (not just current page)
+      const qp: Record<string, string> = { limit: "10000" };
+      if (selectedCategory) qp.categoryId = selectedCategory;
+      if (selectedFyId) qp.financialYearId = selectedFyId;
+      if (selectedMonth) qp.month = selectedMonth;
+      if (selectedYear) qp.year = selectedYear;
+      if (selectedStatus) qp.status = selectedStatus;
+      if (selectedPaymentMode) qp.paymentMode = selectedPaymentMode;
+      if (searchTerm) qp.search = searchTerm;
 
-    const csv = [
-      headers.join(','),
-      ...rows.map(row => row.map(escapeCsv).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+      const { data: allExpenses } = await api.get<Expense[]>("/expenses", { params: qp });
+
+      const headers = ['Date', 'Category', 'Title', 'Paid To', 'Amount', 'Payment Mode', 'Status'];
+      const rows = allExpenses.map(exp => [
+        new Date(exp.paymentDate).toLocaleDateString(),
+        exp.category.name,
+        exp.title,
+        exp.paidTo,
+        exp.amount,
+        exp.paymentMode,
+        exp.status
+      ]);
+
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.map(escapeCsv).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to export expenses").message, "error");
+    }
   };
 
   const clearFilters = () => {

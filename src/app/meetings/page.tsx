@@ -6,21 +6,23 @@ import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Plus, Pencil, Trash2, Eye } from "lucide-react";
+import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { Meeting } from "@/types/meeting";
 import { useMeetings } from "@/hooks/useMeetings";
 
 const TYPE_COLORS: Record<string, string> = {
-  AGM: "bg-purple-100 text-purple-700",
-  SGM: "bg-indigo-100 text-indigo-700",
-  COMMITTEE: "bg-blue-100 text-blue-700",
-  GENERAL: "bg-gray-100 text-gray-700",
+  AGM: "bg-info-bg text-info-fg",
+  SGM: "bg-info-bg text-info-fg",
+  COMMITTEE: "bg-info-bg text-info-fg",
+  GENERAL: "bg-surface-elevated text-fg-secondary",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  SCHEDULED: "bg-yellow-100 text-yellow-700",
-  IN_PROGRESS: "bg-blue-100 text-blue-700",
-  COMPLETED: "bg-green-100 text-green-700",
-  CANCELLED: "bg-red-100 text-red-700",
+  SCHEDULED: "bg-pending-bg text-pending-fg",
+  IN_PROGRESS: "bg-info-bg text-info-fg",
+  COMPLETED: "bg-approved-bg text-approved-fg",
+  CANCELLED: "bg-denied-bg text-denied-fg",
 };
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -71,26 +73,34 @@ export default function MeetingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      ...form,
-      attendeeCount: form.attendeeCount ? parseInt(form.attendeeCount) : undefined,
-      location: form.location || undefined,
-      agenda: form.agenda || undefined,
-      minutes: form.minutes || undefined,
-    };
-    if (editing) {
-      await api.patch(`/meetings/${editing.id}`, payload);
-    } else {
-      await api.post("/meetings", payload);
+    try {
+      const payload = {
+        ...form,
+        attendeeCount: form.attendeeCount ? parseInt(form.attendeeCount) : undefined,
+        location: form.location || undefined,
+        agenda: form.agenda || undefined,
+        minutes: form.minutes || undefined,
+      };
+      if (editing) {
+        await api.patch(`/meetings/${editing.id}`, payload);
+      } else {
+        await api.post("/meetings", payload);
+      }
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["meetings"] });
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to save meeting").message, "error");
     }
-    resetForm();
-    queryClient.invalidateQueries({ queryKey: ["meetings"] });
   };
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: "Delete meeting", message: "Delete this meeting?", confirmLabel: "Delete" }))) return;
-    await api.delete(`/meetings/${id}`);
-    queryClient.invalidateQueries({ queryKey: ["meetings"] });
+    try {
+      await api.delete(`/meetings/${id}`);
+      queryClient.invalidateQueries({ queryKey: ["meetings"] });
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to delete meeting").message, "error");
+    }
   };
 
   return (

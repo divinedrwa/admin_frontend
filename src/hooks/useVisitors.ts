@@ -4,6 +4,7 @@ import { Visitor } from "@/types/visitor";
 
 export type VisitorsResponse = {
   visitors: Visitor[];
+  total?: number;
 };
 
 export function useVisitors(

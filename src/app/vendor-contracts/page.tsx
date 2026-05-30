@@ -5,6 +5,8 @@ import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 import { Vendor } from "@/types/vendor";
 
 type Contract = {
@@ -25,11 +27,11 @@ type Contract = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  ACTIVE: "bg-green-100 text-green-700",
-  EXPIRED: "bg-red-100 text-red-700",
-  TERMINATED: "bg-orange-100 text-orange-700",
-  RENEWED: "bg-blue-100 text-blue-700",
+  DRAFT: "bg-surface-elevated text-fg-secondary",
+  ACTIVE: "bg-approved-bg text-approved-fg",
+  EXPIRED: "bg-denied-bg text-denied-fg",
+  TERMINATED: "bg-pending-bg text-pending-fg",
+  RENEWED: "bg-info-bg text-info-fg",
 };
 
 const fmt = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" });
@@ -116,20 +118,28 @@ export default function VendorContractsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form, amount: parseFloat(form.amount) || 0 };
-    if (editing) {
-      await api.patch(`/vendor-contracts/${editing.id}`, payload);
-    } else {
-      await api.post("/vendor-contracts", payload);
+    try {
+      const payload = { ...form, amount: parseFloat(form.amount) || 0 };
+      if (editing) {
+        await api.patch(`/vendor-contracts/${editing.id}`, payload);
+      } else {
+        await api.post("/vendor-contracts", payload);
+      }
+      resetForm();
+      load();
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to save contract").message, "error");
     }
-    resetForm();
-    load();
   };
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: "Delete contract", message: "Delete this contract?", confirmLabel: "Delete" }))) return;
-    await api.delete(`/vendor-contracts/${id}`);
-    load();
+    try {
+      await api.delete(`/vendor-contracts/${id}`);
+      load();
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to delete contract").message, "error");
+    }
   };
 
   return (

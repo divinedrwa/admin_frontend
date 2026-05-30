@@ -192,9 +192,9 @@ function ParcelsPageInner() {
                 onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
                 className="input text-sm"
               >
-                <option value="all">All Status ({parcels.length})</option>
-                <option value="PENDING">Pending ({pendingCount})</option>
-                <option value="COLLECTED">Collected ({collectedCount})</option>
+                <option value="all">All Status ({parcels.length} on this page)</option>
+                <option value="PENDING">Pending ({pendingCount} on this page)</option>
+                <option value="COLLECTED">Collected ({collectedCount} on this page)</option>
               </select>
             </div>
           </div>

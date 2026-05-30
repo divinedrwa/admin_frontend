@@ -5,6 +5,8 @@ import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { showToast } from "@/components/Toast";
+import { parseApiError } from "@/utils/errorHandler";
 
 type Asset = {
   id: string;
@@ -22,11 +24,11 @@ type Asset = {
 };
 
 const CONDITION_COLORS: Record<string, string> = {
-  NEW: "bg-green-100 text-green-700",
-  GOOD: "bg-blue-100 text-blue-700",
-  FAIR: "bg-yellow-100 text-yellow-700",
-  POOR: "bg-orange-100 text-orange-700",
-  DECOMMISSIONED: "bg-red-100 text-red-700",
+  NEW: "bg-approved-bg text-approved-fg",
+  GOOD: "bg-info-bg text-info-fg",
+  FAIR: "bg-pending-bg text-pending-fg",
+  POOR: "bg-pending-bg text-pending-fg",
+  DECOMMISSIONED: "bg-denied-bg text-denied-fg",
 };
 
 const fmt = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" });
@@ -87,31 +89,39 @@ export default function AssetsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      ...form,
-      purchaseValue: form.purchaseValue ? parseFloat(form.purchaseValue) : undefined,
-      currentValue: form.currentValue ? parseFloat(form.currentValue) : undefined,
-      purchaseDate: form.purchaseDate || undefined,
-      warrantyExpiry: form.warrantyExpiry || undefined,
-      location: form.location || undefined,
-      serialNumber: form.serialNumber || undefined,
-      assignedTo: form.assignedTo || undefined,
-      notes: form.notes || undefined,
-    };
-    if (editing) {
-      await api.patch(`/assets/${editing.id}`, payload);
-    } else {
-      await api.post("/assets", payload);
+    try {
+      const payload = {
+        ...form,
+        purchaseValue: form.purchaseValue ? parseFloat(form.purchaseValue) : undefined,
+        currentValue: form.currentValue ? parseFloat(form.currentValue) : undefined,
+        purchaseDate: form.purchaseDate || undefined,
+        warrantyExpiry: form.warrantyExpiry || undefined,
+        location: form.location || undefined,
+        serialNumber: form.serialNumber || undefined,
+        assignedTo: form.assignedTo || undefined,
+        notes: form.notes || undefined,
+      };
+      if (editing) {
+        await api.patch(`/assets/${editing.id}`, payload);
+      } else {
+        await api.post("/assets", payload);
+      }
+      resetForm();
+      load();
+      api.get("/assets/categories").then(({ data }) => setCategories(data.categories || []));
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to save asset").message, "error");
     }
-    resetForm();
-    load();
-    api.get("/assets/categories").then(({ data }) => setCategories(data.categories || []));
   };
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: "Delete asset", message: "Delete this asset?", confirmLabel: "Delete" }))) return;
-    await api.delete(`/assets/${id}`);
-    load();
+    try {
+      await api.delete(`/assets/${id}`);
+      load();
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to delete asset").message, "error");
+    }
   };
 
   return (

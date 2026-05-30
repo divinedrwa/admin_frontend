@@ -36,6 +36,7 @@ export default function GuardOperationsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [waterToggleOpen, setWaterToggleOpen] = useState(false);
   const [waterToggleReason, setWaterToggleReason] = useState("");
+  const [selectedGateIndex, setSelectedGateIndex] = useState(0);
 
   const loadData = useCallback((signal?: AbortSignal) => {
     Promise.all([
@@ -65,7 +66,7 @@ export default function GuardOperationsPage() {
 
   const confirmWaterToggle = async () => {
     if (waterStatus.length === 0) return;
-    const gate = waterStatus[0];
+    const gate = waterStatus[selectedGateIndex] ?? waterStatus[0];
     const turnOn = gate.status !== "ON";
     try {
       setActionLoading(true);
@@ -99,7 +100,7 @@ export default function GuardOperationsPage() {
           return;
         }
         await api.post("/garbage-collection/entry", {
-          gateId: waterStatus[0].gateId,
+          gateId: (waterStatus[selectedGateIndex] ?? waterStatus[0]).gateId,
           notes: "Marked entry from Guard Ops dashboard",
         });
         showToast("Garbage collector entry logged", "success");
@@ -231,6 +232,20 @@ export default function GuardOperationsPage() {
         {/* Quick Actions for Guards */}
         <div className="bg-surface-background border border-surface-border rounded p-6">
           <h3 className="font-semibold mb-3">Guard Quick Actions</h3>
+          {waterStatus.length > 1 && (
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-fg-primary mb-1">Select Gate</label>
+              <select
+                value={selectedGateIndex}
+                onChange={(e) => setSelectedGateIndex(Number(e.target.value))}
+                className="input w-auto"
+              >
+                {waterStatus.map((ws, idx) => (
+                  <option key={ws.gateId} value={idx}>{ws.gate}{ws.location ? ` (${ws.location})` : ""}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               className="btn btn-primary"
@@ -273,7 +288,7 @@ export default function GuardOperationsPage() {
           </div>
           <div className="card-body space-y-3">
             <p className="text-sm text-fg-secondary">
-              Water will be turned <strong>{waterStatus[0]?.status === "ON" ? "OFF" : "ON"}</strong> for {waterStatus[0]?.gate ?? "the gate"}.
+              Water will be turned <strong>{(waterStatus[selectedGateIndex] ?? waterStatus[0])?.status === "ON" ? "OFF" : "ON"}</strong> for {(waterStatus[selectedGateIndex] ?? waterStatus[0])?.gate ?? "the gate"}.
             </p>
             <div>
               <label className="block text-sm font-medium text-fg-primary mb-1">Reason (optional)</label>

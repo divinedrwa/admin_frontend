@@ -47,11 +47,14 @@ export default function VisitorsPage() {
   });
 
   const visitorQueryParams = useMemo(() => {
-    const p: Record<string, unknown> = {};
+    const p: Record<string, unknown> = {
+      limit: itemsPerPage,
+      offset: (currentPage - 1) * itemsPerPage,
+    };
     if (debouncedSearch) p.search = debouncedSearch;
     if (typeFilter !== "all") p.visitorType = typeFilter;
     return p;
-  }, [debouncedSearch, typeFilter]);
+  }, [debouncedSearch, typeFilter, currentPage]);
 
   const { data: visitorsData, isLoading: loading } = useVisitors(filter, visitorQueryParams);
   const visitors = ((visitorsData?.visitors ?? []) as Visitor[]).map((v) => ({
@@ -188,12 +191,9 @@ export default function VisitorsPage() {
 
   const activeCount = visitors.filter((v) => !v.checkOutAt).length;
 
-  // Pagination (applied to server-filtered results)
-  const totalPages = Math.ceil(visitors.length / itemsPerPage);
-  const paginatedVisitors = visitors.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Server-side pagination
+  const totalPages = Math.ceil((visitorsData?.total ?? visitors.length) / itemsPerPage);
+  const paginatedVisitors = visitors;
 
   // Reset to page 1 when filters change
   useEffect(() => {
