@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isJwtUnexpired } from "@/lib/jwt";
+import { attemptTokenRefresh } from "@/lib/tokenRefresh";
 
 function isTenantPublicPath(pathname: string): boolean {
   const p = pathname.split("?")[0] ?? "";
@@ -19,14 +20,23 @@ export function useAuth(requireAuth: boolean = true) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const token = localStorage.getItem("token");
-      const valid = isJwtUnexpired(token);
+      let valid = isJwtUnexpired(token);
 
-      // An expired token is worse than no token: it would let the page render
-      // briefly while the 401 round-trip happens. Treat it as unauthenticated.
+      // Token exists but expired — try a silent refresh before giving up.
       if (!valid && token) {
-        localStorage.removeItem("token");
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (refreshToken) {
+          const newToken = await attemptTokenRefresh({
+            tokenKey: "token",
+            refreshTokenKey: "refresh_token",
+          });
+          valid = !!newToken;
+        }
+        if (!valid) {
+          localStorage.removeItem("token");
+        }
       }
 
       if (requireAuth && !valid && !isTenantPublicPath(pathname ?? "")) {
