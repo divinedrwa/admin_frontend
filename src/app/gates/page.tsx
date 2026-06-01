@@ -1,7 +1,7 @@
 "use client";
 
-import { MapPinned, Plus } from "lucide-react";
-import { useState } from "react";
+import { MapPinned, Plus, Power, PowerOff, LogIn, LogOut } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -23,6 +23,87 @@ export default function GatesPage() {
     isActive: true
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // --- Water Supply state ---
+  const [waterGateId, setWaterGateId] = useState("");
+  const [waterReason, setWaterReason] = useState("");
+  const [waterToggling, setWaterToggling] = useState(false);
+  const [waterStatus, setWaterStatus] = useState<Record<string, string>>({});
+
+  const fetchWaterStatus = useCallback(async () => {
+    try {
+      const res = await api.get("/water-supply/status");
+      const map: Record<string, string> = {};
+      for (const s of res.data?.status ?? []) {
+        map[s.gateId] = s.currentStatus;
+      }
+      setWaterStatus(map);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { void fetchWaterStatus(); }, [fetchWaterStatus]);
+
+  const handleWaterToggle = async (turnedOn: boolean) => {
+    const gateId = waterGateId || gates[0]?.id;
+    if (!gateId) return;
+    try {
+      setWaterToggling(true);
+      await api.post("/water-supply/toggle", { gateId, turnedOn, reason: waterReason || undefined });
+      showToast(`Water supply turned ${turnedOn ? "ON" : "OFF"}`, "success");
+      setWaterReason("");
+      void fetchWaterStatus();
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to toggle water supply").message, "error");
+    } finally {
+      setWaterToggling(false);
+    }
+  };
+
+  // --- Garbage Collection state ---
+  const [garbageGateId, setGarbageGateId] = useState("");
+  const [garbageNotes, setGarbageNotes] = useState("");
+  const [garbageSubmitting, setGarbageSubmitting] = useState(false);
+  const [activeGarbageEvent, setActiveGarbageEvent] = useState<{ id: string; entryTime: string; gate?: { name: string } | null } | null>(null);
+
+  const fetchActiveGarbage = useCallback(async () => {
+    try {
+      const res = await api.get("/garbage-collection/active");
+      setActiveGarbageEvent(res.data?.event ?? null);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { void fetchActiveGarbage(); }, [fetchActiveGarbage]);
+
+  const handleGarbageEntry = async () => {
+    const gateId = garbageGateId || gates[0]?.id;
+    if (!gateId) return;
+    try {
+      setGarbageSubmitting(true);
+      await api.post("/garbage-collection/entry", { gateId, notes: garbageNotes || undefined });
+      showToast("Garbage collector entry logged", "success");
+      setGarbageNotes("");
+      void fetchActiveGarbage();
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to log entry").message, "error");
+    } finally {
+      setGarbageSubmitting(false);
+    }
+  };
+
+  const handleGarbageExit = async () => {
+    if (!activeGarbageEvent) return;
+    try {
+      setGarbageSubmitting(true);
+      await api.patch(`/garbage-collection/${activeGarbageEvent.id}/exit`, { notes: garbageNotes || undefined });
+      showToast("Garbage collector exit logged", "success");
+      setGarbageNotes("");
+      void fetchActiveGarbage();
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Failed to log exit").message, "error");
+    } finally {
+      setGarbageSubmitting(false);
+    }
+  };
 
   const handleOpenForm = (gate?: Gate) => {
     if (gate) {
@@ -221,6 +302,121 @@ export default function GatesPage() {
             </table>
           )}
         </div>
+
+        {/* Gate Utility Controls */}
+        {gates.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Water Supply Control */}
+            <div className="card p-5">
+              <h2 className="text-lg font-semibold text-fg-primary mb-4 flex items-center gap-2">
+                <Power className="h-5 w-5 text-brand-primary" />
+                Water Supply
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-fg-secondary mb-1">Gate</label>
+                  <select
+                    value={waterGateId || gates[0]?.id || ""}
+                    onChange={(e) => setWaterGateId(e.target.value)}
+                    className="input w-full"
+                  >
+                    {gates.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name} {waterStatus[g.id] ? `(${waterStatus[g.id]})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-fg-secondary mb-1">Reason (optional)</label>
+                  <input
+                    type="text"
+                    value={waterReason}
+                    onChange={(e) => setWaterReason(e.target.value)}
+                    placeholder="e.g. Scheduled maintenance"
+                    className="input w-full"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleWaterToggle(true)}
+                    disabled={waterToggling}
+                    className="btn bg-approved-solid hover:bg-approved-solid/90 text-white flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Power className="h-4 w-4" />
+                    Turn ON
+                  </button>
+                  <button
+                    onClick={() => handleWaterToggle(false)}
+                    disabled={waterToggling}
+                    className="btn bg-brand-danger hover:bg-brand-danger/90 text-white flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <PowerOff className="h-4 w-4" />
+                    Turn OFF
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Garbage Collection Control */}
+            <div className="card p-5">
+              <h2 className="text-lg font-semibold text-fg-primary mb-4 flex items-center gap-2">
+                <LogIn className="h-5 w-5 text-brand-primary" />
+                Garbage Collection
+              </h2>
+              {activeGarbageEvent && (
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-approved-bg text-approved-fg text-sm">
+                  <div className="h-2.5 w-2.5 rounded-full bg-approved-solid animate-pulse" />
+                  Collector inside{activeGarbageEvent.gate ? ` (${activeGarbageEvent.gate.name})` : ""}
+                </div>
+              )}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-fg-secondary mb-1">Gate</label>
+                  <select
+                    value={garbageGateId || gates[0]?.id || ""}
+                    onChange={(e) => setGarbageGateId(e.target.value)}
+                    className="input w-full"
+                  >
+                    {gates.map((g) => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-fg-secondary mb-1">Notes (optional)</label>
+                  <input
+                    type="text"
+                    value={garbageNotes}
+                    onChange={(e) => setGarbageNotes(e.target.value)}
+                    placeholder="e.g. Municipal truck"
+                    className="input w-full"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleGarbageEntry}
+                    disabled={garbageSubmitting || !!activeGarbageEvent}
+                    className="btn bg-approved-solid hover:bg-approved-solid/90 text-white flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+                    title={activeGarbageEvent ? "A collector is already inside" : ""}
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Inside
+                  </button>
+                  <button
+                    onClick={handleGarbageExit}
+                    disabled={garbageSubmitting || !activeGarbageEvent}
+                    className="btn bg-brand-danger hover:bg-brand-danger/90 text-white flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+                    title={!activeGarbageEvent ? "No active collection event" : ""}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Left from Society
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {gates.length > 0 && (
           <div className="bg-brand-primary-light border border-surface-border rounded p-4">

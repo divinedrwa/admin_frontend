@@ -1,13 +1,11 @@
 "use client";
 
-import { Droplets, Power, PowerOff } from "lucide-react";
+import { Droplets } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
-import { showToast } from "@/components/Toast";
-import { useGates } from "@/hooks/useGates";
 
 type WaterSupplyOverview = {
   summary: {
@@ -74,32 +72,6 @@ export default function WaterSupplyAnalyticsPage() {
   const [hourlyPattern, setHourlyPattern] = useState<HourlyPattern | null>(null);
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
   const [period, setPeriod] = useState("7");
-
-  const { data: gatesData } = useGates();
-  const gates = gatesData?.gates ?? [];
-  const [selectedGateId, setSelectedGateId] = useState("");
-  const [toggling, setToggling] = useState(false);
-  const [reason, setReason] = useState("");
-
-  const handleToggle = async (turnedOn: boolean) => {
-    const gateId = selectedGateId || gates[0]?.id;
-    if (!gateId) {
-      showToast("No gate available", "error");
-      return;
-    }
-    try {
-      setToggling(true);
-      await api.post("/water-supply/toggle", { gateId, turnedOn, reason: reason || undefined });
-      showToast(`Water supply turned ${turnedOn ? "ON" : "OFF"}`, "success");
-      setReason("");
-      if (activeTab === "overview") void fetchOverview();
-      else if (activeTab === "recent") void fetchRecentEvents();
-    } catch (err: unknown) {
-      showToast(parseApiError(err, "Failed to toggle water supply").message, "error");
-    } finally {
-      setToggling(false);
-    }
-  };
 
   const fetchOverview = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -184,53 +156,6 @@ export default function WaterSupplyAnalyticsPage() {
           description="Monitor water supply patterns, gate-wise status, daily usage trends, and recent operational events from one analytics surface."
           icon={<Droplets className="h-6 w-6" />}
         />
-
-        {/* Water Supply Controls */}
-        <div className="card p-5">
-          <h2 className="text-lg font-semibold text-fg-primary mb-4">Water Supply Control</h2>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-sm font-medium text-fg-secondary mb-1">Gate</label>
-              <select
-                value={selectedGateId || gates[0]?.id || ""}
-                onChange={(e) => setSelectedGateId(e.target.value)}
-                className="input w-full"
-              >
-                {gates.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-sm font-medium text-fg-secondary mb-1">Reason (optional)</label>
-              <input
-                type="text"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="e.g. Scheduled maintenance"
-                className="input w-full"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleToggle(true)}
-                disabled={toggling || gates.length === 0}
-                className="btn bg-approved-solid hover:bg-approved-solid/90 text-white flex items-center gap-2 disabled:opacity-50"
-              >
-                <Power className="h-4 w-4" />
-                Turn ON
-              </button>
-              <button
-                onClick={() => handleToggle(false)}
-                disabled={toggling || gates.length === 0}
-                className="btn bg-brand-danger hover:bg-brand-danger/90 text-white flex items-center gap-2 disabled:opacity-50"
-              >
-                <PowerOff className="h-4 w-4" />
-                Turn OFF
-              </button>
-            </div>
-          </div>
-        </div>
 
         <div className="tabs">
           {[

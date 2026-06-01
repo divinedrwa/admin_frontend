@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trash2, Clock, Calendar, MapPin, LogIn, LogOut } from "lucide-react";
+import { Trash2, Clock, Calendar, MapPin } from "lucide-react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { parseApiError } from "@/utils/errorHandler";
-import { useGates } from "@/hooks/useGates";
 
 interface GarbageEvent {
   id: string;
@@ -24,12 +23,6 @@ export default function GarbageCollectionPage() {
   const [activeEvent, setActiveEvent] = useState<GarbageEvent | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
-  const { data: gatesData } = useGates();
-  const gates = gatesData?.gates ?? [];
-  const [selectedGateId, setSelectedGateId] = useState("");
-  const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   const fetchActive = useCallback(async () => {
     try {
@@ -53,45 +46,6 @@ export default function GarbageCollectionPage() {
       setLoading(false);
     }
   }, [startDate, endDate]);
-
-  const handleEntry = async () => {
-    const gateId = selectedGateId || gates[0]?.id;
-    if (!gateId) {
-      showToast("No gate available", "error");
-      return;
-    }
-    try {
-      setSubmitting(true);
-      await api.post("/garbage-collection/entry", { gateId, notes: notes || undefined });
-      showToast("Garbage collector entry logged", "success");
-      setNotes("");
-      void fetchActive();
-      void fetchHistory();
-    } catch (err: unknown) {
-      showToast(parseApiError(err, "Failed to log entry").message, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleExit = async () => {
-    if (!activeEvent) {
-      showToast("No active garbage collection event", "error");
-      return;
-    }
-    try {
-      setSubmitting(true);
-      await api.patch(`/garbage-collection/${activeEvent.id}/exit`, { notes: notes || undefined });
-      showToast("Garbage collector exit logged", "success");
-      setNotes("");
-      void fetchActive();
-      void fetchHistory();
-    } catch (err: unknown) {
-      showToast(parseApiError(err, "Failed to log exit").message, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   useEffect(() => {
     void fetchActive();
@@ -133,55 +87,6 @@ export default function GarbageCollectionPage() {
           description="Track garbage collector entry/exit events and collection patterns."
           icon={<Trash2 className="h-6 w-6" />}
         />
-
-        {/* Garbage Collection Controls */}
-        <div className="card p-5">
-          <h2 className="text-lg font-semibold text-fg-primary mb-4">Garbage Collection Control</h2>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-sm font-medium text-fg-secondary mb-1">Gate</label>
-              <select
-                value={selectedGateId || gates[0]?.id || ""}
-                onChange={(e) => setSelectedGateId(e.target.value)}
-                className="input w-full"
-              >
-                {gates.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-sm font-medium text-fg-secondary mb-1">Notes (optional)</label>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Municipal truck"
-                className="input w-full"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleEntry}
-                disabled={submitting || gates.length === 0 || !!activeEvent}
-                className="btn bg-approved-solid hover:bg-approved-solid/90 text-white flex items-center gap-2 disabled:opacity-50"
-                title={activeEvent ? "A collector is already inside" : ""}
-              >
-                <LogIn className="h-4 w-4" />
-                Inside
-              </button>
-              <button
-                onClick={handleExit}
-                disabled={submitting || !activeEvent}
-                className="btn bg-brand-danger hover:bg-brand-danger/90 text-white flex items-center gap-2 disabled:opacity-50"
-                title={!activeEvent ? "No active collection event" : ""}
-              >
-                <LogOut className="h-4 w-4" />
-                Left from Society
-              </button>
-            </div>
-          </div>
-        </div>
 
         {/* Active Event */}
         {activeEvent && (
