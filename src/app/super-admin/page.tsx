@@ -45,6 +45,38 @@ type SocietyDetail = SocietyRow & {
   counts: SocietyCounts;
 };
 
+type AppVersionConfigRow = {
+  id: string;
+  platform: "ANDROID" | "IOS";
+  latestVersion: string;
+  minVersion: string;
+  storeUrl: string | null;
+  releaseNotes: string | null;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type AppVersionForm = {
+  latestVersion: string;
+  minVersion: string;
+  storeUrl: string;
+  releaseNotes: string;
+};
+
+const SEMVER_RE = /^\d+\.\d+\.\d+$/;
+
+function compareSemver(a: string, b: string): number {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] !== pb[i]) return pa[i] - pb[i];
+  }
+  return 0;
+}
+
+const emptyForm: AppVersionForm = { latestVersion: "", minVersion: "", storeUrl: "", releaseNotes: "" };
+
 export default function SuperAdminConsolePage() {
   const router = useRouter();
   const [booting, setBooting] = useState(true);
@@ -81,6 +113,13 @@ export default function SuperAdminConsolePage() {
   /** Maps `societyId:username` → password for freshly-created admins (mirrors sessionStorage). */
   const [storedCredentials, setStoredCredentials] = useState<Record<string, string>>({});
 
+  const [appVersionConfigs, setAppVersionConfigs] = useState<AppVersionConfigRow[]>([]);
+  const [loadingAppVersions, setLoadingAppVersions] = useState(false);
+  const [androidForm, setAndroidForm] = useState<AppVersionForm>({ ...emptyForm });
+  const [iosForm, setIosForm] = useState<AppVersionForm>({ ...emptyForm });
+  const [savingAndroid, setSavingAndroid] = useState(false);
+  const [savingIos, setSavingIos] = useState(false);
+
   const abortRef = useRef<AbortController | null>(null);
 
   const loadSocieties = useCallback(async (signal?: AbortSignal) => {
@@ -101,6 +140,25 @@ export default function SuperAdminConsolePage() {
     }
   }, []);
 
+  const loadAppVersionConfigs = useCallback(async (signal?: AbortSignal) => {
+    setLoadingAppVersions(true);
+    try {
+      const { data } = await apiSuper.get<{ configs: AppVersionConfigRow[] }>("/super/app-version", { signal });
+      if (signal?.aborted) return;
+      const configs = data?.configs ?? [];
+      setAppVersionConfigs(configs);
+      const android = configs.find((c) => c.platform === "ANDROID");
+      const ios = configs.find((c) => c.platform === "IOS");
+      setAndroidForm(android ? { latestVersion: android.latestVersion, minVersion: android.minVersion, storeUrl: android.storeUrl ?? "", releaseNotes: android.releaseNotes ?? "" } : { ...emptyForm });
+      setIosForm(ios ? { latestVersion: ios.latestVersion, minVersion: ios.minVersion, storeUrl: ios.storeUrl ?? "", releaseNotes: ios.releaseNotes ?? "" } : { ...emptyForm });
+    } catch {
+      if (signal?.aborted) return;
+      showToast("Could not load app version configs", "error");
+    } finally {
+      if (!signal?.aborted) setLoadingAppVersions(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const token = localStorage.getItem(SUPER_ADMIN_TOKEN_KEY);
@@ -111,11 +169,11 @@ export default function SuperAdminConsolePage() {
     const ac = new AbortController();
     abortRef.current = ac;
     void (async () => {
-      await loadSocieties(ac.signal);
+      await Promise.all([loadSocieties(ac.signal), loadAppVersionConfigs(ac.signal)]);
       if (!ac.signal.aborted) setBooting(false);
     })();
     return () => ac.abort();
-  }, [router, loadSocieties]);
+  }, [router, loadSocieties, loadAppVersionConfigs]);
 
   function logout() {
     localStorage.removeItem(SUPER_ADMIN_TOKEN_KEY);
@@ -304,6 +362,108 @@ export default function SuperAdminConsolePage() {
     } finally {
       setArchivingId(null);
     }
+  }
+
+  async function onSaveAppVersion(
+    platform: "ANDROID" | "IOS",
+    form: AppVersionForm,
+    setSaving: (v: boolean) => void,
+  ) {
+    if (!SEMVER_RE.test(form.latestVersion) || !SEMVER_RE.test(form.minVersion)) {
+      showToast("Versions must be semver (e.g. 1.2.3)", "error");
+      return;
+    }
+    if (compareSemver(form.minVersion, form.latestVersion) > 0) {
+      showToast("minVersion must be <= latestVersion", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiSuper.put("/super/app-version", {
+        platform,
+        latestVersion: form.latestVersion.trim(),
+        minVersion: form.minVersion.trim(),
+        storeUrl: form.storeUrl.trim() || null,
+        releaseNotes: form.releaseNotes.trim() || null,
+      });
+      showToast(`${platform} version config saved`, "success");
+      await loadAppVersionConfigs();
+    } catch (error: unknown) {
+      const message = parseApiError(error, "Could not save app version config").message;
+      showToast(message, "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function renderPlatformCard(
+    platform: "ANDROID" | "IOS",
+    form: AppVersionForm,
+    setForm: (fn: (prev: AppVersionForm) => AppVersionForm) => void,
+    saving: boolean,
+    setSaving: (v: boolean) => void,
+  ) {
+    const existing = appVersionConfigs.find((c) => c.platform === platform);
+    return (
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold">{platform === "ANDROID" ? "Android" : "iOS"}</h3>
+          <span className="text-xs text-fg-tertiary">
+            {existing ? `Updated ${new Date(existing.updatedAt).toLocaleString()}` : "Not configured"}
+          </span>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold text-fg-secondary mb-1">Latest version *</label>
+            <input
+              className="input w-full bg-surface text-fg-primary"
+              value={form.latestVersion}
+              onChange={(e) => setForm((p) => ({ ...p, latestVersion: e.target.value }))}
+              required
+              placeholder="1.2.3"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-fg-secondary mb-1">Min version *</label>
+            <input
+              className="input w-full bg-surface text-fg-primary"
+              value={form.minVersion}
+              onChange={(e) => setForm((p) => ({ ...p, minVersion: e.target.value }))}
+              required
+              placeholder="1.0.0"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-fg-secondary mb-1">Store URL</label>
+            <input
+              type="url"
+              className="input w-full bg-surface text-fg-primary"
+              value={form.storeUrl}
+              onChange={(e) => setForm((p) => ({ ...p, storeUrl: e.target.value }))}
+              placeholder="https://play.google.com/store/apps/..."
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-fg-secondary mb-1">Release notes</label>
+            <textarea
+              className="input w-full bg-surface text-fg-primary min-h-[60px]"
+              value={form.releaseNotes}
+              onChange={(e) => setForm((p) => ({ ...p, releaseNotes: e.target.value }))}
+              maxLength={2000}
+              placeholder="What's new in this version…"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={saving || !form.latestVersion || !form.minVersion}
+            className="btn btn-primary w-full py-2.5"
+            onClick={() => void onSaveAppVersion(platform, form, setSaving)}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (booting) {
@@ -635,6 +795,17 @@ export default function SuperAdminConsolePage() {
             </form>
           </section>
         </div>
+
+        <section className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">App version config</h2>
+            {loadingAppVersions && <span className="text-xs text-fg-tertiary">Loading…</span>}
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            {renderPlatformCard("ANDROID", androidForm, setAndroidForm, savingAndroid, setSavingAndroid)}
+            {renderPlatformCard("IOS", iosForm, setIosForm, savingIos, setSavingIos)}
+          </div>
+        </section>
       </div>
 
       {/* View society */}

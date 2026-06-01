@@ -153,6 +153,12 @@ export default function DashboardPage() {
   const [activeProjectCount, setActiveProjectCount] = useState(0);
   const [projectOutstanding, setProjectOutstanding] = useState(0);
 
+  const [userStats, setUserStats] = useState<{
+    byRole: Record<string, { active: number; inactive: number }>;
+    totalActive: number;
+    totalInactive: number;
+  } | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -188,6 +194,7 @@ export default function DashboardPage() {
         billingRes,
         noticesRes,
         specialProjectsRes,
+        userStatsRes,
       ] = await Promise.all([
         api.get("/maintenance/dashboard", { signal }).catch(() => null),
         api.get("/maintenance-management/financial-dashboard", { signal }).catch(() => null),
@@ -202,6 +209,7 @@ export default function DashboardPage() {
         api.get("/v1/admin/cycles", { signal }).catch(() => null),
         api.get("/notices", { signal }).catch(() => null),
         api.get("/special-projects?status=ACTIVE&limit=200", { signal }).catch(() => null),
+        api.get("/users/stats", { signal }).catch(() => null),
       ]);
 
       if (signal.aborted) return;
@@ -407,6 +415,10 @@ export default function DashboardPage() {
       );
       setProjectOutstanding(totalOutstanding);
 
+      // User stats
+      const us = userStatsRes?.data as typeof userStats | undefined;
+      setUserStats(us && typeof us.totalActive === "number" ? us : null);
+
       activities.sort((a, b) => b.at - a.at);
       setTimeline(activities.slice(0, 10));
       setLastSyncedAt(new Date());
@@ -448,6 +460,23 @@ export default function DashboardPage() {
         value: String(villaCount),
         sub: `${residentCount} residents`,
         accent: STAT_ACCENTS.blue,
+      },
+      {
+        icon: "👥",
+        label: "Active users",
+        value: String(userStats?.totalActive ?? 0),
+        sub: userStats
+          ? [
+              userStats.byRole.RESIDENT?.active ? `${userStats.byRole.RESIDENT.active} residents` : null,
+              userStats.byRole.GUARD?.active ? `${userStats.byRole.GUARD.active} guards` : null,
+              (userStats.byRole.ADMIN?.active || userStats.byRole.RESIDENT_CUM_ADMIN?.active)
+                ? `${(userStats.byRole.ADMIN?.active ?? 0) + (userStats.byRole.RESIDENT_CUM_ADMIN?.active ?? 0)} admins`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "No active users"
+          : "Loading...",
+        accent: STAT_ACCENTS.green,
       },
       {
         icon: "💰",
@@ -521,6 +550,7 @@ export default function DashboardPage() {
     complaintOpenCount,
     billingSnippet,
     fundTrend,
+    userStats,
   ]);
 
   const quickActions = [
@@ -634,6 +664,60 @@ export default function DashboardPage() {
               <span className="text-xs font-medium text-brand-primary">View all →</span>
             </div>
           </Link>
+        )}
+
+        {/* User breakdown */}
+        {userStats && (userStats.totalActive > 0 || userStats.totalInactive > 0) && (
+          <div className="rounded-xl border border-surface-border bg-surface p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-fg-primary">User breakdown</h2>
+              <span className="text-xs font-medium text-fg-secondary">
+                {userStats.totalActive + userStats.totalInactive} total
+              </span>
+            </div>
+            <div className="space-y-3">
+              {(["RESIDENT", "GUARD", "ADMIN", "RESIDENT_CUM_ADMIN"] as const).map((role) => {
+                const data = userStats.byRole[role];
+                if (!data) return null;
+                const total = data.active + data.inactive;
+                if (total === 0) return null;
+                const pct = Math.round((data.active / total) * 100);
+                const label =
+                  role === "RESIDENT_CUM_ADMIN"
+                    ? "Resident + Admin"
+                    : role.charAt(0) + role.slice(1).toLowerCase();
+                return (
+                  <div key={role} className="flex items-center gap-4">
+                    <div className="w-36 shrink-0 flex items-center justify-between">
+                      {role === "RESIDENT" ? (
+                        <Link href="/resident-management" className="text-sm font-medium text-brand-primary hover:underline">
+                          {label}
+                        </Link>
+                      ) : (
+                        <span className="text-sm font-medium text-fg-primary">{label}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 flex items-center gap-3">
+                      <div className="flex-1 h-2.5 rounded-full bg-surface-elevated overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-approved-solid transition-[width]"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-fg-secondary w-28 text-right shrink-0">
+                        {data.active} active · {data.inactive} inactive
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 pt-3 border-t border-surface-border flex items-center gap-4 text-sm">
+              <span className="text-approved-fg font-semibold">{userStats.totalActive} active</span>
+              <span className="text-fg-tertiary">·</span>
+              <span className="text-fg-secondary">{userStats.totalInactive} inactive</span>
+            </div>
+          </div>
         )}
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
