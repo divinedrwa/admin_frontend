@@ -15,6 +15,7 @@ export type BillingCycleRow = {
   gracePeriodDays: number;
   financialYearId?: string | null;
   financialYearLabel?: string | null;
+  publishedAt?: string | null;
 };
 
 export type FinancialYearOption = {

@@ -19,6 +19,8 @@ export interface CycleFormModalProps {
   onDeleteTarget: (c: BillingCycleRow) => void;
   statusBadge: (status: string) => React.ReactNode;
   onOpenCreate: () => void;
+  onPublish?: (cycleId: string) => void;
+  publishingId?: string | null;
 }
 
 export function CycleFormModal({
@@ -38,6 +40,8 @@ export function CycleFormModal({
   onDeleteTarget,
   statusBadge,
   onOpenCreate,
+  onPublish,
+  publishingId,
 }: CycleFormModalProps) {
   return (
     <>
@@ -205,7 +209,14 @@ export function CycleFormModal({
                   </div>
                 </td>
                 <td className="table-td">{c.amount}</td>
-                <td className="table-td">{statusBadge(c.status)}</td>
+                <td className="table-td">
+                  <div className="flex items-center gap-1.5">
+                    {!c.publishedAt && (
+                      <span className="badge badge-warning">Draft</span>
+                    )}
+                    {statusBadge(c.status)}
+                  </div>
+                </td>
                 <td className="table-td max-w-[280px] text-xs text-fg-secondary truncate" title={c.paymentWindow}>
                   {c.paymentStartDate.slice(0, 19)} → {c.paymentEndDate.slice(0, 19)}
                 </td>
@@ -213,6 +224,16 @@ export function CycleFormModal({
                 <td className="table-td">{c.pendingUsersCount}</td>
                 <td className="table-td">
                   <div className="flex items-center gap-3">
+                    {!c.publishedAt && onPublish && (
+                      <button
+                        type="button"
+                        className="text-approved-fg text-xs font-semibold hover:underline disabled:opacity-50"
+                        disabled={publishingId === c.id}
+                        onClick={() => onPublish(c.id)}
+                      >
+                        {publishingId === c.id ? "Publishing..." : "Publish"}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="text-brand-primary text-xs font-semibold hover:underline"

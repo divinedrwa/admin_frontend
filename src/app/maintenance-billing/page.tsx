@@ -85,6 +85,7 @@ export default function MaintenanceBillingPage() {
   const [reopenId, setReopenId] = useState("");
   const [reopenEnd, setReopenEnd] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<BillingCycleRow | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   const loadCycles = useCallback(async (signal?: AbortSignal) => {
@@ -341,6 +342,25 @@ export default function MaintenanceBillingPage() {
     }
   }
 
+  async function handlePublish(cycleId: string) {
+    const yes = await confirm({
+      title: "Publish billing cycle",
+      message: "This will notify all residents. Continue?",
+      confirmLabel: "Publish",
+    });
+    if (!yes) return;
+    setPublishingId(cycleId);
+    try {
+      await api.post(`/v1/admin/cycles/${cycleId}/publish`);
+      showToast("Cycle published — residents notified", "success");
+      await loadCycles();
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Publish failed").message, "error");
+    } finally {
+      setPublishingId(null);
+    }
+  }
+
   async function submitEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editId) return;
@@ -547,6 +567,8 @@ export default function MaintenanceBillingPage() {
             onDeleteTarget={setDeleteTarget}
             statusBadge={statusBadge}
             onOpenCreate={handleOpenCreate}
+            onPublish={handlePublish}
+            publishingId={publishingId}
             cycleOptions={cycleOptions}
             primaryMaintenanceUsers={primaryMaintenanceUsers}
             reopenId={reopenId}

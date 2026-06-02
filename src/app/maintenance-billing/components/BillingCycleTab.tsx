@@ -33,6 +33,8 @@ export interface BillingCycleTabProps {
   onDeleteTarget: (c: BillingCycleRow) => void;
   statusBadge: (status: string) => React.ReactNode;
   onOpenCreate: () => void;
+  onPublish?: (cycleId: string) => void;
+  publishingId?: string | null;
 
   /* Action cards */
   cycleOptions: Array<{ id: string; label: string }>;
@@ -87,6 +89,8 @@ export function BillingCycleTab({
   onDeleteTarget,
   statusBadge,
   onOpenCreate,
+  onPublish,
+  publishingId,
   cycleOptions,
   primaryMaintenanceUsers,
   reopenId,
@@ -139,6 +143,8 @@ export function BillingCycleTab({
         onDeleteTarget={onDeleteTarget}
         statusBadge={statusBadge}
         onOpenCreate={onOpenCreate}
+        onPublish={onPublish}
+        publishingId={publishingId}
       />
 
       <CashPaymentModal
