@@ -224,7 +224,7 @@ export function CycleFormModal({
                 <td className="table-td">{c.pendingUsersCount}</td>
                 <td className="table-td">
                   <div className="flex items-center gap-3">
-                    {!c.publishedAt && onPublish && (
+                    {!c.publishedAt && c.status !== "CLOSED" && onPublish && (
                       <button
                         type="button"
                         className="text-approved-fg text-xs font-semibold hover:underline disabled:opacity-50"
