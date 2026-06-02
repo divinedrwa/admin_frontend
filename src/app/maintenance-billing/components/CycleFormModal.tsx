@@ -210,12 +210,9 @@ export function CycleFormModal({
                 </td>
                 <td className="table-td">{c.amount}</td>
                 <td className="table-td">
-                  <div className="flex items-center gap-1.5">
-                    {!c.publishedAt && (
-                      <span className="badge badge-warning">Draft</span>
-                    )}
-                    {statusBadge(c.status)}
-                  </div>
+                  {c.publishedAt ? statusBadge(c.status) : (
+                    <span className="badge badge-warning">Draft</span>
+                  )}
                 </td>
                 <td className="table-td max-w-[280px] text-xs text-fg-secondary truncate" title={c.paymentWindow}>
                   {c.paymentStartDate.slice(0, 19)} → {c.paymentEndDate.slice(0, 19)}
