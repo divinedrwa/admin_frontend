@@ -210,8 +210,10 @@ export function CycleFormModal({
                 </td>
                 <td className="table-td">{c.amount}</td>
                 <td className="table-td">
-                  {c.publishedAt ? statusBadge(c.status) : (
-                    <span className="badge badge-warning">Draft</span>
+                  {statusBadge(
+                    !c.publishedAt ? "DRAFT" :
+                    c.status === "CLOSED" ? "CLOSED" :
+                    "ACTIVE"
                   )}
                 </td>
                 <td className="table-td max-w-[280px] text-xs text-fg-secondary truncate" title={c.paymentWindow}>

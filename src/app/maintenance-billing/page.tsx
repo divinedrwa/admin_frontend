@@ -467,8 +467,8 @@ export default function MaintenanceBillingPage() {
 
   function statusBadge(status: string) {
     const badgeClass =
-      status === "OPEN" ? "badge-success" :
-      status === "UPCOMING" ? "badge-warning" :
+      status === "ACTIVE" ? "badge-success" :
+      status === "DRAFT" ? "badge-warning" :
       "badge-gray";
     return (
       <span className={`badge ${badgeClass}`}>
