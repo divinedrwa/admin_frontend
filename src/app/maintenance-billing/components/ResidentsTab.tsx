@@ -1,5 +1,8 @@
 "use client";
 
+import { Download } from "lucide-react";
+import { useState } from "react";
+import { api } from "@/lib/api";
 import type { BillingCycleRow, ResidentRow, ResidentTotals } from "./types";
 import { fmtInr, paymentDeltaStyles, statusBadgeStyles } from "./types";
 
@@ -101,6 +104,7 @@ export function ResidentsTab({
               <th scope="col" className="table-th">Effective paid</th>
               <th scope="col" className="table-th">Delta</th>
               <th scope="col" className="table-th">Badge</th>
+              <th scope="col" className="table-th w-10"></th>
             </tr>
           </thead>
           <tbody>
@@ -122,6 +126,11 @@ export function ResidentsTab({
                     {status || "—"}
                   </span>
                 </td>
+                <td className="table-td">
+                  {r.paymentId && r.paymentStatus === "SUCCESS" && (
+                    <DownloadInvoiceButton paymentId={r.paymentId} flat={r.flat} cycleKey={r.cycleKey} />
+                  )}
+                </td>
               </tr>
               );
             })}
@@ -129,5 +138,31 @@ export function ResidentsTab({
         </table>
       </div>
     </div>
+  );
+}
+
+function DownloadInvoiceButton({ paymentId, flat, cycleKey }: { paymentId: string; flat?: string; cycleKey?: string }) {
+  const [loading, setLoading] = useState(false);
+  const download = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const res = await api.get(`/v1/payments/${paymentId}/invoice.pdf`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(res.data as Blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipt-${flat ?? "unit"}-${cycleKey ?? "cycle"}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <button onClick={download} disabled={loading} className="p-1 rounded hover:bg-surface-elevated transition-colors" title="Download receipt">
+      <Download className={`w-4 h-4 ${loading ? "animate-pulse text-fg-muted" : "text-fg-secondary hover:text-fg-primary"}`} />
+    </button>
   );
 }

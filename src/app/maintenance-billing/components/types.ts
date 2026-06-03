@@ -42,6 +42,7 @@ export type ResidentRow = {
   name?: string;
   flat?: string;
   cycleKey?: string;
+  paymentId?: string | null;
   paymentStatus?: string;
   expectedAmount?: number;
   cashPaidAmount?: number;

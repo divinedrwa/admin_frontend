@@ -59,8 +59,8 @@ export default function ReconciliationPage() {
     try {
       const res = await api.get("/reconciliation/summary");
       setSummary(res.data ?? null);
-    } catch {
-      /* ignore */
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to load summary").message, "error");
     }
   }, []);
 
