@@ -250,10 +250,10 @@ export default function MaintenanceManagementPage() {
   }
 
   /** Until grid loads, allow the rules form; after load, only OPEN collection cycles are editable. */
-  /** Admin can edit in any status except LOCKED. */
-  const cycleEditable = gridCycle == null ? true : gridCycle.status !== "LOCKED";
+  const cycleEditable = gridCycle == null ? true : gridCycle.status === "OPEN";
 
   function openRowEdit(r: ResidentRow) {
+    if (!cycleEditable) { showToast("Only OPEN cycles can be edited", "error"); return; }
     const paid = r.paidTowardCycle ?? 0;
     setRowEdit({
       villaId: r.villaId,
@@ -299,6 +299,7 @@ export default function MaintenanceManagementPage() {
   }
 
   function openMarkPaid(row: ResidentRow) {
+    if (!cycleEditable) { showToast("Only OPEN cycles can be modified", "error"); return; }
     const remaining = Math.max(0, row.amount - (row.paidTowardCycle ?? 0));
     setPaymentForm({
       villaId: row.villaId,
@@ -447,6 +448,7 @@ export default function MaintenanceManagementPage() {
   }
 
   function openUnpaidModal(row: ResidentRow) {
+    if (!cycleEditable) { showToast("Only OPEN cycles can be modified", "error"); return; }
     setUnpaidTarget(row);
     setUnpaidReason("");
     setShowUnpaidModal(true);

@@ -204,7 +204,7 @@ export function MaintenanceTable({
                           type="button"
                           onClick={() => onOpenRowEdit(r)}
                           disabled={!cycleEditable || loading}
-                          title={!cycleEditable ? "This billing cycle is locked" : "Edit expected & collected"}
+                          title={!cycleEditable ? "Only OPEN cycles can be edited" : "Edit expected & collected"}
                           className="text-fg-primary hover:text-brand-primary font-medium disabled:opacity-40"
                         >
                           Edit
