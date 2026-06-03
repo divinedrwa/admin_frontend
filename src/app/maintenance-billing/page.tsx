@@ -30,7 +30,7 @@ export default function MaintenanceBillingPage() {
   const [cycles, setCycles] = useState<BillingCycleRow[]>([]);
   const [residentCount, setResidentCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [actionBusy, setActionBusy] = useState(false);
+  const [actionBusy, setActionBusy] = useState<false | "reopen" | "cash" | "waive">(false);
   const { confirm, ConfirmUI } = useConfirm();
   const [users, setUsers] = useState<
     Array<{
@@ -403,12 +403,14 @@ export default function MaintenanceBillingPage() {
       showToast("Select cycle and new end date", "error");
       return;
     }
-    setActionBusy(true);
+    setActionBusy("reopen");
     try {
       await api.post(`/v1/admin/cycles/${reopenId}/reopen`, {
         paymentEndDate: new Date(reopenEnd).toISOString(),
       });
       showToast("Cycle updated (reopen)", "success");
+      setReopenId("");
+      setReopenEnd("");
       await loadCycles();
     } catch (err: unknown) {
       showToast(parseApiError(err, "Reopen failed").message, "error");
@@ -422,7 +424,7 @@ export default function MaintenanceBillingPage() {
       showToast("Fill cash payment fields", "error");
       return;
     }
-    setActionBusy(true);
+    setActionBusy("cash");
     try {
       await api.post("/v1/admin/payments/mark-cash", {
         userId: cashUserId,
@@ -437,6 +439,9 @@ export default function MaintenanceBillingPage() {
         // Collection cycle may not exist yet; mark-cash still updated billing ledger.
       }
       showToast("Cash payment recorded", "success");
+      setCashCycleId("");
+      setCashUserId("");
+      setCashAmount("");
       await Promise.all([loadCycles(), tab === "residents" ? loadResidents() : Promise.resolve()]);
     } catch (err: unknown) {
       showToast(parseApiError(err, "Could not save").message, "error");
@@ -450,13 +455,15 @@ export default function MaintenanceBillingPage() {
       showToast("Select cycle and resident", "error");
       return;
     }
-    setActionBusy(true);
+    setActionBusy("waive");
     try {
       await api.post("/v1/admin/cycles/waive-late-fee", {
         cycleId: waiveCycleId,
         userId: waiveUserId,
       });
       showToast("Late fee waived", "success");
+      setWaiveCycleId("");
+      setWaiveUserId("");
       await Promise.all([loadCycles(), tab === "residents" ? loadResidents() : Promise.resolve()]);
     } catch (err: unknown) {
       showToast(parseApiError(err, "Could not waive").message, "error");

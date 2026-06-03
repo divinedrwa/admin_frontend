@@ -249,11 +249,10 @@ export default function MaintenanceManagementPage() {
     }
   }
 
-  /** Until grid loads, allow the rules form; after load, only OPEN collection cycles are editable. */
-  const cycleEditable = gridCycle == null ? true : gridCycle.status === "OPEN";
+  /** Admin can operate on any cycle regardless of status. */
+  const cycleEditable = true;
 
   function openRowEdit(r: ResidentRow) {
-    if (!cycleEditable) { showToast("Only OPEN cycles can be edited", "error"); return; }
     const paid = r.paidTowardCycle ?? 0;
     setRowEdit({
       villaId: r.villaId,
@@ -299,7 +298,6 @@ export default function MaintenanceManagementPage() {
   }
 
   function openMarkPaid(row: ResidentRow) {
-    if (!cycleEditable) { showToast("Only OPEN cycles can be modified", "error"); return; }
     const remaining = Math.max(0, row.amount - (row.paidTowardCycle ?? 0));
     setPaymentForm({
       villaId: row.villaId,
@@ -319,13 +317,18 @@ export default function MaintenanceManagementPage() {
       showToast("Please select month first", "error");
       return;
     }
+    const amt = Number(paymentForm.amount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      showToast("Enter a valid payment amount", "error");
+      return;
+    }
     try {
       setLoading(true);
       await api.post("/maintenance-management/mark-paid", {
         villaId: paymentForm.villaId,
         year: selectedCycle.periodYear,
         month: selectedCycle.periodMonth,
-        amount: Number(paymentForm.amount),
+        amount: amt,
         paymentDate: new Date(paymentForm.paymentDate).toISOString(),
         paymentMode: paymentForm.paymentMode,
         transactionId: paymentForm.transactionId || undefined,
@@ -448,7 +451,6 @@ export default function MaintenanceManagementPage() {
   }
 
   function openUnpaidModal(row: ResidentRow) {
-    if (!cycleEditable) { showToast("Only OPEN cycles can be modified", "error"); return; }
     setUnpaidTarget(row);
     setUnpaidReason("");
     setShowUnpaidModal(true);

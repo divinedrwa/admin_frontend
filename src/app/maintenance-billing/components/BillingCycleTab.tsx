@@ -58,7 +58,7 @@ export interface BillingCycleTabProps {
   setWaiveCycleId: React.Dispatch<React.SetStateAction<string>>;
   waiveUserId: string;
   setWaiveUserId: React.Dispatch<React.SetStateAction<string>>;
-  actionBusy: boolean;
+  actionBusy: false | "reopen" | "cash" | "waive";
   onReopen: () => void;
   onCash: () => void;
   onWaive: () => void;
