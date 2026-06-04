@@ -10,7 +10,6 @@ interface MaintenanceTableProps {
   filteredResidents: ResidentRow[];
   selectedCycleId: string;
   gridLoading: boolean;
-  cycleEditable: boolean;
   loading: boolean;
   showCreditHelp: boolean;
   onToggleCreditHelp: () => void;
@@ -31,7 +30,6 @@ export function MaintenanceTable({
   filteredResidents,
   selectedCycleId,
   gridLoading,
-  cycleEditable,
   loading,
   showCreditHelp,
   onToggleCreditHelp,
@@ -150,7 +148,7 @@ export function MaintenanceTable({
                       <button
                         type="button"
                         onClick={() => onOpenCreditModal(r)}
-                        disabled={!cycleEditable || loading}
+                        disabled={loading}
                         className="inline-flex items-center gap-1.5 rounded-full bg-approved-bg border border-approved-bg px-2.5 py-1 text-xs font-semibold text-approved-fg hover:bg-approved-bg transition-colors disabled:opacity-40"
                         title="Click to manage this credit"
                       >
@@ -163,7 +161,7 @@ export function MaintenanceTable({
                       <button
                         type="button"
                         onClick={() => onOpenCreditModal(r)}
-                        disabled={!cycleEditable || loading}
+                        disabled={loading}
                         className="text-fg-tertiary hover:text-brand-primary text-xs disabled:opacity-40"
                         title="Add advance credit"
                       >
@@ -193,7 +191,7 @@ export function MaintenanceTable({
                       <button
                         type="button"
                         onClick={() => onIncludeVilla(r)}
-                        disabled={!cycleEditable || loading}
+                        disabled={loading}
                         className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
                       >
                         Include
@@ -212,7 +210,7 @@ export function MaintenanceTable({
                         <button
                           type="button"
                           onClick={() => onOpenMarkPaid(r)}
-                          disabled={!cycleEditable || loading}
+                          disabled={loading}
                           className="text-brand-primary hover:text-info-fg font-medium disabled:opacity-40"
                         >
                           Mark paid
@@ -221,7 +219,7 @@ export function MaintenanceTable({
                           <button
                             type="button"
                             onClick={() => onOpenUnpaidModal(r)}
-                            disabled={!cycleEditable || loading}
+                            disabled={loading}
                             className="text-denied-fg hover:text-brand-danger font-medium disabled:opacity-40"
                           >
                             Mark Unpaid
@@ -233,7 +231,7 @@ export function MaintenanceTable({
                         <button
                           type="button"
                           onClick={() => onOpenExcludeModal(r)}
-                          disabled={!cycleEditable || loading}
+                          disabled={loading}
                           className="text-fg-tertiary hover:text-denied-fg text-sm disabled:opacity-40"
                           title="Exclude this villa from the cycle"
                         >

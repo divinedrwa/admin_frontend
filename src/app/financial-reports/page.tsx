@@ -12,6 +12,9 @@ import {
   Scale,
   ClipboardList,
   Target,
+  Layers,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -84,13 +87,35 @@ interface BudgetVsActual {
   hasBudgets: boolean;
 }
 
-type TabKey = "pl" | "balance" | "trial" | "budget";
+interface FundSegregation {
+  maintenanceFund: {
+    balance: number;
+    spendable: number;
+    advanceCredit: number;
+    cashInflow: number;
+    additionalMergedInflow: number;
+    totalExpenses: number;
+  };
+  projectFunds: {
+    total: number;
+    projects: Array<{ id: string; title: string; collected: number; spent: number; balance: number; target: number }>;
+  };
+  separateFunds: {
+    total: number;
+    items: Array<{ id: string; title: string; amount: number; source: string | null; receivedDate: string }>;
+  };
+  computedBankBalance: number;
+  outstandingDues: number;
+}
+
+type TabKey = "pl" | "balance" | "trial" | "budget" | "funds";
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "pl", label: "Income & Expenditure", icon: <BarChart3 className="h-4 w-4" /> },
   { key: "balance", label: "Balance Sheet", icon: <Scale className="h-4 w-4" /> },
   { key: "trial", label: "Trial Balance", icon: <ClipboardList className="h-4 w-4" /> },
   { key: "budget", label: "Budget vs Actual", icon: <Target className="h-4 w-4" /> },
+  { key: "funds", label: "Fund Segregation", icon: <Layers className="h-4 w-4" /> },
 ];
 
 const MONTH_NAMES = [
@@ -135,6 +160,7 @@ export default function FinancialReportsPage() {
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheet | null>(null);
   const [trialBalance, setTrialBalance] = useState<TrialBalance | null>(null);
   const [budgetVsActual, setBudgetVsActual] = useState<BudgetVsActual | null>(null);
+  const [fundSegregation, setFundSegregation] = useState<FundSegregation | null>(null);
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -144,6 +170,7 @@ export default function FinancialReportsPage() {
         balance: `/maintenance-management/balance-sheet/${year}`,
         trial: `/maintenance-management/trial-balance/${year}`,
         budget: `/maintenance-management/budget-vs-actual/${year}`,
+        funds: `/maintenance-management/fund-segregation`,
       };
       const res = await api.get(endpoints[tab], { signal });
       switch (tab) {
@@ -151,6 +178,7 @@ export default function FinancialReportsPage() {
         case "balance": setBalanceSheet(res.data); break;
         case "trial": setTrialBalance(res.data); break;
         case "budget": setBudgetVsActual(res.data); break;
+        case "funds": setFundSegregation(res.data); break;
       }
     } catch (error: unknown) {
       if ((error as { name?: string }).name === "CanceledError") return;
@@ -173,6 +201,7 @@ export default function FinancialReportsPage() {
     balance: { url: `/maintenance-management/balance-sheet/${year}/pdf`, filename: `balance_sheet_${year}.pdf` },
     trial: { url: `/maintenance-management/trial-balance/${year}/pdf`, filename: `trial_balance_${year}.pdf` },
     budget: null, // no PDF for budget vs actual yet
+    funds: null, // no PDF for fund segregation yet
   };
 
   return (
@@ -243,6 +272,7 @@ export default function FinancialReportsPage() {
             {tab === "balance" && balanceSheet && <BalanceSheetTab data={balanceSheet} />}
             {tab === "trial" && trialBalance && <TrialBalanceTab data={trialBalance} />}
             {tab === "budget" && budgetVsActual && <BudgetTab data={budgetVsActual} />}
+            {tab === "funds" && fundSegregation && <FundSegregationTab data={fundSegregation} />}
           </>
         )}
       </div>
@@ -708,6 +738,190 @@ function BudgetTab({ data }: { data: BudgetVsActual }) {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ---- Fund Segregation Tab ----
+
+function FundSegregationTab({ data }: { data: FundSegregation }) {
+  const { maintenanceFund, projectFunds, separateFunds, computedBankBalance, outstandingDues } = data;
+  const isBalanced = Math.abs(
+    computedBankBalance - (maintenanceFund.balance + projectFunds.total + separateFunds.total)
+  ) < 1;
+
+  return (
+    <>
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryCard
+          label="Spendable Maintenance"
+          value={fmt(maintenanceFund.spendable)}
+          icon={<Wallet className="h-5 w-5 text-brand-success" />}
+          subtitle="Maintenance fund minus advance credit"
+          highlight={maintenanceFund.spendable >= 0 ? "success" : "danger"}
+        />
+        <SummaryCard
+          label="Advance Credit (Liability)"
+          value={fmt(maintenanceFund.advanceCredit)}
+          icon={<TrendingDown className="h-5 w-5 text-brand-danger" />}
+          subtitle="Credit owed to residents"
+          highlight={maintenanceFund.advanceCredit > 0 ? "danger" : undefined}
+        />
+        {projectFunds.total > 0.5 && (
+          <SummaryCard
+            label="Project Funds"
+            value={fmt(projectFunds.total)}
+            icon={<Target className="h-5 w-5 text-brand-primary" />}
+            subtitle={`${projectFunds.projects.length} active project${projectFunds.projects.length !== 1 ? "s" : ""}`}
+          />
+        )}
+        {separateFunds.total > 0.5 && (
+          <SummaryCard
+            label="Separate / Earmarked"
+            value={fmt(separateFunds.total)}
+            icon={<Layers className="h-5 w-5 text-brand-primary" />}
+            subtitle={`${separateFunds.items.length} fund${separateFunds.items.length !== 1 ? "s" : ""}`}
+          />
+        )}
+      </div>
+
+      {/* Maintenance Fund Details */}
+      <div className="card p-6">
+        <h3 className="font-semibold text-fg-primary mb-4 flex items-center gap-2">
+          <div className="h-3 w-1 rounded-full bg-brand-success" />
+          Maintenance Fund Breakdown
+        </h3>
+        <div className="space-y-3">
+          <StatementRow label="Cash Inflow (Maintenance Payments)" value={fmt(maintenanceFund.cashInflow)} />
+          <StatementRow label="Additional Funds (Merged)" value={fmt(maintenanceFund.additionalMergedInflow)} />
+          <StatementRow label="Total Expenses" value={`- ${fmt(maintenanceFund.totalExpenses)}`} />
+          <div className="border-t border-border pt-3">
+            <StatementRow label="Maintenance Fund Balance" value={fmt(maintenanceFund.balance)} bold />
+          </div>
+          <StatementRow label="Less: Advance Credit (Liability)" value={`- ${fmt(maintenanceFund.advanceCredit)}`} muted />
+          <div className="border-t border-border pt-3">
+            <StatementRow label="Spendable Maintenance" value={fmt(maintenanceFund.spendable)} bold />
+          </div>
+        </div>
+      </div>
+
+      {/* Project Funds Table */}
+      {projectFunds.projects.length > 0 && (
+        <div className="card p-6">
+          <h3 className="font-semibold text-fg-primary mb-4 flex items-center gap-2">
+            <div className="h-3 w-1 rounded-full bg-brand-primary" />
+            Project Funds
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th scope="col" className="table-th">Project</th>
+                  <th scope="col" className="table-th text-right">Collected</th>
+                  <th scope="col" className="table-th text-right">Spent</th>
+                  <th scope="col" className="table-th text-right">Balance</th>
+                  <th scope="col" className="table-th text-right">Target</th>
+                </tr>
+              </thead>
+              <tbody className="bg-surface divide-y">
+                {projectFunds.projects.map((p) => (
+                  <tr key={p.id} className="table-row">
+                    <td className="table-td font-medium">{p.title}</td>
+                    <td className="table-td text-right">{fmt(p.collected)}</td>
+                    <td className="table-td text-right">{fmt(p.spent)}</td>
+                    <td className="table-td text-right font-medium text-brand-success">{fmt(p.balance)}</td>
+                    <td className="table-td text-right text-fg-secondary">{fmt(p.target)}</td>
+                  </tr>
+                ))}
+                <tr className="table-row font-bold bg-surface-elevated">
+                  <td className="table-td">Total</td>
+                  <td className="table-td text-right">
+                    {fmt(projectFunds.projects.reduce((s, p) => s + p.collected, 0))}
+                  </td>
+                  <td className="table-td text-right">
+                    {fmt(projectFunds.projects.reduce((s, p) => s + p.spent, 0))}
+                  </td>
+                  <td className="table-td text-right text-brand-success">{fmt(projectFunds.total)}</td>
+                  <td className="table-td text-right text-fg-secondary">
+                    {fmt(projectFunds.projects.reduce((s, p) => s + p.target, 0))}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Separate / Earmarked Funds Table */}
+      {separateFunds.items.length > 0 && (
+        <div className="card p-6">
+          <h3 className="font-semibold text-fg-primary mb-4 flex items-center gap-2">
+            <div className="h-3 w-1 rounded-full bg-pending-fg" />
+            Separate / Earmarked Funds
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead className="table-head">
+                <tr>
+                  <th scope="col" className="table-th">Title</th>
+                  <th scope="col" className="table-th text-right">Amount</th>
+                  <th scope="col" className="table-th">Source</th>
+                  <th scope="col" className="table-th">Received</th>
+                </tr>
+              </thead>
+              <tbody className="bg-surface divide-y">
+                {separateFunds.items.map((f) => (
+                  <tr key={f.id} className="table-row">
+                    <td className="table-td font-medium">{f.title}</td>
+                    <td className="table-td text-right">{fmt(f.amount)}</td>
+                    <td className="table-td text-fg-secondary">{f.source ?? "—"}</td>
+                    <td className="table-td text-fg-secondary">
+                      {new Date(f.receivedDate).toLocaleDateString("en-IN", {
+                        day: "numeric", month: "short", year: "numeric",
+                      })}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="table-row font-bold bg-surface-elevated">
+                  <td className="table-td">Total</td>
+                  <td className="table-td text-right">{fmt(separateFunds.total)}</td>
+                  <td className="table-td" colSpan={2} />
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Bank Balance Validation */}
+      <div className={`card p-5 border-l-4 ${isBalanced ? "border-l-brand-success" : "border-l-brand-danger"}`}>
+        <div className="flex items-center gap-3 mb-4">
+          {isBalanced
+            ? <CheckCircle2 className="h-5 w-5 text-brand-success" />
+            : <AlertTriangle className="h-5 w-5 text-brand-danger" />}
+          <h3 className="font-semibold text-fg-primary">
+            {isBalanced ? "Bank Balance Reconciliation" : "Balance Mismatch Detected"}
+          </h3>
+        </div>
+        <div className="space-y-2">
+          <StatementRow label="Maintenance Fund" value={fmt(maintenanceFund.balance)} />
+          {projectFunds.total > 0.5 && (
+            <StatementRow label="Project Funds" value={fmt(projectFunds.total)} />
+          )}
+          {separateFunds.total > 0.5 && (
+            <StatementRow label="Separate / Earmarked Funds" value={fmt(separateFunds.total)} />
+          )}
+          <div className="border-t border-border pt-3">
+            <StatementRow label="Computed Bank Balance" value={fmt(computedBankBalance)} bold />
+          </div>
+          {outstandingDues > 0 && (
+            <div className="pt-2">
+              <StatementRow label="Outstanding Dues (Receivable)" value={fmt(outstandingDues)} muted />
+            </div>
+          )}
         </div>
       </div>
     </>

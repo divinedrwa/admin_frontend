@@ -249,9 +249,6 @@ export default function MaintenanceManagementPage() {
     }
   }
 
-  /** Admin can operate on any cycle regardless of status. */
-  const cycleEditable = true;
-
   function openRowEdit(r: ResidentRow) {
     const paid = r.paidTowardCycle ?? 0;
     setRowEdit({
@@ -539,7 +536,6 @@ export default function MaintenanceManagementPage() {
               <select
                 value={selectedVillaId}
                 onChange={(e) => setSelectedVillaId(e.target.value)}
-                disabled={!cycleEditable && !!selectedCycleId}
                 className="input w-full disabled:opacity-50"
               >
                 <option value="">Select villa...</option>
@@ -558,15 +554,13 @@ export default function MaintenanceManagementPage() {
                 step="0.01"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
-                disabled={!cycleEditable && !!selectedCycleId}
                 className="input w-full disabled:opacity-50"
               />
             </div>
             <button
               type="button"
               onClick={() => void saveVillaCustomAmount()}
-              disabled={loading || !selectedCycleId || !cycleEditable}
-              title={!cycleEditable ? "This billing cycle is locked" : undefined}
+              disabled={loading || !selectedCycleId}
               className="btn btn-primary disabled:opacity-50"
             >
               Save for selected month
@@ -587,7 +581,6 @@ export default function MaintenanceManagementPage() {
           filteredResidents={filteredResidents}
           selectedCycleId={selectedCycleId}
           gridLoading={gridLoading}
-          cycleEditable={cycleEditable}
           loading={loading}
           showCreditHelp={showCreditHelp}
           onToggleCreditHelp={() => setShowCreditHelp(!showCreditHelp)}
