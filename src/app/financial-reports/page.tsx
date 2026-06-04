@@ -55,20 +55,34 @@ interface BalanceSheet {
   totalLiabilitiesAndEquity: number;
 }
 
-interface TrialBalanceAccount {
-  account: string;
-  type: "INCOME" | "EXPENSE";
-  debit: number;
-  credit: number;
+interface CycleReportRow {
+  cycleId: string;
+  title: string;
+  periodMonth: number;
+  periodYear: number;
+  status: string;
+  dueDate: string | null;
+  totalExpected: number;
+  totalCollected: number;
+  pendingDues: number;
+  collectionRate: number;
+  totalExpense: number;
+  net: number;
+  paidCount: number;
+  unpaidCount: number;
 }
 
-interface TrialBalance {
+interface CycleReport {
   year: number;
-  accounts: TrialBalanceAccount[];
-  totalDebit: number;
-  totalCredit: number;
-  difference: number;
-  isBalanced: boolean;
+  totalExpected: number;
+  totalCollected: number;
+  totalPending: number;
+  collectionRate: number;
+  totalExpenses: number;
+  netPosition: number;
+  totalPaid: number;
+  totalUnpaid: number;
+  cycles: CycleReportRow[];
 }
 
 interface BudgetRow {
@@ -131,12 +145,12 @@ interface FundSegregation {
   collectionSummary?: CollectionSummary;
 }
 
-type TabKey = "pl" | "balance" | "trial" | "budget" | "funds";
+type TabKey = "pl" | "balance" | "cycles" | "budget" | "funds";
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "pl", label: "Income & Expenditure", icon: <BarChart3 className="h-4 w-4" /> },
-  { key: "balance", label: "Balance Sheet", icon: <Scale className="h-4 w-4" /> },
-  { key: "trial", label: "Trial Balance", icon: <ClipboardList className="h-4 w-4" /> },
+  { key: "balance", label: "Financial Position", icon: <Scale className="h-4 w-4" /> },
+  { key: "cycles", label: "Billing Cycles", icon: <ClipboardList className="h-4 w-4" /> },
   { key: "budget", label: "Budget vs Actual", icon: <Target className="h-4 w-4" /> },
   { key: "funds", label: "Fund Segregation", icon: <Layers className="h-4 w-4" /> },
 ];
@@ -181,7 +195,7 @@ export default function FinancialReportsPage() {
   // Data for each tab
   const [plReport, setPlReport] = useState<PLReport | null>(null);
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheet | null>(null);
-  const [trialBalance, setTrialBalance] = useState<TrialBalance | null>(null);
+  const [cycleReport, setCycleReport] = useState<CycleReport | null>(null);
   const [budgetVsActual, setBudgetVsActual] = useState<BudgetVsActual | null>(null);
   const [fundSegregation, setFundSegregation] = useState<FundSegregation | null>(null);
 
@@ -191,7 +205,7 @@ export default function FinancialReportsPage() {
       const endpoints: Record<TabKey, string> = {
         pl: `/maintenance-management/profit-loss/${year}`,
         balance: `/maintenance-management/balance-sheet/${year}`,
-        trial: `/maintenance-management/trial-balance/${year}`,
+        cycles: `/maintenance-management/cycle-report/${year}`,
         budget: `/maintenance-management/budget-vs-actual/${year}`,
         funds: `/maintenance-management/fund-segregation`,
       };
@@ -199,7 +213,7 @@ export default function FinancialReportsPage() {
       switch (tab) {
         case "pl": setPlReport(res.data); break;
         case "balance": setBalanceSheet(res.data); break;
-        case "trial": setTrialBalance(res.data); break;
+        case "cycles": setCycleReport(res.data); break;
         case "budget": setBudgetVsActual(res.data); break;
         case "funds": setFundSegregation(res.data); break;
       }
@@ -222,7 +236,7 @@ export default function FinancialReportsPage() {
   const pdfEndpoints: Record<TabKey, { url: string; filename: string } | null> = {
     pl: { url: `/maintenance-management/profit-loss/${year}/pdf`, filename: `income_expenditure_${year}.pdf` },
     balance: { url: `/maintenance-management/balance-sheet/${year}/pdf`, filename: `balance_sheet_${year}.pdf` },
-    trial: { url: `/maintenance-management/trial-balance/${year}/pdf`, filename: `trial_balance_${year}.pdf` },
+    cycles: null, // no PDF for billing cycles yet
     budget: null, // no PDF for budget vs actual yet
     funds: null, // no PDF for fund segregation yet
   };
@@ -233,7 +247,7 @@ export default function FinancialReportsPage() {
         <AdminPageHeader
           eyebrow="Management"
           title="Financial Reports"
-          description="Income & expenditure, balance sheet, trial balance, and budget analysis."
+          description="Income & expenditure, billing cycles, financial position, budget analysis, and fund segregation."
           icon={<BarChart3 className="h-6 w-6" />}
           actions={
             pdfEndpoints[tab] ? (
@@ -293,7 +307,7 @@ export default function FinancialReportsPage() {
           <>
             {tab === "pl" && plReport && <PLTab report={plReport} />}
             {tab === "balance" && balanceSheet && <BalanceSheetTab data={balanceSheet} />}
-            {tab === "trial" && trialBalance && <TrialBalanceTab data={trialBalance} />}
+            {tab === "cycles" && cycleReport && <BillingCyclesTab data={cycleReport} />}
             {tab === "budget" && budgetVsActual && <BudgetTab data={budgetVsActual} />}
             {tab === "funds" && fundSegregation && <FundSegregationTab data={fundSegregation} />}
           </>
@@ -317,18 +331,18 @@ function PLTab({ report }: { report: PLReport }) {
   return (
     <>
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <SummaryCard
           label="Total Income"
           value={fmt(report.totalIncome)}
           icon={<TrendingUp className="h-5 w-5 text-brand-success" />}
-          subtitle="Maintenance + additional funds"
+          subtitle={`Maintenance + other income in ${report.year}`}
         />
         <SummaryCard
           label="Total Expenses"
           value={fmt(report.totalExpenses)}
           icon={<TrendingDown className="h-5 w-5 text-brand-danger" />}
-          subtitle="All society outgoings"
+          subtitle={`All approved expenses in ${report.year}`}
         />
         <SummaryCard
           label={report.netSurplus >= 0 ? "Net Surplus" : "Net Deficit"}
@@ -338,14 +352,21 @@ function PLTab({ report }: { report: PLReport }) {
               ? <ArrowUpRight className="h-5 w-5 text-brand-success" />
               : <ArrowDownRight className="h-5 w-5 text-brand-danger" />
           }
-          subtitle={`For year ${report.year}`}
+          subtitle={`Income minus expenses for ${report.year}`}
           highlight={report.netSurplus >= 0 ? "success" : "danger"}
         />
         <SummaryCard
-          label="Fund Balance"
+          label="Outstanding Dues"
+          value={fmt(report.outstandingDues)}
+          icon={<AlertTriangle className="h-5 w-5 text-brand-danger" />}
+          subtitle="Total pending from all residents"
+          highlight={report.outstandingDues > 0 ? "danger" : undefined}
+        />
+        <SummaryCard
+          label="Bank Balance"
           value={fmt(report.currentFundBalance)}
           icon={<Wallet className="h-5 w-5 text-brand-primary" />}
-          subtitle={`Outstanding dues: ${fmt(report.outstandingDues)}`}
+          subtitle="All-time available funds"
         />
       </div>
 
@@ -400,10 +421,10 @@ function PLTab({ report }: { report: PLReport }) {
               <tr>
                 <th scope="col" className="table-th">Month</th>
                 <th scope="col" className="table-th text-right">Maintenance</th>
-                <th scope="col" className="table-th text-right">Additional</th>
+                <th scope="col" className="table-th text-right">Other Income</th>
                 <th scope="col" className="table-th text-right">Total Income</th>
                 <th scope="col" className="table-th text-right">Expenses</th>
-                <th scope="col" className="table-th text-right">Net</th>
+                <th scope="col" className="table-th text-right">Surplus / Deficit</th>
               </tr>
             </thead>
             <tbody className="bg-surface divide-y">
@@ -470,62 +491,68 @@ function PLTab({ report }: { report: PLReport }) {
 function BalanceSheetTab({ data }: { data: BalanceSheet }) {
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
-          label="Total Assets"
-          value={fmt(data.assets.totalAssets)}
-          icon={<TrendingUp className="h-5 w-5 text-brand-success" />}
-          subtitle="Fund balance + receivables"
+          label="Bank Balance"
+          value={fmt(data.assets.fundBalance)}
+          icon={<Wallet className="h-5 w-5 text-brand-success" />}
+          subtitle="Available funds in bank"
           highlight="success"
         />
         <SummaryCard
-          label="Total Liabilities"
-          value={fmt(data.liabilities.totalLiabilities)}
-          icon={<TrendingDown className="h-5 w-5 text-brand-danger" />}
-          subtitle="Advance credit owed to residents"
-          highlight="danger"
+          label="Pending from Residents"
+          value={fmt(data.assets.outstandingDues)}
+          icon={<AlertTriangle className="h-5 w-5 text-brand-danger" />}
+          subtitle="Dues yet to be collected"
+          highlight={data.assets.outstandingDues > 0 ? "danger" : undefined}
         />
         <SummaryCard
-          label="Net Worth"
+          label="Advance Payments Held"
+          value={fmt(data.liabilities.advanceCredit)}
+          icon={<TrendingDown className="h-5 w-5 text-brand-primary" />}
+          subtitle="Overpayments by residents"
+        />
+        <SummaryCard
+          label="Society Net Worth"
           value={fmt(data.equity.accumulatedSurplus)}
-          icon={<Wallet className="h-5 w-5 text-brand-primary" />}
-          subtitle={`Current year surplus: ${fmt(data.equity.currentYearSurplus)}`}
+          icon={<TrendingUp className="h-5 w-5 text-brand-primary" />}
+          subtitle={`This year's surplus: ${fmt(data.equity.currentYearSurplus)}`}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Assets */}
+        {/* What Society Has */}
         <div className="card p-6">
           <h3 className="font-semibold text-fg-primary mb-4 flex items-center gap-2">
             <div className="h-3 w-1 rounded-full bg-brand-success" />
-            Assets
+            What Society Has
           </h3>
           <div className="space-y-3">
-            <StatementRow label="Fund Balance (Bank)" value={fmt(data.assets.fundBalance)} />
-            <StatementRow label="Outstanding Dues (Receivable)" value={fmt(data.assets.outstandingDues)} />
+            <StatementRow label="Bank Balance (Available Funds)" value={fmt(data.assets.fundBalance)} />
+            <StatementRow label="Pending Dues from Residents" value={fmt(data.assets.outstandingDues)} />
             <div className="border-t border-border pt-3">
-              <StatementRow label="Total Assets" value={fmt(data.assets.totalAssets)} bold />
+              <StatementRow label="Total" value={fmt(data.assets.totalAssets)} bold />
             </div>
           </div>
         </div>
 
-        {/* Liabilities + Equity */}
+        {/* What Society Owes + Net Worth */}
         <div className="card p-6">
           <h3 className="font-semibold text-fg-primary mb-4 flex items-center gap-2">
             <div className="h-3 w-1 rounded-full bg-brand-danger" />
-            Liabilities & Equity
+            Obligations & Net Worth
           </h3>
           <div className="space-y-3">
-            <StatementRow label="Advance Credit (Resident Overpayments)" value={fmt(data.liabilities.advanceCredit)} />
+            <StatementRow label="Advance Payments by Residents" value={fmt(data.liabilities.advanceCredit)} />
             <div className="border-t border-border pt-3">
-              <StatementRow label="Total Liabilities" value={fmt(data.liabilities.totalLiabilities)} bold />
+              <StatementRow label="Total Obligations" value={fmt(data.liabilities.totalLiabilities)} bold />
             </div>
             <div className="pt-2">
-              <StatementRow label="Accumulated Surplus (Equity)" value={fmt(data.equity.accumulatedSurplus)} />
-              <StatementRow label="Current Year Surplus" value={fmt(data.equity.currentYearSurplus)} muted />
+              <StatementRow label="Society Net Worth" value={fmt(data.equity.accumulatedSurplus)} />
+              <StatementRow label="This Year's Surplus" value={fmt(data.equity.currentYearSurplus)} muted />
             </div>
             <div className="border-t border-border pt-3">
-              <StatementRow label="Total Liabilities + Equity" value={fmt(data.totalLiabilitiesAndEquity)} bold />
+              <StatementRow label="Total Obligations + Net Worth" value={fmt(data.totalLiabilitiesAndEquity)} bold />
             </div>
           </div>
         </div>
@@ -534,87 +561,152 @@ function BalanceSheetTab({ data }: { data: BalanceSheet }) {
       <div className="card p-4">
         <p className="text-xs text-fg-tertiary text-center">
           As of {new Date(data.asOf).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-          {" "} | This is a simplified balance sheet for housing society accounting. Assets = Liabilities + Equity.
+          {" "} | Bank Balance + Pending Dues = Obligations + Net Worth
         </p>
       </div>
     </>
   );
 }
 
-// ---- Trial Balance Tab ----
+// ---- Billing Cycles Tab ----
 
-function TrialBalanceTab({ data }: { data: TrialBalance }) {
-  const incomeAccounts = data.accounts.filter((a) => a.type === "INCOME");
-  const expenseAccounts = data.accounts.filter((a) => a.type === "EXPENSE");
+function BillingCyclesTab({ data }: { data: CycleReport }) {
+  if (data.cycles.length === 0) {
+    return (
+      <div className="empty-state p-12">
+        <ClipboardList className="h-10 w-10 text-fg-tertiary mx-auto mb-3" />
+        <p className="empty-state-title">No billing cycles for {data.year}</p>
+        <p className="text-sm text-fg-tertiary mt-1">
+          Billing cycles will appear here once maintenance collection is set up for this year.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <SummaryCard
-          label="Total Credits"
-          value={fmt(data.totalCredit)}
+          label="Expected Collection"
+          value={fmt(data.totalExpected)}
+          icon={<Target className="h-5 w-5 text-brand-primary" />}
+          subtitle={`Total due from ${data.totalPaid + data.totalUnpaid} villas`}
+        />
+        <SummaryCard
+          label="Actual Collection"
+          value={fmt(data.totalCollected)}
           icon={<TrendingUp className="h-5 w-5 text-brand-success" />}
-          subtitle="Income accounts"
+          subtitle={`${data.totalPaid} paid across all cycles`}
           highlight="success"
         />
         <SummaryCard
-          label="Total Debits"
-          value={fmt(data.totalDebit)}
-          icon={<TrendingDown className="h-5 w-5 text-brand-danger" />}
-          subtitle="Expense accounts"
-          highlight="danger"
+          label="Pending Dues"
+          value={fmt(data.totalPending)}
+          icon={<AlertTriangle className="h-5 w-5 text-brand-danger" />}
+          subtitle={`${data.totalUnpaid} unpaid across all cycles`}
+          highlight={data.totalPending > 0 ? "danger" : undefined}
         />
         <SummaryCard
-          label="Difference"
-          value={fmt(data.difference)}
-          icon={<Scale className="h-5 w-5 text-brand-primary" />}
-          subtitle={data.isBalanced ? "Books are balanced" : "Imbalance detected"}
+          label="Collection Rate"
+          value={`${data.collectionRate}%`}
+          icon={<BarChart3 className="h-5 w-5 text-brand-primary" />}
+          subtitle={data.collectionRate >= 90 ? "Healthy" : data.collectionRate >= 70 ? "Needs attention" : "Low collection"}
+          highlight={data.collectionRate >= 90 ? "success" : data.collectionRate < 70 ? "danger" : undefined}
+        />
+        <SummaryCard
+          label="Total Expenses"
+          value={fmt(data.totalExpenses)}
+          icon={<TrendingDown className="h-5 w-5 text-brand-danger" />}
+          subtitle={`Net position: ${data.netPosition >= 0 ? "+" : ""}${fmt(data.netPosition)}`}
         />
       </div>
 
+      {/* Cycle detail table */}
       <div className="table-wrapper">
         <div className="overflow-x-auto">
           <table className="table">
             <thead className="table-head">
               <tr>
-                <th scope="col" className="table-th">Account</th>
-                <th scope="col" className="table-th">Type</th>
-                <th scope="col" className="table-th text-right">Debit</th>
-                <th scope="col" className="table-th text-right">Credit</th>
+                <th scope="col" className="table-th">Billing Cycle</th>
+                <th scope="col" className="table-th text-center">Status</th>
+                <th scope="col" className="table-th text-right">Expected</th>
+                <th scope="col" className="table-th text-right">Collected</th>
+                <th scope="col" className="table-th text-right">Pending</th>
+                <th scope="col" className="table-th text-right">Rate</th>
+                <th scope="col" className="table-th text-right">Expenses</th>
+                <th scope="col" className="table-th text-right">Surplus / Deficit</th>
+                <th scope="col" className="table-th text-right">Paid</th>
+                <th scope="col" className="table-th text-right">Unpaid</th>
               </tr>
             </thead>
             <tbody className="bg-surface divide-y">
-              {incomeAccounts.map((a) => (
-                <tr key={a.account} className="table-row">
-                  <td className="table-td font-medium">{a.account}</td>
-                  <td className="table-td"><span className="badge badge-success">Income</span></td>
-                  <td className="table-td text-right">{a.debit > 0 ? fmt(a.debit) : "—"}</td>
-                  <td className="table-td text-right font-medium text-brand-success">{a.credit > 0 ? fmt(a.credit) : "—"}</td>
+              {data.cycles.map((c) => (
+                <tr key={c.cycleId} className="table-row">
+                  <td className="table-td font-medium whitespace-nowrap">{c.title}</td>
+                  <td className="table-td text-center">
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
+                      c.status === "CLOSED"
+                        ? "bg-surface-elevated text-fg-tertiary"
+                        : c.status === "ACTIVE"
+                          ? "bg-brand-success/10 text-brand-success"
+                          : "bg-brand-primary/10 text-brand-primary"
+                    }`}>
+                      {c.status}
+                    </span>
+                  </td>
+                  <td className="table-td text-right">{fmt(c.totalExpected)}</td>
+                  <td className="table-td text-right text-brand-success">{fmt(c.totalCollected)}</td>
+                  <td className={`table-td text-right ${c.pendingDues > 0 ? "text-brand-danger font-medium" : "text-fg-tertiary"}`}>
+                    {c.pendingDues > 0 ? fmt(c.pendingDues) : "—"}
+                  </td>
+                  <td className={`table-td text-right ${
+                    c.collectionRate >= 90 ? "text-brand-success" : c.collectionRate < 70 ? "text-brand-danger" : "text-fg-primary"
+                  }`}>
+                    {c.collectionRate}%
+                  </td>
+                  <td className="table-td text-right">{c.totalExpense > 0 ? fmt(c.totalExpense) : "—"}</td>
+                  <td className={`table-td text-right font-medium ${c.net >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
+                    {c.net >= 0 ? "+" : ""}{fmt(c.net)}
+                  </td>
+                  <td className="table-td text-right text-brand-success">{c.paidCount}</td>
+                  <td className={`table-td text-right ${c.unpaidCount > 0 ? "text-brand-danger" : "text-fg-tertiary"}`}>
+                    {c.unpaidCount > 0 ? c.unpaidCount : "—"}
+                  </td>
                 </tr>
               ))}
-              {expenseAccounts.map((a) => (
-                <tr key={a.account} className="table-row">
-                  <td className="table-td font-medium">{a.account}</td>
-                  <td className="table-td"><span className="badge badge-danger">Expense</span></td>
-                  <td className="table-td text-right font-medium text-brand-danger">{a.debit > 0 ? fmt(a.debit) : "—"}</td>
-                  <td className="table-td text-right">{a.credit > 0 ? fmt(a.credit) : "—"}</td>
-                </tr>
-              ))}
+              {/* Totals row */}
               <tr className="table-row font-bold bg-surface-elevated">
-                <td className="table-td" colSpan={2}>Totals</td>
-                <td className="table-td text-right text-brand-danger">{fmt(data.totalDebit)}</td>
-                <td className="table-td text-right text-brand-success">{fmt(data.totalCredit)}</td>
+                <td className="table-td">Total ({data.cycles.length} cycles)</td>
+                <td className="table-td" />
+                <td className="table-td text-right">{fmt(data.totalExpected)}</td>
+                <td className="table-td text-right text-brand-success">{fmt(data.totalCollected)}</td>
+                <td className={`table-td text-right ${data.totalPending > 0 ? "text-brand-danger" : ""}`}>
+                  {data.totalPending > 0 ? fmt(data.totalPending) : "—"}
+                </td>
+                <td className="table-td text-right">{data.collectionRate}%</td>
+                <td className="table-td text-right">{fmt(data.totalExpenses)}</td>
+                <td className={`table-td text-right ${data.netPosition >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
+                  {data.netPosition >= 0 ? "+" : ""}{fmt(data.netPosition)}
+                </td>
+                <td className="table-td text-right text-brand-success">{data.totalPaid}</td>
+                <td className={`table-td text-right ${data.totalUnpaid > 0 ? "text-brand-danger" : ""}`}>
+                  {data.totalUnpaid > 0 ? data.totalUnpaid : "—"}
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {!data.isBalanced && (
+      {/* Contextual guidance */}
+      {data.totalPending > 0 && (
         <div className="card p-4 border-l-4 border-l-brand-danger">
           <p className="text-sm text-fg-secondary">
-            <strong>Note:</strong> The trial balance shows a difference of {fmt(data.difference)}.
-            This represents the net surplus (income exceeding expenses) for the year, which is expected for a society that collects more than it spends.
+            <strong>{fmt(data.totalPending)}</strong> in dues are still pending collection from <strong>{data.totalUnpaid}</strong> villa-cycle entries.
+            {data.netPosition < 0 && (
+              <> The society has a <strong>net deficit of {fmt(Math.abs(data.netPosition))}</strong> — expenses exceeded collections.</>
+            )}
           </p>
         </div>
       )}
