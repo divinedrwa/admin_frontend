@@ -87,6 +87,28 @@ interface BudgetVsActual {
   hasBudgets: boolean;
 }
 
+interface CollectionCycleRow {
+  cycleId: string;
+  title: string;
+  periodMonth: number;
+  periodYear: number;
+  status: string;
+  totalExpected: number;
+  totalCollected: number;
+  totalExpense: number;
+  net: number;
+  paidCount: number;
+  unpaidCount: number;
+  collectionRate: number;
+}
+
+interface CollectionSummary {
+  expectedAllTime: number;
+  collectedAllTime: number;
+  collectionRate: number;
+  cycles: CollectionCycleRow[];
+}
+
 interface FundSegregation {
   maintenanceFund: {
     balance: number;
@@ -106,6 +128,7 @@ interface FundSegregation {
   };
   computedBankBalance: number;
   outstandingDues: number;
+  collectionSummary?: CollectionSummary;
 }
 
 type TabKey = "pl" | "balance" | "trial" | "budget" | "funds";
@@ -747,7 +770,7 @@ function BudgetTab({ data }: { data: BudgetVsActual }) {
 // ---- Fund Segregation Tab ----
 
 function FundSegregationTab({ data }: { data: FundSegregation }) {
-  const { maintenanceFund, projectFunds, separateFunds, computedBankBalance, outstandingDues } = data;
+  const { maintenanceFund, projectFunds, separateFunds, computedBankBalance, outstandingDues, collectionSummary: cs } = data;
   const isBalanced = Math.abs(
     computedBankBalance - (maintenanceFund.balance + projectFunds.total + separateFunds.total)
   ) < 1;
@@ -787,6 +810,95 @@ function FundSegregationTab({ data }: { data: FundSegregation }) {
           />
         )}
       </div>
+
+      {/* Collection Summary */}
+      {cs && cs.cycles.length > 0 && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <SummaryCard
+              label="Expected (Active FY)"
+              value={fmt(cs.expectedAllTime)}
+              icon={<Target className="h-5 w-5 text-brand-primary" />}
+              subtitle="Total expected across cycles"
+            />
+            <SummaryCard
+              label="Collected (Active FY)"
+              value={fmt(cs.collectedAllTime)}
+              icon={<TrendingUp className="h-5 w-5 text-brand-success" />}
+              subtitle="Total collected across cycles"
+              highlight={cs.collectedAllTime >= cs.expectedAllTime ? "success" : undefined}
+            />
+            <SummaryCard
+              label="Collection Rate"
+              value={`${cs.collectionRate}%`}
+              icon={<BarChart3 className="h-5 w-5 text-brand-primary" />}
+              subtitle={cs.collectionRate >= 90 ? "Healthy" : cs.collectionRate >= 70 ? "Needs attention" : "Low collection"}
+              highlight={cs.collectionRate >= 90 ? "success" : cs.collectionRate < 70 ? "danger" : undefined}
+            />
+          </div>
+
+          <div className="card p-6">
+            <h3 className="font-semibold text-fg-primary mb-4 flex items-center gap-2">
+              <div className="h-3 w-1 rounded-full bg-brand-primary" />
+              Collection Summary by Cycle
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead className="table-head">
+                  <tr>
+                    <th scope="col" className="table-th">Cycle</th>
+                    <th scope="col" className="table-th text-right">Expected</th>
+                    <th scope="col" className="table-th text-right">Collected</th>
+                    <th scope="col" className="table-th text-right">Expenses</th>
+                    <th scope="col" className="table-th text-right">Net</th>
+                    <th scope="col" className="table-th text-right">Rate</th>
+                    <th scope="col" className="table-th text-right">Paid</th>
+                    <th scope="col" className="table-th text-right">Unpaid</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-surface divide-y">
+                  {cs.cycles.map((c) => (
+                    <tr key={c.cycleId} className="table-row">
+                      <td className="table-td font-medium whitespace-nowrap">
+                        {c.title}
+                      </td>
+                      <td className="table-td text-right">{fmt(c.totalExpected)}</td>
+                      <td className="table-td text-right">{fmt(c.totalCollected)}</td>
+                      <td className="table-td text-right">{fmt(c.totalExpense)}</td>
+                      <td className={`table-td text-right font-medium ${c.net >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
+                        {c.net >= 0 ? "+" : ""}{fmt(c.net)}
+                      </td>
+                      <td className={`table-td text-right ${c.collectionRate >= 90 ? "text-brand-success" : c.collectionRate < 70 ? "text-brand-danger" : "text-fg-primary"}`}>
+                        {c.collectionRate}%
+                      </td>
+                      <td className="table-td text-right text-brand-success">{c.paidCount}</td>
+                      <td className="table-td text-right text-brand-danger">{c.unpaidCount}</td>
+                    </tr>
+                  ))}
+                  <tr className="table-row font-bold bg-surface-elevated">
+                    <td className="table-td">Total</td>
+                    <td className="table-td text-right">{fmt(cs.expectedAllTime)}</td>
+                    <td className="table-td text-right">{fmt(cs.collectedAllTime)}</td>
+                    <td className="table-td text-right">
+                      {fmt(cs.cycles.reduce((s, c) => s + c.totalExpense, 0))}
+                    </td>
+                    <td className={`table-td text-right ${cs.collectedAllTime - cs.cycles.reduce((s, c) => s + c.totalExpense, 0) >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
+                      {(() => { const net = cs.collectedAllTime - cs.cycles.reduce((s, c) => s + c.totalExpense, 0); return `${net >= 0 ? "+" : ""}${fmt(net)}`; })()}
+                    </td>
+                    <td className="table-td text-right">{cs.collectionRate}%</td>
+                    <td className="table-td text-right text-brand-success">
+                      {cs.cycles.reduce((s, c) => s + c.paidCount, 0)}
+                    </td>
+                    <td className="table-td text-right text-brand-danger">
+                      {cs.cycles.reduce((s, c) => s + c.unpaidCount, 0)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Maintenance Fund Details */}
       <div className="card p-6">
