@@ -85,22 +85,6 @@ interface CycleReport {
   cycles: CycleReportRow[];
 }
 
-interface BudgetRow {
-  categoryId: string | null;
-  categoryName: string;
-  budgeted: number;
-  actual: number;
-  variance: number;
-  variancePercent: number;
-}
-
-interface BudgetVsActual {
-  year: number;
-  rows: BudgetRow[];
-  totals: { budgeted: number; actual: number; variance: number; variancePercent: number };
-  hasBudgets: boolean;
-}
-
 interface CollectionCycleRow {
   cycleId: string;
   title: string;
@@ -145,13 +129,12 @@ interface FundSegregation {
   collectionSummary?: CollectionSummary;
 }
 
-type TabKey = "pl" | "balance" | "cycles" | "budget" | "funds";
+type TabKey = "pl" | "balance" | "cycles" | "funds";
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "pl", label: "Income & Expenditure", icon: <BarChart3 className="h-4 w-4" /> },
   { key: "balance", label: "Financial Position", icon: <Scale className="h-4 w-4" /> },
   { key: "cycles", label: "Billing Cycles", icon: <ClipboardList className="h-4 w-4" /> },
-  { key: "budget", label: "Budget vs Actual", icon: <Target className="h-4 w-4" /> },
   { key: "funds", label: "Fund Segregation", icon: <Layers className="h-4 w-4" /> },
 ];
 
@@ -196,7 +179,6 @@ export default function FinancialReportsPage() {
   const [plReport, setPlReport] = useState<PLReport | null>(null);
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheet | null>(null);
   const [cycleReport, setCycleReport] = useState<CycleReport | null>(null);
-  const [budgetVsActual, setBudgetVsActual] = useState<BudgetVsActual | null>(null);
   const [fundSegregation, setFundSegregation] = useState<FundSegregation | null>(null);
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
@@ -206,7 +188,6 @@ export default function FinancialReportsPage() {
         pl: `/maintenance-management/profit-loss/${year}`,
         balance: `/maintenance-management/balance-sheet/${year}`,
         cycles: `/maintenance-management/cycle-report/${year}`,
-        budget: `/maintenance-management/budget-vs-actual/${year}`,
         funds: `/maintenance-management/fund-segregation`,
       };
       const res = await api.get(endpoints[tab], { signal });
@@ -214,7 +195,6 @@ export default function FinancialReportsPage() {
         case "pl": setPlReport(res.data); break;
         case "balance": setBalanceSheet(res.data); break;
         case "cycles": setCycleReport(res.data); break;
-        case "budget": setBudgetVsActual(res.data); break;
         case "funds": setFundSegregation(res.data); break;
       }
     } catch (error: unknown) {
@@ -237,7 +217,6 @@ export default function FinancialReportsPage() {
     pl: { url: `/maintenance-management/profit-loss/${year}/pdf`, filename: `income_expenditure_${year}.pdf` },
     balance: { url: `/maintenance-management/balance-sheet/${year}/pdf`, filename: `balance_sheet_${year}.pdf` },
     cycles: null, // no PDF for billing cycles yet
-    budget: null, // no PDF for budget vs actual yet
     funds: null, // no PDF for fund segregation yet
   };
 
@@ -247,7 +226,7 @@ export default function FinancialReportsPage() {
         <AdminPageHeader
           eyebrow="Management"
           title="Financial Reports"
-          description="Income & expenditure, billing cycles, financial position, budget analysis, and fund segregation."
+          description="Income & expenditure, billing cycles, financial position, and fund segregation."
           icon={<BarChart3 className="h-6 w-6" />}
           actions={
             pdfEndpoints[tab] ? (
@@ -308,7 +287,6 @@ export default function FinancialReportsPage() {
             {tab === "pl" && plReport && <PLTab report={plReport} />}
             {tab === "balance" && balanceSheet && <BalanceSheetTab data={balanceSheet} />}
             {tab === "cycles" && cycleReport && <BillingCyclesTab data={cycleReport} />}
-            {tab === "budget" && budgetVsActual && <BudgetTab data={budgetVsActual} />}
             {tab === "funds" && fundSegregation && <FundSegregationTab data={fundSegregation} />}
           </>
         )}
@@ -710,151 +688,6 @@ function BillingCyclesTab({ data }: { data: CycleReport }) {
           </p>
         </div>
       )}
-    </>
-  );
-}
-
-// ---- Budget vs Actual Tab ----
-
-function BudgetTab({ data }: { data: BudgetVsActual }) {
-  if (!data.hasBudgets && data.rows.length === 0) {
-    return (
-      <div className="empty-state p-12">
-        <Target className="h-10 w-10 text-fg-tertiary mx-auto mb-3" />
-        <p className="empty-state-title">No budgets set</p>
-        <p className="text-sm text-fg-tertiary mt-1">
-          Set category budgets in the Expenses section to see budget vs actual comparisons here.
-        </p>
-      </div>
-    );
-  }
-
-  const maxBar = Math.max(...data.rows.map((r) => Math.max(r.budgeted, r.actual)), 1);
-
-  return (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SummaryCard
-          label="Total Budgeted"
-          value={fmt(data.totals.budgeted)}
-          icon={<Target className="h-5 w-5 text-brand-primary" />}
-          subtitle={`${data.rows.length} categories`}
-        />
-        <SummaryCard
-          label="Total Actual"
-          value={fmt(data.totals.actual)}
-          icon={<TrendingDown className="h-5 w-5 text-brand-danger" />}
-          subtitle="Approved expenses"
-          highlight={data.totals.actual > data.totals.budgeted ? "danger" : undefined}
-        />
-        <SummaryCard
-          label={data.totals.variance >= 0 ? "Under Budget" : "Over Budget"}
-          value={fmt(Math.abs(data.totals.variance))}
-          icon={
-            data.totals.variance >= 0
-              ? <ArrowDownRight className="h-5 w-5 text-brand-success" />
-              : <ArrowUpRight className="h-5 w-5 text-brand-danger" />
-          }
-          subtitle={`${Math.abs(data.totals.variancePercent).toFixed(1)}% ${data.totals.variance >= 0 ? "savings" : "overrun"}`}
-          highlight={data.totals.variance >= 0 ? "success" : "danger"}
-        />
-      </div>
-
-      {/* Visual bars */}
-      <div className="card p-6">
-        <h3 className="font-semibold text-fg-primary mb-4">Category Comparison</h3>
-        <div className="space-y-4">
-          {data.rows.map((r) => (
-            <div key={r.categoryId ?? r.categoryName}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-fg-primary">{r.categoryName}</span>
-                <span className={`text-xs font-medium ${r.variance >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
-                  {r.variance >= 0 ? "Under" : "Over"} by {fmt(Math.abs(r.variance))}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-16 text-xs text-fg-tertiary shrink-0">Budget</div>
-                  <div className="flex-1 bg-surface-elevated rounded-sm h-3">
-                    <div
-                      className="h-3 rounded-sm bg-brand-primary/40"
-                      style={{ width: `${r.budgeted > 0 ? (r.budgeted / maxBar) * 100 : 0}%`, minWidth: r.budgeted > 0 ? "4px" : "0" }}
-                    />
-                  </div>
-                  <span className="text-xs text-fg-secondary w-24 text-right">{fmt(r.budgeted)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-16 text-xs text-fg-tertiary shrink-0">Actual</div>
-                  <div className="flex-1 bg-surface-elevated rounded-sm h-3">
-                    <div
-                      className={`h-3 rounded-sm ${r.actual > r.budgeted ? "bg-brand-danger/60" : "bg-brand-success/60"}`}
-                      style={{ width: `${r.actual > 0 ? (r.actual / maxBar) * 100 : 0}%`, minWidth: r.actual > 0 ? "4px" : "0" }}
-                    />
-                  </div>
-                  <span className="text-xs text-fg-secondary w-24 text-right">{fmt(r.actual)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-sm bg-brand-primary/40" />
-            <span className="text-xs text-fg-secondary">Budgeted</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-sm bg-brand-success/60" />
-            <span className="text-xs text-fg-secondary">Actual (within budget)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-sm bg-brand-danger/60" />
-            <span className="text-xs text-fg-secondary">Actual (over budget)</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Detail table */}
-      <div className="table-wrapper">
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead className="table-head">
-              <tr>
-                <th scope="col" className="table-th">Category</th>
-                <th scope="col" className="table-th text-right">Budgeted</th>
-                <th scope="col" className="table-th text-right">Actual</th>
-                <th scope="col" className="table-th text-right">Variance</th>
-                <th scope="col" className="table-th text-right">%</th>
-              </tr>
-            </thead>
-            <tbody className="bg-surface divide-y">
-              {data.rows.map((r) => (
-                <tr key={r.categoryId ?? r.categoryName} className="table-row">
-                  <td className="table-td font-medium">{r.categoryName}</td>
-                  <td className="table-td text-right">{fmt(r.budgeted)}</td>
-                  <td className="table-td text-right">{fmt(r.actual)}</td>
-                  <td className={`table-td text-right font-medium ${r.variance >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
-                    {r.variance >= 0 ? "+" : ""}{fmt(r.variance)}
-                  </td>
-                  <td className={`table-td text-right text-sm ${r.variance >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
-                    {r.variancePercent > 0 ? "+" : ""}{r.variancePercent.toFixed(1)}%
-                  </td>
-                </tr>
-              ))}
-              <tr className="table-row font-bold bg-surface-elevated">
-                <td className="table-td">Totals</td>
-                <td className="table-td text-right">{fmt(data.totals.budgeted)}</td>
-                <td className="table-td text-right">{fmt(data.totals.actual)}</td>
-                <td className={`table-td text-right ${data.totals.variance >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
-                  {data.totals.variance >= 0 ? "+" : ""}{fmt(data.totals.variance)}
-                </td>
-                <td className={`table-td text-right ${data.totals.variance >= 0 ? "text-brand-success" : "text-brand-danger"}`}>
-                  {data.totals.variancePercent > 0 ? "+" : ""}{data.totals.variancePercent.toFixed(1)}%
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
     </>
   );
 }
