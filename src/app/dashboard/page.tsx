@@ -37,27 +37,6 @@ type BillingResidentsTotals = {
   totalAdvanceCredit: number;
 };
 
-type FundSegregation = {
-  maintenanceFund: {
-    balance: number;
-    spendable: number;
-    advanceCredit: number;
-    cashInflow: number;
-    additionalMergedInflow: number;
-    totalExpenses: number;
-  };
-  projectFunds: {
-    total: number;
-    projects: Array<{ id: string; title: string; collected: number; spent: number; balance: number; target: number }>;
-  };
-  separateFunds: {
-    total: number;
-    items: Array<{ id: string; title: string; amount: number; source: string | null; receivedDate: string }>;
-  };
-  computedBankBalance: number;
-  outstandingDues: number;
-};
-
 type SocietyFundSnapshot = {
   /** Cash on hand: maintenance cash + additional inflows − expenses. */
   currentFundBalance: number;
@@ -144,7 +123,6 @@ export default function DashboardPage() {
   const [maint, setMaint] = useState<CurrentMonthMaintenance | null>(null);
   const [billingMaint, setBillingMaint] = useState<CurrentMonthMaintenance | null>(null);
   const [fund, setFund] = useState<SocietyFundSnapshot | null>(null);
-  const [fundSeg, setFundSeg] = useState<FundSegregation | null>(null);
   const [fundTrend, setFundTrend] = useState<FundTrendPoint[]>([]);
 
   const [visitorTodayCount, setVisitorTodayCount] = useState(0);
@@ -217,7 +195,6 @@ export default function DashboardPage() {
         noticesRes,
         specialProjectsRes,
         userStatsRes,
-        fundSegRes,
       ] = await Promise.all([
         api.get("/maintenance/dashboard", { signal }).catch(() => null),
         api.get("/maintenance-management/financial-dashboard", { signal }).catch(() => null),
@@ -233,7 +210,6 @@ export default function DashboardPage() {
         api.get("/notices", { signal }).catch(() => null),
         api.get("/special-projects?status=ACTIVE&limit=200", { signal }).catch(() => null),
         api.get("/users/stats", { signal }).catch(() => null),
-        api.get("/maintenance-management/fund-segregation", { signal }).catch(() => null),
       ]);
 
       if (signal.aborted) return;
@@ -254,7 +230,6 @@ export default function DashboardPage() {
       setMaint(m ?? null);
       const f = financialRes?.data?.fund as SocietyFundSnapshot | undefined;
       setFund(f ?? null);
-      setFundSeg((fundSegRes?.data ?? null) as FundSegregation | null);
 
       // Build 6-month trend from the maintenance dashboard's monthWise data
       // (already returned in the initial call) instead of making 6 extra API
@@ -466,19 +441,14 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     const maintenanceView = billingMaint ?? maint;
     const pendingRupee = maintenanceView?.totalPending ?? 0;
-    const credit = fundSeg?.maintenanceFund.advanceCredit ?? fund?.totalAdvanceCredit ?? 0;
-    const fundBalance = fundSeg?.maintenanceFund.balance ?? fund?.currentFundBalance ?? 0;
-    const spendable = fundSeg?.maintenanceFund.spendable ?? fundBalance - credit;
-    const projTotal = fundSeg?.projectFunds.total ?? 0;
-    const sepTotal = fundSeg?.separateFunds.total ?? 0;
-    const bankTotal = fundSeg?.computedBankBalance ?? fundBalance;
+    const credit = fund?.totalAdvanceCredit ?? 0;
+    const fundBalance = fund?.currentFundBalance ?? 0;
+    const spendable = fundBalance - credit;
     const fundSub = (() => {
-      if (fund == null && fundSeg == null) return "Fund snapshot unavailable";
+      if (fund == null) return "Fund snapshot unavailable";
       const parts: string[] = [];
       if (credit > 0.5) parts.push(`Credit ${fmtInr(credit)}`);
-      if (projTotal > 0.5) parts.push(`Projects ${fmtInr(projTotal)}`);
-      if (sepTotal > 0.5) parts.push(`Separate ${fmtInr(sepTotal)}`);
-      parts.push(`Bank ${fmtInr(bankTotal)}`);
+      parts.push(`Balance ${fmtInr(fundBalance)}`);
       return parts.join(" · ");
     })();
     return [
@@ -570,7 +540,6 @@ export default function DashboardPage() {
     maint,
     billingMaint,
     fund,
-    fundSeg,
     guardCount,
     gates,
     sosActiveCount,
