@@ -31,18 +31,6 @@ export const api = axios.create({
   baseURL: API_BASE_URL
 });
 
-function extractApiMessage(data: unknown): string | undefined {
-  if (!data) return undefined;
-  if (typeof data === "string") return data.trim() || undefined;
-  if (typeof data === "object") {
-    const message = (data as { message?: unknown }).message;
-    if (typeof message === "string" && message.trim().length > 0) {
-      return message.trim();
-    }
-  }
-  return undefined;
-}
-
 api.interceptors.request.use((config) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   if (token) {
@@ -90,21 +78,21 @@ api.interceptors.response.use(
 
     if (typeof window !== "undefined") {
       const status = error.response?.status;
-      const message = extractApiMessage(error.response?.data) ?? error.message ?? "Unknown error";
-      const url = error.config?.url;
 
-      // Handle rate limiting (429) - auto-retry once after waiting
-      if (status === 429 && !error.config?._retryAfterRateLimit) {
+      // Handle rate limiting (429) - auto-retry once for safe (idempotent) methods only
+      if (
+        status === 429 &&
+        !error.config?._retryAfterRateLimit &&
+        ["get", "head", "options"].includes(error.config?.method?.toLowerCase() ?? "")
+      ) {
         const retryAfterHeader = error.response?.headers?.["retry-after"];
-        const retryAfterSeconds = parseInt(retryAfterHeader || "60", 10);
-        
-        console.warn(`[API] Rate limited on ${url}. Retrying in ${retryAfterSeconds}s...`);
-        
-        // Wait for the retry-after period (capped at 2 minutes for UX)
-        const delayMs = Math.min(retryAfterSeconds * 1000, 120000);
+        const parsed = parseInt(retryAfterHeader || "5", 10);
+        const retryAfterSeconds = Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+
+        // Cap at 30s so the UI doesn't feel frozen
+        const delayMs = Math.min(retryAfterSeconds * 1000, 30_000);
         await new Promise((resolve) => setTimeout(resolve, delayMs));
-        
-        // Retry the request once
+
         error.config._retryAfterRateLimit = true;
         return api.request(error.config);
       }

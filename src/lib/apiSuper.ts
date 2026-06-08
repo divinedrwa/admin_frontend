@@ -29,6 +29,21 @@ apiSuper.interceptors.response.use(
     if (typeof window !== "undefined") {
       const status = error.response?.status;
 
+      // Handle rate limiting (429) - auto-retry once for safe methods
+      if (
+        status === 429 &&
+        !error.config?._retryAfterRateLimit &&
+        ["get", "head", "options"].includes(error.config?.method?.toLowerCase() ?? "")
+      ) {
+        const retryAfterHeader = error.response?.headers?.["retry-after"];
+        const parsed = parseInt(retryAfterHeader || "5", 10);
+        const retryAfterSeconds = Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+        const delayMs = Math.min(retryAfterSeconds * 1000, 30_000);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        error.config._retryAfterRateLimit = true;
+        return apiSuper.request(error.config);
+      }
+
       if (status === 401) {
         // Attempt silent refresh before redirecting to login.
         if (!error.config?._retryAfterRefresh) {
