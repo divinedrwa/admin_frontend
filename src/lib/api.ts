@@ -93,6 +93,22 @@ api.interceptors.response.use(
       const message = extractApiMessage(error.response?.data) ?? error.message ?? "Unknown error";
       const url = error.config?.url;
 
+      // Handle rate limiting (429) - auto-retry once after waiting
+      if (status === 429 && !error.config?._retryAfterRateLimit) {
+        const retryAfterHeader = error.response?.headers?.["retry-after"];
+        const retryAfterSeconds = parseInt(retryAfterHeader || "60", 10);
+        
+        console.warn(`[API] Rate limited on ${url}. Retrying in ${retryAfterSeconds}s...`);
+        
+        // Wait for the retry-after period (capped at 2 minutes for UX)
+        const delayMs = Math.min(retryAfterSeconds * 1000, 120000);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        
+        // Retry the request once
+        error.config._retryAfterRateLimit = true;
+        return api.request(error.config);
+      }
+
       // Handle authentication errors — attempt silent refresh before logout.
       if (status === 401) {
         const path = window.location.pathname;
