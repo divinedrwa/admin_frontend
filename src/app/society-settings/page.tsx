@@ -17,6 +17,8 @@ type SocietySettings = {
   upiVpa: string | null;
   upiQrCodeUrl: string | null;
   letterheadUrl: string | null;
+  signatureUrl: string | null;
+  stampUrl: string | null;
   lateFeePercentage: number;
   lateFeeFixedAmount: number;
   maintenanceGracePeriodDays: number;
@@ -31,8 +33,12 @@ export default function SocietySettingsPage() {
   const [savingUpi, setSavingUpi] = useState(false);
   const [uploadingQr, setUploadingQr] = useState(false);
   const [uploadingLetterhead, setUploadingLetterhead] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
+  const [uploadingStamp, setUploadingStamp] = useState(false);
   const qrFileRef = useRef<HTMLInputElement>(null);
   const letterheadFileRef = useRef<HTMLInputElement>(null);
+  const signatureFileRef = useRef<HTMLInputElement>(null);
+  const stampFileRef = useRef<HTMLInputElement>(null);
 
   // Visitor settings form
   const [visitorForm, setVisitorForm] = useState({
@@ -123,7 +129,7 @@ export default function SocietySettingsPage() {
 
   const uploadImage = async (
     file: File,
-    field: "qrImage" | "letterhead",
+    field: "qrImage" | "letterhead" | "signature" | "stamp",
     endpoint: string,
     setBusy: (v: boolean) => void,
     inputRef: React.RefObject<HTMLInputElement | null>,
@@ -346,6 +352,101 @@ export default function SocietySettingsPage() {
                   <Trash2 size={14} /> Remove
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Signature & stamp */}
+        <div className="card card-body">
+          <h3 className="font-semibold text-fg-primary mb-1">Authorised Signature &amp; Stamp</h3>
+          <p className="text-xs text-fg-tertiary mb-4">
+            Uploaded here, these are printed in the signature/stamp area of generated documents such as maintenance invoices.
+            A transparent PNG works best. PNG, JPG or WEBP, up to 5 MB.
+          </p>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {/* Signature */}
+            <div>
+              <label className="block text-sm font-medium text-fg-primary mb-2">Authorised signature</label>
+              <div className="flex items-start gap-4">
+                {settings.signatureUrl ? (
+                  <img src={settings.signatureUrl} alt="Signature" className="h-20 w-36 rounded border border-surface-border bg-white object-contain p-1" loading="lazy" />
+                ) : (
+                  <div className="flex h-20 w-36 items-center justify-center rounded border border-dashed border-surface-border text-center text-xs text-fg-tertiary">
+                    No signature
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={signatureFileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        uploadImage(file, "signature", "/society-settings/upload-signature", setUploadingSignature, signatureFileRef, "Signature uploaded");
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => signatureFileRef.current?.click()}
+                    disabled={uploadingSignature}
+                    className="btn btn-secondary flex items-center gap-1"
+                  >
+                    <Upload size={14} /> {uploadingSignature ? "Uploading…" : settings.signatureUrl ? "Replace" : "Upload"}
+                  </button>
+                  {settings.signatureUrl && (
+                    <button
+                      onClick={() => removeImage("/society-settings/signature", "Signature removed")}
+                      className="btn btn-ghost flex items-center gap-1 text-brand-danger"
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            {/* Stamp */}
+            <div>
+              <label className="block text-sm font-medium text-fg-primary mb-2">Society stamp / seal</label>
+              <div className="flex items-start gap-4">
+                {settings.stampUrl ? (
+                  <img src={settings.stampUrl} alt="Stamp" className="h-24 w-24 rounded border border-surface-border bg-white object-contain p-1" loading="lazy" />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded border border-dashed border-surface-border text-center text-xs text-fg-tertiary">
+                    No stamp
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={stampFileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        uploadImage(file, "stamp", "/society-settings/upload-stamp", setUploadingStamp, stampFileRef, "Stamp uploaded");
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => stampFileRef.current?.click()}
+                    disabled={uploadingStamp}
+                    className="btn btn-secondary flex items-center gap-1"
+                  >
+                    <Upload size={14} /> {uploadingStamp ? "Uploading…" : settings.stampUrl ? "Replace" : "Upload"}
+                  </button>
+                  {settings.stampUrl && (
+                    <button
+                      onClick={() => removeImage("/society-settings/stamp", "Stamp removed")}
+                      className="btn btn-ghost flex items-center gap-1 text-brand-danger"
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
