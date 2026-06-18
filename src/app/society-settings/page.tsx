@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
-import { Save } from "lucide-react";
+import { Save, Upload, Trash2 } from "lucide-react";
 
 type SocietySettings = {
   id: string;
@@ -16,6 +16,7 @@ type SocietySettings = {
   guardCanApproveVisitors: boolean;
   upiVpa: string | null;
   upiQrCodeUrl: string | null;
+  letterheadUrl: string | null;
   lateFeePercentage: number;
   lateFeeFixedAmount: number;
   maintenanceGracePeriodDays: number;
@@ -28,6 +29,10 @@ export default function SocietySettingsPage() {
   const [savingVisitor, setSavingVisitor] = useState(false);
   const [savingLateFee, setSavingLateFee] = useState(false);
   const [savingUpi, setSavingUpi] = useState(false);
+  const [uploadingQr, setUploadingQr] = useState(false);
+  const [uploadingLetterhead, setUploadingLetterhead] = useState(false);
+  const qrFileRef = useRef<HTMLInputElement>(null);
+  const letterheadFileRef = useRef<HTMLInputElement>(null);
 
   // Visitor settings form
   const [visitorForm, setVisitorForm] = useState({
@@ -113,6 +118,45 @@ export default function SocietySettingsPage() {
       showToast(parseApiError(error, "Failed to save").message, "error");
     } finally {
       setSavingUpi(false);
+    }
+  };
+
+  const uploadImage = async (
+    file: File,
+    field: "qrImage" | "letterhead",
+    endpoint: string,
+    setBusy: (v: boolean) => void,
+    inputRef: React.RefObject<HTMLInputElement | null>,
+    successMsg: string,
+  ) => {
+    if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type)) {
+      showToast("Please choose a PNG, JPG or WEBP image", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append(field, file);
+      await api.post(endpoint, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      showToast(successMsg, "success");
+      if (inputRef.current) inputRef.current.value = "";
+      await load();
+    } catch (error) {
+      showToast(parseApiError(error, "Upload failed").message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeImage = async (endpoint: string, successMsg: string) => {
+    try {
+      await api.delete(endpoint);
+      showToast(successMsg, "success");
+      await load();
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to remove").message, "error");
     }
   };
 
@@ -209,15 +253,101 @@ export default function SocietySettingsPage() {
               className="input mt-1 max-w-md"
               placeholder="e.g. society@upi" />
           </div>
-          {settings.upiQrCodeUrl && (
-            <div className="mt-2">
-              <label className="block text-sm font-medium text-fg-primary">QR Code</label>
-              <img src={settings.upiQrCodeUrl} alt="UPI QR" className="mt-1 h-32 w-32 rounded border border-surface-border object-contain" loading="lazy" />
-            </div>
-          )}
           <button onClick={saveUpi} disabled={savingUpi} className="btn btn-primary mt-3 flex items-center gap-1">
             <Save size={14} /> {savingUpi ? "Saving…" : "Save UPI Settings"}
           </button>
+
+          <div className="mt-5 border-t border-surface-border pt-4">
+            <label className="block text-sm font-medium text-fg-primary">UPI QR Code</label>
+            <p className="mt-0.5 text-xs text-fg-tertiary">
+              Upload your bank/UPI app QR image. Shown to residents and on generated invoices. PNG, JPG or WEBP, up to 5 MB.
+            </p>
+            <div className="mt-2 flex items-start gap-4">
+              {settings.upiQrCodeUrl ? (
+                <img src={settings.upiQrCodeUrl} alt="UPI QR" className="h-32 w-32 rounded border border-surface-border object-contain" loading="lazy" />
+              ) : (
+                <div className="flex h-32 w-32 items-center justify-center rounded border border-dashed border-surface-border text-xs text-fg-tertiary">
+                  No QR uploaded
+                </div>
+              )}
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={qrFileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      uploadImage(file, "qrImage", "/society-settings/upload-qr", setUploadingQr, qrFileRef, "QR code uploaded");
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => qrFileRef.current?.click()}
+                  disabled={uploadingQr}
+                  className="btn btn-secondary flex items-center gap-1"
+                >
+                  <Upload size={14} /> {uploadingQr ? "Uploading…" : settings.upiQrCodeUrl ? "Replace QR" : "Upload QR"}
+                </button>
+                {settings.upiQrCodeUrl && (
+                  <button
+                    onClick={() => removeImage("/society-settings/qr-code", "QR code removed")}
+                    className="btn btn-ghost flex items-center gap-1 text-brand-danger"
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Branding / letterhead */}
+        <div className="card card-body">
+          <h3 className="font-semibold text-fg-primary mb-1">Branding &amp; Letterhead</h3>
+          <p className="text-xs text-fg-tertiary mb-3">
+            Upload your society letterhead. It is used as the background for generated documents such as maintenance invoices.
+            A US-Letter / A4 portrait image works best. PNG, JPG or WEBP, up to 10 MB.
+          </p>
+          <div className="flex items-start gap-4">
+            {settings.letterheadUrl ? (
+              <img src={settings.letterheadUrl} alt="Letterhead" className="h-44 w-auto max-w-[220px] rounded border border-surface-border object-contain" loading="lazy" />
+            ) : (
+              <div className="flex h-44 w-[170px] items-center justify-center rounded border border-dashed border-surface-border text-center text-xs text-fg-tertiary">
+                No letterhead uploaded
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <input
+                ref={letterheadFileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    uploadImage(file, "letterhead", "/society-settings/upload-letterhead", setUploadingLetterhead, letterheadFileRef, "Letterhead uploaded");
+                  }
+                }}
+              />
+              <button
+                onClick={() => letterheadFileRef.current?.click()}
+                disabled={uploadingLetterhead}
+                className="btn btn-secondary flex items-center gap-1"
+              >
+                <Upload size={14} /> {uploadingLetterhead ? "Uploading…" : settings.letterheadUrl ? "Replace letterhead" : "Upload letterhead"}
+              </button>
+              {settings.letterheadUrl && (
+                <button
+                  onClick={() => removeImage("/society-settings/letterhead", "Letterhead removed")}
+                  className="btn btn-ghost flex items-center gap-1 text-brand-danger"
+                >
+                  <Trash2 size={14} /> Remove
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </AppShell>
