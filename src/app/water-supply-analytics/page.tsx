@@ -56,6 +56,7 @@ type RecentEvent = {
   id: string;
   timestamp: string;
   action: string;
+  turnedOn?: boolean;
   reason?: string | null;
   minutesAgo: number;
   gate?: {
@@ -382,7 +383,9 @@ export default function WaterSupplyAnalyticsPage() {
                     <td className="table-td">
                       <span
                         className={`badge ${
-                          event.action === "ON" ? "badge-success" : "badge-danger"
+                          (event.action === "ON" || event.turnedOn === true)
+                            ? "badge-success"
+                            : "badge-danger"
                         }`}
                       >
                         {event.action}
