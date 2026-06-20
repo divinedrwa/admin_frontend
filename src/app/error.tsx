@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { captureError } from "@/lib/captureError";
 
-export default function GlobalError({
+export default function RouteError({
   error,
   reset,
 }: {
@@ -11,8 +12,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.error("Unhandled error:", error);
+    captureError(error, {
+      digest: error.digest,
+      boundary: "route-error",
+    });
   }, [error]);
 
   return (

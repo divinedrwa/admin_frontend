@@ -28,9 +28,19 @@ type GarbageEvent = {
   };
 };
 
+type WaterRequest = {
+  id: string;
+  requestType: "TURN_ON" | "TURN_OFF";
+  status: string;
+  createdAt: string;
+  gate: { name: string };
+  user: { name: string };
+};
+
 export default function GuardOperationsPage() {
   const router = useRouter();
   const [waterStatus, setWaterStatus] = useState<WaterStatus[]>([]);
+  const [pendingWaterRequests, setPendingWaterRequests] = useState<WaterRequest[]>([]);
   const [garbageEvent, setGarbageEvent] = useState<GarbageEvent | null>(null);
   const [_loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -41,10 +51,12 @@ export default function GuardOperationsPage() {
   const loadData = useCallback((signal?: AbortSignal) => {
     Promise.all([
       api.get("/water-supply/status", { signal }),
+      api.get("/water-supply/requests/pending", { signal }),
       api.get("/garbage-collection/active", { signal }),
     ])
-      .then(([waterRes, garbageRes]) => {
+      .then(([waterRes, requestsRes, garbageRes]) => {
         setWaterStatus(waterRes.data.status ?? []);
+        setPendingWaterRequests(requestsRes.data.requests ?? []);
         setGarbageEvent(garbageRes.data.isInside ? garbageRes.data.event : null);
       })
       .catch((error: unknown) => {
@@ -63,6 +75,19 @@ export default function GuardOperationsPage() {
       clearInterval(interval);
     };
   }, [loadData]);
+
+  const resolveWaterRequest = async (id: string, status: "FULFILLED" | "REJECTED") => {
+    try {
+      setActionLoading(true);
+      await api.patch(`/water-supply/requests/${id}/resolve`, { status });
+      showToast(`Request ${status.toLowerCase()}`, "success");
+      loadData();
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to resolve request").message, "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const confirmWaterToggle = async () => {
     if (waterStatus.length === 0) return;
@@ -168,6 +193,52 @@ export default function GuardOperationsPage() {
               All residents are automatically notified of status changes.
             </p>
           </div>
+        </div>
+
+        {/* Resident water requests */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Pending water requests</h2>
+          {pendingWaterRequests.length === 0 ? (
+            <div className="bg-surface border border-surface-border rounded p-4 text-sm text-fg-secondary">
+              No pending resident requests.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingWaterRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded border border-surface-border bg-surface"
+                >
+                  <div>
+                    <p className="font-medium text-fg-primary">
+                      {req.user.name} — Turn water {req.requestType === "TURN_ON" ? "ON" : "OFF"}
+                    </p>
+                    <p className="text-sm text-fg-secondary">
+                      Gate: {req.gate.name} · {new Date(req.createdAt).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-success btn-sm"
+                      disabled={actionLoading}
+                      onClick={() => void resolveWaterRequest(req.id, "FULFILLED")}
+                    >
+                      Fulfill
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      disabled={actionLoading}
+                      onClick={() => void resolveWaterRequest(req.id, "REJECTED")}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Garbage Collection Alert */}

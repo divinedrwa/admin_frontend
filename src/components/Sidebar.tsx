@@ -80,6 +80,7 @@ const linkSections: SidebarSection[] = [
       { href: "/maintenance-management", label: "Maintenance", icon: HandCoins },
       { href: "/maintenance-billing", label: "Billing cycles", icon: ScrollText },
       { href: "/payment-methods", label: "Payment methods", icon: CreditCard },
+      { href: "/bank-accounts", label: "Bank accounts", icon: Building2 },
       { href: "/upi-payments", label: "UPI verification", icon: CreditCard },
       { href: "/admin-shortfall", label: "Income vs Expenses", icon: Wallet },
       { href: "/reconciliation", label: "Reconciliation", icon: Scale },
