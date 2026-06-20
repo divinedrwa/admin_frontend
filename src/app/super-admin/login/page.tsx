@@ -20,7 +20,9 @@ import { AuthShell } from "@/components/auth/AuthShell";
 
 const API_BASE_URL = getResolvedApiBaseUrl();
 
-/** When opened from society login with ?prefill=1 — override via NEXT_PUBLIC_* in .env.local. */
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+/** When opened from society login with ?prefill=1 — dev/staging only. */
 const DEFAULT_PREFILL_USERNAME =
   process.env.NEXT_PUBLIC_SUPER_ADMIN_PREFILL_USERNAME ?? "super_admin";
 const DEFAULT_PREFILL_PASSWORD =
@@ -69,7 +71,7 @@ function SuperAdminLoginInner() {
   }, [router]);
 
   useEffect(() => {
-    if (searchParams.get("prefill") !== "1") return;
+    if (IS_PRODUCTION || searchParams.get("prefill") !== "1") return;
     setUsername(DEFAULT_PREFILL_USERNAME);
     if (DEFAULT_PREFILL_PASSWORD) {
       setPassword(DEFAULT_PREFILL_PASSWORD);

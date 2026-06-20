@@ -14,12 +14,15 @@ import {
   UserRound,
 } from "lucide-react";
 import { api, setTenantSocietyIdFromLogin } from "@/lib/api";
+import { SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
 import { showToast } from "@/components/Toast";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { LOGIN_SUCCESS_TOAST } from "@/lib/branding";
 
 type SocietyRow = { id: string; name: string; address?: string | null };
-const ENABLE_DEMO_LOGIN = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "1";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const ENABLE_DEMO_LOGIN =
+  !IS_PRODUCTION && process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "1";
 const DEMO_ADMIN_USERNAME = process.env.NEXT_PUBLIC_DEMO_ADMIN_USERNAME ?? "admin";
 const DEMO_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DEMO_ADMIN_PASSWORD ?? "";
 
@@ -120,6 +123,9 @@ function LoginPageInner() {
       if (response.data.refreshToken) {
         localStorage.setItem("refresh_token", response.data.refreshToken);
       }
+      // Tenant session must not coexist with a super-admin token on shared browsers.
+      localStorage.removeItem(SUPER_ADMIN_TOKEN_KEY);
+      localStorage.removeItem("super_admin_refresh_token");
       setTenantSocietyIdFromLogin(response.data?.user);
       showToast(LOGIN_SUCCESS_TOAST, "success");
       router.push("/dashboard");
