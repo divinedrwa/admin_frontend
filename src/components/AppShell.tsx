@@ -11,6 +11,9 @@ import {
   getPlatformViewSession,
   type PlatformViewPayload,
 } from "@/lib/platformViewSession";
+import { getResolvedApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const IS_DEV = process.env.NODE_ENV === "development";
 
 export function AppShell({
   title,
@@ -160,6 +163,14 @@ export function AppShell({
                         : "API unreachable"}
                   </span>
                 </div>
+                {IS_DEV ? (
+                  <div
+                    className="hidden max-w-[280px] truncate rounded-full border border-info-solid/20 bg-info-bg px-3 py-2 text-xs font-medium text-info-fg lg:block"
+                    title={getResolvedApiBaseUrl()}
+                  >
+                    API: {getResolvedApiBaseUrl()}
+                  </div>
+                ) : null}
               </div>
             </div>
           </header>

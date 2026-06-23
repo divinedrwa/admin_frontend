@@ -341,9 +341,13 @@ async function fetchDashboardData(signal?: AbortSignal): Promise<DashboardData> 
 }
 
 export function useDashboard(refetchInterval = 60_000) {
+  const hasToken =
+    typeof window !== "undefined" && Boolean(localStorage.getItem("token")?.trim());
+
   return useQuery({
     queryKey: ["dashboard"],
     queryFn: ({ signal }) => fetchDashboardData(signal),
+    enabled: hasToken,
     refetchInterval,
     staleTime: 30_000,
   });

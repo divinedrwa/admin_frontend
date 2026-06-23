@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   CreditCard,
   CheckCircle2,
@@ -13,6 +13,8 @@ import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { parseApiError } from "@/utils/errorHandler";
+import { useUpiPayments, useUpiPaymentStats } from "@/hooks/useUpiPayments";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface UpiSubmission {
   id: string;
@@ -40,47 +42,26 @@ const MONTH_NAMES = [
 ];
 
 export default function UpiPaymentsPage() {
-  const [submissions, setSubmissions] = useState<UpiSubmission[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<UpiStats>({ pending: 0, verified: 0, rejected: 0 });
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("PENDING");
+  const { data: submissionsData, isLoading: loading } = useUpiPayments(statusFilter);
+  const { data: stats } = useUpiPaymentStats();
+  const statsData = stats ?? { pending: 0, verified: 0, rejected: 0 };
+  const submissions = (submissionsData?.submissions ?? []) as UpiSubmission[];
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
 
-  const fetchSubmissions = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter) params.append("status", statusFilter);
-      const res = await api.get(`/upi-payments/pending?${params.toString()}`);
-      setSubmissions(res.data?.submissions ?? res.data ?? []);
-    } catch (error: unknown) {
-      showToast(parseApiError(error, "Failed to load submissions").message, "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter]);
-
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await api.get("/upi-payments/stats");
-      setStats(res.data ?? { pending: 0, verified: 0, rejected: 0 });
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchSubmissions();
-    void fetchStats();
-  }, [fetchSubmissions, fetchStats]);
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["upi-payments"] });
+  };
 
   async function handleVerify(id: string) {
     setProcessingId(id);
     try {
       await api.post(`/upi-payments/${id}/verify`);
       showToast("Payment verified and recorded", "success");
-      await Promise.all([fetchSubmissions(), fetchStats()]);
+      refresh();
     } catch (error: unknown) {
       showToast(parseApiError(error, "Verification failed").message, "error");
     } finally {
@@ -101,7 +82,7 @@ export default function UpiPaymentsPage() {
       showToast("Payment rejected", "success");
       setRejectingId(null);
       setRejectionReason("");
-      await Promise.all([fetchSubmissions(), fetchStats()]);
+      refresh();
     } catch (error: unknown) {
       showToast(parseApiError(error, "Rejection failed").message, "error");
     } finally {
@@ -149,7 +130,7 @@ export default function UpiPaymentsPage() {
               <Clock className="h-5 w-5 text-brand-warning" />
               <div>
                 <div className="stat-card-label">Pending</div>
-                <div className="stat-card-value">{stats.pending}</div>
+                <div className="stat-card-value">{statsData.pending}</div>
               </div>
             </div>
           </div>
@@ -158,7 +139,7 @@ export default function UpiPaymentsPage() {
               <CheckCircle2 className="h-5 w-5 text-brand-success" />
               <div>
                 <div className="stat-card-label">Verified</div>
-                <div className="stat-card-value">{stats.verified}</div>
+                <div className="stat-card-value">{statsData.verified}</div>
               </div>
             </div>
           </div>
@@ -167,7 +148,7 @@ export default function UpiPaymentsPage() {
               <XCircle className="h-5 w-5 text-brand-danger" />
               <div>
                 <div className="stat-card-label">Rejected</div>
-                <div className="stat-card-value">{stats.rejected}</div>
+                <div className="stat-card-value">{statsData.rejected}</div>
               </div>
             </div>
           </div>
@@ -181,7 +162,7 @@ export default function UpiPaymentsPage() {
               <button
                 key={s}
                 disabled={loading}
-                onClick={() => { setStatusFilter(s); setLoading(true); }}
+                onClick={() => setStatusFilter(s)}
                 className={`btn ${statusFilter === s ? "btn-primary" : "btn-ghost"} text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {s.charAt(0) + s.slice(1).toLowerCase()}

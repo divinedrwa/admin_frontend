@@ -32,6 +32,7 @@ interface UsersTableProps {
   onDelete: (id: string) => void;
   pgMeta: { total: number; limit: number; offset: number };
   onPageChange: (offset: number) => void;
+  hideResidentBulkSelect?: boolean;
 }
 
 export function UsersTable({
@@ -45,6 +46,7 @@ export function UsersTable({
   onDelete,
   pgMeta,
   onPageChange,
+  hideResidentBulkSelect = false,
 }: UsersTableProps) {
   if (loading) {
     return (
@@ -60,7 +62,7 @@ export function UsersTable({
         <thead className="table-head">
           <tr>
             <th scope="col" className="table-th w-10">
-              {residentsList.length > 0 ? (
+              {!hideResidentBulkSelect && residentsList.length > 0 ? (
                 <input
                   type="checkbox"
                   checked={residentsList.length > 0 && residentsList.every((r) => selectedResidentIds.has(r.id))}
@@ -97,7 +99,7 @@ export function UsersTable({
             users.map((user) => (
               <tr key={user.id} className="table-row">
                 <td className="table-td align-middle">
-                  {isResidentLike(user.role) ? (
+                  {!hideResidentBulkSelect && isResidentLike(user.role) ? (
                     <input type="checkbox" checked={selectedResidentIds.has(user.id)} onChange={() => toggleResidentSelected(user.id)} className="rounded border-surface-border" aria-label={`Select ${user.username}`} />
                   ) : (
                     <span className="inline-block w-4" aria-hidden />

@@ -15,6 +15,7 @@ export const apiSuper = axios.create({
 });
 
 apiSuper.interceptors.request.use((config) => {
+  config.baseURL = getResolvedApiBaseUrl();
   const token =
     typeof window !== "undefined" ? localStorage.getItem(SUPER_ADMIN_TOKEN_KEY) : null;
   if (token) {

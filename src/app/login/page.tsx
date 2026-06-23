@@ -6,21 +6,23 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Building2,
-  ChevronDown,
   ClipboardCheck,
   LayoutDashboard,
   LockKeyhole,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { api, setTenantSocietyIdFromLogin } from "@/lib/api";
+import { api, setTenantAuthCookie, setTenantSocietyIdFromLogin } from "@/lib/api";
 import { SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
 import { isTenantAdminToken } from "@/lib/jwt";
 import { showToast } from "@/components/Toast";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { LOGIN_SUCCESS_TOAST } from "@/lib/branding";
+import { getResolvedApiBaseUrl } from "@/lib/apiBaseUrl";
+import { SocietyCombobox } from "@/components/SocietyCombobox";
+import { usePublicSocieties } from "@/hooks/usePublicSocieties";
 
-type SocietyRow = { id: string; name: string; address?: string | null };
+const IS_DEV = process.env.NODE_ENV === "development";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const ENABLE_DEMO_LOGIN =
   !IS_PRODUCTION && process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "1";
@@ -74,38 +76,18 @@ function LoginPageInner() {
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [societyId, setSocietyId] = useState("");
-  const [societies, setSocieties] = useState<SocietyRow[]>([]);
-  const [societiesLoading, setSocietiesLoading] = useState(true);
+  const { data: societiesData, isLoading: societiesLoading } = usePublicSocieties({ limit: 200 });
+  const societies = societiesData?.societies ?? [];
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await api.get<{ societies: SocietyRow[] }>("/public/societies");
-        const list = r.data?.societies;
-        if (!cancelled && Array.isArray(list)) {
-          setSocieties(list);
-          const fromUrl = searchParams.get("society")?.trim();
-          setSocietyId((prev) => {
-            if (prev) return prev;
-            if (fromUrl && list.some((s) => s.id === fromUrl)) return fromUrl;
-            return list[0]?.id || "";
-          });
-        }
-      } catch {
-        if (!cancelled) {
-          setSocieties([]);
-          showToast("Could not load societies. Check API URL and server.", "error");
-        }
-      } finally {
-        if (!cancelled) setSocietiesLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [searchParams]);
+    const fromUrl = searchParams.get("society")?.trim();
+    if (!societyId && fromUrl && societies.some((s) => s.id === fromUrl)) {
+      setSocietyId(fromUrl);
+    } else if (!societyId && societies.length === 1) {
+      setSocietyId(societies[0].id);
+    }
+  }, [searchParams, societies, societyId]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -133,6 +115,7 @@ function LoginPageInner() {
       localStorage.removeItem(SUPER_ADMIN_TOKEN_KEY);
       localStorage.removeItem("super_admin_refresh_token");
       setTenantSocietyIdFromLogin(response.data?.user);
+      setTenantAuthCookie();
       showToast(LOGIN_SUCCESS_TOAST, "success");
       router.push("/dashboard");
     } catch (error: unknown) {
@@ -157,7 +140,7 @@ function LoginPageInner() {
     ? "Fetching active societies from the backend..."
     : societies.length === 0
       ? "No active societies were found. Check the API connection or seed data before signing in."
-      : `${societies.length} active ${societies.length === 1 ? "society is" : "societies are"} ready for admin sign-in.`;
+      : `${societiesData?.total ?? societies.length} active ${(societiesData?.total ?? societies.length) === 1 ? "society is" : "societies are"} ready for admin sign-in.`;
 
   return (
     <AuthShell
@@ -192,36 +175,22 @@ function LoginPageInner() {
             <label className="auth-field-label" htmlFor="societyId">
               Society
             </label>
-            <div className="auth-input-wrap">
-              <div className="auth-input-icon">
-                <Building2 className="h-5 w-5" />
-              </div>
-              <select
-                id="societyId"
-                className="auth-input auth-input-with-icon auth-select"
-                value={societyId}
-                onChange={(e) => setSocietyId(e.target.value)}
-                disabled={societiesLoading || societies.length === 0}
-                required
-              >
-                {societiesLoading ? (
-                  <option value="">Loading societies...</option>
-                ) : societies.length === 0 ? (
-                  <option value="">No active societies available</option>
-                ) : (
-                  societies.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))
-                )}
-              </select>
-              <ChevronDown className="auth-select-icon h-5 w-5" />
-            </div>
+            <SocietyCombobox
+              id="societyId"
+              value={societyId}
+              onChange={(id) => setSocietyId(id)}
+              disabled={societiesLoading}
+              required
+            />
             <p className="auth-field-hint">Choose the society this admin session should manage.</p>
           </div>
 
           <div className={societyAlertClass}>{societyAlertText}</div>
+          {IS_DEV ? (
+            <p className="text-xs text-fg-tertiary">
+              Dev API: <span className="font-mono">{getResolvedApiBaseUrl()}</span>
+            </p>
+          ) : null}
 
           <div className="auth-field">
             <label className="auth-field-label" htmlFor="emailOrUsername">

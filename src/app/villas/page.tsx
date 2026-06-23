@@ -1,8 +1,8 @@
 "use client";
 
 import { Building2, FileSpreadsheet, Plus } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
@@ -18,6 +18,8 @@ import {
 import { Villa, VillaResident, VillaUnit, VillaForm, UnitRow } from "@/types/villa";
 import { VillaFormModal } from "./components/VillaFormModal";
 import { VillasTable } from "./components/VillasTable";
+import { useVillas } from "@/hooks/useVillas";
+import { useUrlPagination } from "@/hooks/useUrlPagination";
 
 function pickPrimaryResident(villa: Villa): VillaResident | null {
   const residents = (villa.users ?? []).filter((u) => u.role === "RESIDENT" || u.role === "RESIDENT_CUM_ADMIN") as VillaResident[];
@@ -57,10 +59,20 @@ export default function VillasPage() {
 }
 
 function VillasPageInner() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const [villas, setVillas] = useState<Villa[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { queryParams, handlePageChange } = useUrlPagination();
+  const { data, isLoading: loading } = useVillas(queryParams);
+  const villas = data?.villas ?? [];
+  const pgMeta = {
+    total: data?.total ?? 0,
+    limit: data?.limit ?? 50,
+    offset: data?.offset ?? 0,
+  };
+
+  const invalidateVillas = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["villas"] });
+  }, [queryClient]);
+
   const [showForm, setShowForm] = useState(false);
   const [editingVilla, setEditingVilla] = useState<Villa | null>(null);
   const [formData, setFormData] = useState<VillaForm>({
@@ -83,47 +95,7 @@ function VillasPageInner() {
   const [assignedFloorTier, setAssignedFloorTier] = useState("");
   const [primaryResidentId, setPrimaryResidentId] = useState<string | null>(null);
   const [primaryResidentName, setPrimaryResidentName] = useState<string | null>(null);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const { confirm, ConfirmUI } = useConfirm();
-  const initialOffset = Number(searchParams.get("offset")) || 0;
-
-  const loadVillas = useCallback((offset = initialOffset, signal?: AbortSignal) => {
-    setLoading(true);
-    api
-      .get(`/villas?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setVillas(response.data.villas ?? []);
-        setPgMeta({
-          total: response.data.total ?? 0,
-          limit: response.data.limit ?? 50,
-          offset: response.data.offset ?? 0,
-        });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string }).name === "CanceledError") return;
-        const status = (error as { response?: { status?: number } })?.response?.status;
-
-        // Only show error toast for non-auth errors
-        if (status !== 401 && status !== 403) {
-          showToast(parseApiError(error, "Failed to load villas").message, "error");
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
-
-  const handlePageChange = (newOffset: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (newOffset > 0) params.set("offset", String(newOffset));
-    else params.delete("offset");
-    router.replace(`?${params.toString()}`, { scroll: false });
-    loadVillas(newOffset);
-  };
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadVillas(initialOffset, controller.signal);
-    return () => { controller.abort(); };
-  }, [loadVillas, initialOffset]);
 
   const handleOpenForm = (villa?: Villa) => {
     if (villa) {
@@ -275,7 +247,7 @@ function VillasPageInner() {
       }
 
       handleCloseForm();
-      loadVillas();
+      invalidateVillas();
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to save villa").message, "error");
     } finally {
@@ -353,7 +325,7 @@ function VillasPageInner() {
           "error",
         );
       }
-      loadVillas();
+      invalidateVillas();
     } catch (error: unknown) {
       showToast(parseApiError(error, "Import failed").message, "error");
     } finally {
@@ -406,7 +378,7 @@ function VillasPageInner() {
         next.delete(villaId);
         return next;
       });
-      loadVillas();
+      invalidateVillas();
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to delete villa").message, "error");
     }
@@ -438,7 +410,7 @@ function VillasPageInner() {
       }
     }
     setSelectedVillaIds(new Set());
-    loadVillas();
+    invalidateVillas();
     setBulkDeletingVillas(false);
     if (failures.length === 0) {
       showToast(`Deleted ${deleted} villa(s)`, "success");

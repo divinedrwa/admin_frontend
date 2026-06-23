@@ -1,8 +1,9 @@
 "use client";
 
 import { UserPlus, Users } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
@@ -15,6 +16,8 @@ import { UserFormModal } from "./components/UserFormModal";
 import { UsersTable } from "./components/UsersTable";
 import { CsvImportExport } from "./components/CsvImportExport";
 import { BulkSelectionToolbar } from "./components/BulkSelectionToolbar";
+import { useUsers } from "@/hooks/useUsers";
+import { useUrlPagination } from "@/hooks/useUrlPagination";
 
 function isResidentLike(role: string): boolean {
   return role === "RESIDENT" || role === "ADMIN" || role === "RESIDENT_CUM_ADMIN";
@@ -36,9 +39,24 @@ export default function UsersPage() {
 
 function UsersPageInner() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const roleFilter = searchParams.get("role")?.trim() || undefined;
+  const { offset, queryParams, handlePageChange } = useUrlPagination();
+  const { data, isLoading: loading } = useUsers({
+    ...queryParams,
+    ...(roleFilter ? { role: roleFilter } : {}),
+  });
+  const users = data?.users ?? [];
+  const pgMeta = {
+    total: data?.total ?? 0,
+    limit: data?.limit ?? 50,
+    offset: data?.offset ?? 0,
+  };
+
+  const invalidateUsers = () => {
+    void queryClient.invalidateQueries({ queryKey: ["users"] });
+  };
+
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<UserForm>({ ...EMPTY_FORM });
   const [submitting, setSubmitting] = useState(false);
@@ -48,39 +66,7 @@ function UsersPageInner() {
   const [exportingResidents, setExportingResidents] = useState(false);
   const [selectedResidentIds, setSelectedResidentIds] = useState<Set<string>>(new Set());
   const [bulkDeletingResidents, setBulkDeletingResidents] = useState(false);
-  const [pgMeta, setPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const { confirm, ConfirmUI } = useConfirm();
-
-  const abortRef = useRef<AbortController | null>(null);
-  const initialOffset = Number(searchParams.get("offset")) || 0;
-
-  const loadUsers = useCallback((signal?: AbortSignal, offset = initialOffset) => {
-    setLoading(true);
-    api.get(`/users?limit=50&offset=${offset}`, { signal })
-      .then((response) => {
-        setUsers(response.data.users ?? []);
-        setPgMeta({ total: response.data.total ?? 0, limit: response.data.limit ?? 50, offset: response.data.offset ?? 0 });
-      })
-      .catch((error: unknown) => {
-        if (signal?.aborted) return;
-        showToast(parseApiError(error, "Failed to load users").message, "error");
-      })
-      .finally(() => setLoading(false));
-  }, [initialOffset]);
-
-  const handlePageChange = (newOffset: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (newOffset > 0) params.set("offset", String(newOffset)); else params.delete("offset");
-    router.replace(`?${params.toString()}`, { scroll: false });
-    loadUsers(undefined, newOffset);
-  };
-
-  useEffect(() => {
-    const ac = new AbortController();
-    abortRef.current = ac;
-    loadUsers(ac.signal);
-    return () => ac.abort();
-  }, [loadUsers]);
 
   const sortedUsers = useMemo(() => sortByVillaNumber(users, (u) => u.villa?.villaNumber ?? null), [users]);
   const residentsList = users.filter((u) => isResidentLike(u.role));
@@ -137,7 +123,7 @@ function UsersPageInner() {
         showToast("User created successfully", "success");
       }
       handleCloseForm();
-      loadUsers();
+      invalidateUsers();
     } catch (error: unknown) {
       const data = (error as { response?: { data?: { message?: string; issues?: { path: (string | number)[]; message: string }[] } } })?.response?.data;
       const fromIssues = data?.issues?.length ? data.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(" · ") : undefined;
@@ -173,7 +159,7 @@ function UsersPageInner() {
         const preview = data.errors.slice(0, 5).map((x) => `Line ${x.line}: ${x.message}`).join("; ");
         showToast(preview + (data.errors.length > 5 ? ` … and ${data.errors.length - 5} more` : ""), "error");
       }
-      loadUsers();
+      invalidateUsers();
     } catch (error: unknown) { showToast(parseApiError(error, "Import failed").message, "error"); }
     finally { setImporting(false); }
   };
@@ -193,7 +179,7 @@ function UsersPageInner() {
       await api.delete(`/users/${userId}`);
       showToast("User deleted successfully", "success");
       setSelectedResidentIds((prev) => { const next = new Set(prev); next.delete(userId); return next; });
-      loadUsers();
+      invalidateUsers();
     } catch (error: unknown) { showToast(parseApiError(error, "Failed to delete user").message, "error"); }
   };
 
@@ -207,7 +193,7 @@ function UsersPageInner() {
       try { await api.delete(`/users/${id}`); deleted++; }
       catch (error: unknown) { failures.push(`${users.find((u) => u.id === id)?.username ?? id}: ${parseApiError(error, "Delete failed").message}`); }
     }
-    setSelectedResidentIds(new Set()); loadUsers(); setBulkDeletingResidents(false);
+    setSelectedResidentIds(new Set()); invalidateUsers(); setBulkDeletingResidents(false);
     if (failures.length === 0) { showToast(`Deleted ${deleted} resident(s)`, "success"); }
     else { showToast(`Deleted ${deleted}. ${failures.length} failed.`, "error"); showToast(failures.slice(0, 5).join("; ") + (failures.length > 5 ? ` … and ${failures.length - 5} more` : ""), "error"); }
   };

@@ -48,7 +48,7 @@ import {
 import { showToast } from "./Toast";
 import { useState } from "react";
 import { clearPlatformViewSession } from "@/lib/platformViewSession";
-import { api, clearTenantSocietyId } from "@/lib/api";
+import { api, clearTenantAuthCookie, clearTenantSocietyId } from "@/lib/api";
 import { APP_NAME } from "@/lib/branding";
 
 import type { LucideIcon } from "lucide-react";
@@ -71,6 +71,7 @@ const linkSections: SidebarSection[] = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/villas", label: "Villas", icon: Building2 },
       { href: "/users", label: "Users", icon: Users },
+      { href: "/role-management", label: "Role management", icon: UserCheck },
       { href: "/invitations", label: "Invitations", icon: MailPlus },
     ],
   },
@@ -79,6 +80,7 @@ const linkSections: SidebarSection[] = [
     links: [
       { href: "/resident-management", label: "Residents", icon: UserRoundCheck },
       { href: "/maintenance-management", label: "Maintenance", icon: HandCoins },
+      { href: "/villa-financial-history", label: "Villa financial history", icon: ScrollText },
       { href: "/maintenance-billing", label: "Billing cycles", icon: ScrollText },
       { href: "/maintenance-reminders", label: "Dues reminders", icon: BellRing },
       { href: "/payment-methods", label: "Payment methods", icon: CreditCard },
@@ -195,6 +197,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     localStorage.removeItem("refresh_token");
     clearTenantSocietyId();
     clearPlatformViewSession();
+    clearTenantAuthCookie();
     showToast("Logged out successfully", "success");
     router.push("/login");
   }

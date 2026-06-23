@@ -9,6 +9,7 @@ import { attemptTokenRefresh } from "./tokenRefresh";
 import { readSocietyIdFromToken } from "./jwt";
 
 const TENANT_SOCIETY_STORAGE_KEY = "tenant_society_id";
+const TENANT_AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 const API_BASE_URL = getResolvedApiBaseUrl();
 
@@ -20,6 +21,18 @@ export function setTenantSocietyIdFromLogin(user: { societyId?: string | null } 
   }
 }
 
+export function setTenantAuthCookie(): void {
+  if (typeof window !== "undefined") {
+    document.cookie = `tenant_auth=1; path=/; max-age=${TENANT_AUTH_COOKIE_MAX_AGE}; SameSite=Lax`;
+  }
+}
+
+export function clearTenantAuthCookie(): void {
+  if (typeof window !== "undefined") {
+    document.cookie = "tenant_auth=; path=/; max-age=0; SameSite=Lax";
+  }
+}
+
 export function clearTenantSocietyId(): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem(TENANT_SOCIETY_STORAGE_KEY);
@@ -28,10 +41,12 @@ export function clearTenantSocietyId(): void {
 
 
 export const api = axios.create({
-  baseURL: API_BASE_URL
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
+  // Re-resolve each request so dev `.env.local` changes apply without a full rebuild.
+  config.baseURL = getResolvedApiBaseUrl();
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

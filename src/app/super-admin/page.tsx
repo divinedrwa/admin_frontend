@@ -11,6 +11,7 @@ import {
   getStoredPasswordForAdmin,
   rememberSocietyAdminPassword,
 } from "@/lib/superAdminStoredCredentials";
+import { setTenantAuthCookie, setTenantSocietyIdFromLogin } from "@/lib/api";
 import { cssVar } from "@/theme/tokens";
 import { parseApiError } from "@/utils/errorHandler";
 
@@ -21,16 +22,31 @@ type SocietyAdminSummary = {
   name: string;
 };
 
+type SocietySubscriptionSummary = {
+  plan: string;
+  status: string;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
+  monthlyAmount: number | null;
+};
+
 type SocietyRow = {
   id: string;
   name: string;
   address: string | null;
   status: string;
-  /** ISO timestamp when soft-archived; null when active. */
   archivedAt: string | null;
   archivedBy: string | null;
   createdAt: string;
   admins?: SocietyAdminSummary[];
+  subscription?: SocietySubscriptionSummary | null;
+  onboardingStatus?: "PROVISIONED" | "SETUP" | "LIVE" | "ARCHIVED";
+};
+
+type PlatformRevenue = {
+  totalRevenue: number;
+  byMonth: Array<{ month: string; revenue: number }>;
+  bySociety: Array<{ societyId: string; societyName: string; revenue: number }>;
 };
 
 type SocietyCounts = {
@@ -120,12 +136,34 @@ export default function SuperAdminConsolePage() {
   const [savingAndroid, setSavingAndroid] = useState(false);
   const [savingIos, setSavingIos] = useState(false);
 
+  const [consoleTab, setConsoleTab] = useState<"societies" | "revenue">("societies");
+  const [societySearch, setSocietySearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [revenue, setRevenue] = useState<PlatformRevenue | null>(null);
+  const [loadingRevenue, setLoadingRevenue] = useState(false);
+
+  const [subscriptionRow, setSubscriptionRow] = useState<SocietyRow | null>(null);
+  const [subPlan, setSubPlan] = useState("TRIAL");
+  const [subStatus, setSubStatus] = useState("TRIAL");
+  const [subTrialEnd, setSubTrialEnd] = useState("");
+  const [subMonthlyAmount, setSubMonthlyAmount] = useState("");
+  const [savingSubscription, setSavingSubscription] = useState(false);
+
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(societySearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [societySearch]);
 
   const loadSocieties = useCallback(async (signal?: AbortSignal) => {
     setLoadingList(true);
     try {
-      const { data } = await apiSuper.get<{ societies: SocietyRow[] }>("/super/societies", { signal });
+      const params = debouncedSearch ? { search: debouncedSearch } : undefined;
+      const { data } = await apiSuper.get<{ societies: SocietyRow[] }>("/super/societies", {
+        signal,
+        params,
+      });
       if (signal?.aborted) return;
       const list = data?.societies ?? [];
       setSocieties(list);
@@ -137,6 +175,20 @@ export default function SuperAdminConsolePage() {
       showToast("Could not load societies", "error");
     } finally {
       if (!signal?.aborted) setLoadingList(false);
+    }
+  }, [debouncedSearch]);
+
+  const loadRevenue = useCallback(async (signal?: AbortSignal) => {
+    setLoadingRevenue(true);
+    try {
+      const { data } = await apiSuper.get<PlatformRevenue>("/super/platform-revenue", { signal });
+      if (signal?.aborted) return;
+      setRevenue(data);
+    } catch {
+      if (signal?.aborted) return;
+      showToast("Could not load platform revenue", "error");
+    } finally {
+      if (!signal?.aborted) setLoadingRevenue(false);
     }
   }, []);
 
@@ -174,6 +226,55 @@ export default function SuperAdminConsolePage() {
     })();
     return () => ac.abort();
   }, [router, loadSocieties, loadAppVersionConfigs]);
+
+  useEffect(() => {
+    if (consoleTab !== "revenue") return;
+    const ac = new AbortController();
+    void loadRevenue(ac.signal);
+    return () => ac.abort();
+  }, [consoleTab, loadRevenue]);
+
+  function onboardingBadge(status?: SocietyRow["onboardingStatus"]) {
+    const label = status ?? "SETUP";
+    const cls =
+      label === "LIVE"
+        ? "text-approved-solid"
+        : label === "ARCHIVED"
+          ? "text-denied-fg"
+          : label === "PROVISIONED"
+            ? "text-pending-solid"
+            : "text-fg-secondary";
+    return <span className={`text-xs font-semibold uppercase ${cls}`}>{label}</span>;
+  }
+
+  function openSubscriptionEdit(row: SocietyRow) {
+    setSubscriptionRow(row);
+    const sub = row.subscription;
+    setSubPlan(sub?.plan ?? "TRIAL");
+    setSubStatus(sub?.status ?? "TRIAL");
+    setSubTrialEnd(sub?.trialEndsAt ? sub.trialEndsAt.slice(0, 10) : "");
+    setSubMonthlyAmount(sub?.monthlyAmount != null ? String(sub.monthlyAmount) : "");
+  }
+
+  async function saveSubscription() {
+    if (!subscriptionRow) return;
+    setSavingSubscription(true);
+    try {
+      await apiSuper.patch(`/super/societies/${subscriptionRow.id}/subscription`, {
+        plan: subPlan,
+        status: subStatus,
+        trialEndsAt: subTrialEnd ? new Date(subTrialEnd).toISOString() : null,
+        monthlyAmount: subMonthlyAmount.trim() ? Number(subMonthlyAmount) : null,
+      });
+      showToast("Subscription updated", "success");
+      setSubscriptionRow(null);
+      await loadSocieties();
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to update subscription").message, "error");
+    } finally {
+      setSavingSubscription(false);
+    }
+  }
 
   function logout() {
     const refreshToken = localStorage.getItem(SUPER_ADMIN_REFRESH_TOKEN_KEY);
@@ -270,6 +371,8 @@ export default function SuperAdminConsolePage() {
         return;
       }
       enterPlatformView(data.token, s.id, s.name);
+      setTenantSocietyIdFromLogin({ societyId: s.id });
+      setTenantAuthCookie();
       setDetailSociety(null);
       setDetailLoading(false);
       router.push("/dashboard");
@@ -514,17 +617,93 @@ export default function SuperAdminConsolePage() {
       </header>
 
       <div className="max-w-6xl mx-auto p-6 space-y-8">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${consoleTab === "societies" ? "bg-white/20 text-white" : "bg-white/5 text-fg-secondary hover:bg-white/10"}`}
+            onClick={() => setConsoleTab("societies")}
+          >
+            Societies
+          </button>
+          <button
+            type="button"
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${consoleTab === "revenue" ? "bg-white/20 text-white" : "bg-white/5 text-fg-secondary hover:bg-white/10"}`}
+            onClick={() => setConsoleTab("revenue")}
+          >
+            Platform revenue
+          </button>
+        </div>
+
+        {consoleTab === "revenue" ? (
+          <section className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Platform revenue</h2>
+              <button
+                type="button"
+                onClick={() => void loadRevenue()}
+                disabled={loadingRevenue}
+                className="text-sm px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-50"
+              >
+                {loadingRevenue ? "Loading…" : "Refresh"}
+              </button>
+            </div>
+            {loadingRevenue && !revenue ? (
+              <p className="text-fg-secondary text-sm">Loading revenue…</p>
+            ) : revenue ? (
+              <>
+                <p className="text-2xl font-bold">₹{revenue.totalRevenue.toLocaleString("en-IN")}</p>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">By month</h3>
+                    <ul className="text-sm space-y-1 max-h-64 overflow-y-auto">
+                      {revenue.byMonth.map((m) => (
+                        <li key={m.month} className="flex justify-between">
+                          <span>{m.month}</span>
+                          <span>₹{m.revenue.toLocaleString("en-IN")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">By society</h3>
+                    <ul className="text-sm space-y-1 max-h-64 overflow-y-auto">
+                      {revenue.bySociety.map((s) => (
+                        <li key={s.societyId} className="flex justify-between gap-2">
+                          <span className="truncate">{s.societyName}</span>
+                          <span>₹{s.revenue.toLocaleString("en-IN")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-fg-secondary text-sm">No revenue data yet.</p>
+            )}
+          </section>
+        ) : null}
+
+        {consoleTab === "societies" ? (
         <section className="bg-white/5 border border-white/10 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold">All societies</h2>
-            <button
-              type="button"
-              onClick={() => void loadSocieties()}
-              disabled={loadingList}
-              className="text-sm px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-50"
-            >
-              {loadingList ? "Refreshing…" : "Refresh"}
-            </button>
+            <div className="flex items-center gap-2">
+              <input
+                type="search"
+                value={societySearch}
+                onChange={(e) => setSocietySearch(e.target.value)}
+                placeholder="Search name or address…"
+                className="input bg-surface text-fg-primary text-sm py-2 px-3 min-w-[200px]"
+              />
+              <button
+                type="button"
+                onClick={() => void loadSocieties()}
+                disabled={loadingList}
+                className="text-sm px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-50"
+              >
+                {loadingList ? "Refreshing…" : "Refresh"}
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full text-sm text-left">
@@ -532,6 +711,8 @@ export default function SuperAdminConsolePage() {
                 <tr>
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Onboarding</th>
+                  <th className="px-4 py-3 font-medium">Subscription</th>
                   <th className="px-4 py-3 font-medium">Id</th>
                   <th className="px-4 py-3 font-medium">Created</th>
                   <th className="px-4 py-3 font-medium min-w-[220px]">Society admin login</th>
@@ -541,7 +722,7 @@ export default function SuperAdminConsolePage() {
               <tbody className="divide-y divide-white/10">
                 {societies.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-fg-secondary">
+                    <td colSpan={8} className="px-4 py-8 text-center text-fg-secondary">
                       No societies yet. Create one below.
                     </td>
                   </tr>
@@ -574,6 +755,26 @@ export default function SuperAdminConsolePage() {
                             </span>
                           ) : null}
                         </div>
+                      </td>
+                      <td className="px-4 py-3">{onboardingBadge(s.onboardingStatus)}</td>
+                      <td className="px-4 py-3 text-xs">
+                        {s.subscription ? (
+                          <div className="space-y-1">
+                            <div>{s.subscription.plan} · {s.subscription.status}</div>
+                            {s.subscription.trialEndsAt ? (
+                              <div className="text-fg-tertiary">Trial ends {new Date(s.subscription.trialEndsAt).toLocaleDateString()}</div>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="text-brand-primary hover:underline"
+                              onClick={() => openSubscriptionEdit(s)}
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-fg-tertiary italic">None</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-fg-secondary break-all max-w-[200px]">
                         {s.id}
@@ -670,7 +871,10 @@ export default function SuperAdminConsolePage() {
             </table>
           </div>
         </section>
+        ) : null}
 
+        {consoleTab === "societies" ? (
+        <>
         <div className="grid md:grid-cols-2 gap-6">
           <section className="bg-white/5 border border-white/10 rounded-2xl p-6">
             <h2 className="text-lg font-semibold mb-4">Create society</h2>
@@ -811,7 +1015,53 @@ export default function SuperAdminConsolePage() {
             {renderPlatformCard("IOS", iosForm, setIosForm, savingIos, setSavingIos)}
           </div>
         </section>
+        </>
+        ) : null}
       </div>
+
+      <Modal open={!!subscriptionRow} onClose={() => setSubscriptionRow(null)} maxWidth="max-w-md">
+        <div
+          className="border border-white/15 rounded-2xl shadow-xl p-6 space-y-4"
+          style={{ backgroundColor: `var(${cssVar.superLogin.to})` }}
+        >
+          <h3 className="text-lg font-semibold text-white">Edit subscription</h3>
+          {subscriptionRow ? (
+            <p className="text-sm text-fg-secondary">{subscriptionRow.name}</p>
+          ) : null}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">Plan</label>
+              <select className="input w-full bg-surface text-fg-primary" value={subPlan} onChange={(e) => setSubPlan(e.target.value)}>
+                {["TRIAL", "STARTER", "GROWTH", "ENTERPRISE"].map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">Status</label>
+              <select className="input w-full bg-surface text-fg-primary" value={subStatus} onChange={(e) => setSubStatus(e.target.value)}>
+                {["TRIAL", "ACTIVE", "PAST_DUE", "SUSPENDED", "CANCELLED"].map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">Trial ends</label>
+              <input type="date" className="input w-full bg-surface text-fg-primary" value={subTrialEnd} onChange={(e) => setSubTrialEnd(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-fg-secondary mb-1">Monthly amount (INR)</label>
+              <input type="number" min={0} className="input w-full bg-surface text-fg-primary" value={subMonthlyAmount} onChange={(e) => setSubMonthlyAmount(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button type="button" className="btn btn-ghost" onClick={() => setSubscriptionRow(null)}>Cancel</button>
+            <button type="button" className="btn btn-primary" disabled={savingSubscription} onClick={() => void saveSubscription()}>
+              {savingSubscription ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* View society */}
       <Modal open={!!detailSociety || detailLoading} onClose={() => { setDetailSociety(null); setDetailLoading(false); }} maxWidth="max-w-lg">

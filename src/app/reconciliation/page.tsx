@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Scale,
   AlertTriangle,
@@ -13,6 +13,11 @@ import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { parseApiError } from "@/utils/errorHandler";
+import {
+  useReconciliationAlerts,
+  useReconciliationSummary,
+} from "@/hooks/useReconciliation";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ReconciliationAlert {
   id: string;
@@ -36,38 +41,18 @@ interface ReconciliationSummary {
 }
 
 export default function ReconciliationPage() {
-  const [alerts, setAlerts] = useState<ReconciliationAlert[]>([]);
-  const [summary, setSummary] = useState<ReconciliationSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("unresolved");
+  const { data: alertsData, isLoading: loading } = useReconciliationAlerts(statusFilter);
+  const { data: summary } = useReconciliationSummary();
+  const alerts = (alertsData?.alerts ?? []) as ReconciliationAlert[];
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolveNotes, setResolveNotes] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const fetchAlerts = useCallback(async () => {
-    try {
-      const res = await api.get(`/reconciliation/alerts?status=${statusFilter}`);
-      setAlerts(res.data?.alerts ?? []);
-    } catch (error: unknown) {
-      showToast(parseApiError(error, "Failed to load alerts").message, "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter]);
-
-  const fetchSummary = useCallback(async () => {
-    try {
-      const res = await api.get("/reconciliation/summary");
-      setSummary(res.data ?? null);
-    } catch (error: unknown) {
-      showToast(parseApiError(error, "Failed to load summary").message, "error");
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchAlerts();
-    void fetchSummary();
-  }, [fetchAlerts, fetchSummary]);
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["reconciliation"] });
+  };
 
   async function handleResolve(id: string) {
     if (!resolveNotes.trim()) {
@@ -82,7 +67,7 @@ export default function ReconciliationPage() {
       showToast("Alert resolved", "success");
       setResolvingId(null);
       setResolveNotes("");
-      await Promise.all([fetchAlerts(), fetchSummary()]);
+      refresh();
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to resolve").message, "error");
     } finally {
@@ -169,7 +154,7 @@ export default function ReconciliationPage() {
             {["unresolved", "resolved"].map((s) => (
               <button
                 key={s}
-                onClick={() => { setStatusFilter(s); setLoading(true); }}
+                onClick={() => setStatusFilter(s)}
                 className={`btn ${statusFilter === s ? "btn-primary" : "btn-ghost"} text-sm`}
               >
                 {s.charAt(0).toUpperCase() + s.slice(1)}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isJwtUnexpired, isTenantAdminToken } from "@/lib/jwt";
 import { attemptTokenRefresh } from "@/lib/tokenRefresh";
+import { setTenantAuthCookie } from "@/lib/api";
 
 function isTenantPublicPath(pathname: string): boolean {
   const p = pathname.split("?")[0] ?? "";
@@ -54,6 +55,9 @@ export function useAuth(requireAuth: boolean = true) {
       }
 
       setIsAuthenticated(valid);
+      if (valid && activeToken && isTenantAdminToken(activeToken)) {
+        setTenantAuthCookie();
+      }
       setIsLoading(false);
     };
 
