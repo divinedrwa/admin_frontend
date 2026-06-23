@@ -1,7 +1,8 @@
 "use client";
 
 import { User, UserForm, MaintenanceBillingRole } from "@/types/user";
-import { VillaOption } from "@/types/villa";
+import { VillaTypeahead } from "@/components/VillaTypeahead";
+import { useVilla } from "@/hooks/useVillas";
 
 function isResidentLike(role: string): boolean {
   return role === "RESIDENT" || role === "ADMIN" || role === "RESIDENT_CUM_ADMIN";
@@ -11,8 +12,6 @@ interface UserFormModalProps {
   formData: UserForm;
   setFormData: (fd: UserForm) => void;
   editingUser: User | null;
-  villas: VillaOption[];
-  sortedVillas: VillaOption[];
   submitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
@@ -22,12 +21,13 @@ export function UserFormModal({
   formData,
   setFormData,
   editingUser,
-  villas,
-  sortedVillas,
   submitting,
   onSubmit,
   onClose,
 }: UserFormModalProps) {
+  const { data: villaDetail } = useVilla(formData.villaId || undefined);
+  const units = villaDetail?.villa?.units ?? [];
+
   return (
     <div className="card">
       <div className="card-header">
@@ -126,15 +126,12 @@ export function UserFormModal({
 
                 <div>
                   <label className="block text-sm font-medium text-fg-primary mb-1">Assign Villa *</label>
-                  <select required={isResidentLike(formData.role)} value={formData.villaId} onChange={(e) => setFormData({ ...formData, villaId: e.target.value, unitId: "" })} className="input">
-                    <option value="">Select a villa</option>
-                    {sortedVillas.map((villa) => (
-                      <option key={villa.id} value={villa.id}>
-                        {villa.villaNumber} {villa.block ? `(Block ${villa.block})` : ""} - {villa.ownerName}
-                      </option>
-                    ))}
-                  </select>
-                  {villas.length === 0 && <p className="text-sm text-brand-danger mt-1">No villas available. Please create villas first.</p>}
+                  <VillaTypeahead
+                    required
+                    value={formData.villaId}
+                    onChange={(villaId) => setFormData({ ...formData, villaId, unitId: "" })}
+                    placeholder="Search villa number or block…"
+                  />
                 </div>
 
                 <div>
@@ -147,7 +144,7 @@ export function UserFormModal({
                     className="input disabled:bg-surface-elevated"
                   >
                     <option value="">{formData.villaId ? "Select unit" : "Select a property first"}</option>
-                    {(villas.find((v) => v.id === formData.villaId)?.units ?? []).map((u) => (
+                    {units.map((u) => (
                       <option key={u.id} value={u.id}>{u.label} ({u.unitCode})</option>
                     ))}
                   </select>
@@ -173,7 +170,7 @@ export function UserFormModal({
           </div>
 
           <div className="flex gap-3">
-            <button type="submit" disabled={submitting || (isResidentLike(formData.role) && villas.length === 0)} className="btn btn-primary">
+            <button type="submit" disabled={submitting} className="btn btn-primary">
               {submitting ? (editingUser ? "Saving..." : "Creating...") : editingUser ? "Save changes" : "Create User"}
             </button>
             <button type="button" onClick={onClose} className="btn btn-ghost">Cancel</button>

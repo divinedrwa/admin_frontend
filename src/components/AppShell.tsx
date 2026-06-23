@@ -3,6 +3,7 @@
 import { Activity, CalendarDays, Menu } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { useApiHealth } from "@/hooks/useApiHealth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -26,6 +27,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, isLoading } = useAuth(true);
+  const { data: apiHealthy, isLoading: healthLoading, isError: healthError } = useApiHealth();
   const router = useRouter();
   const [platformView, setPlatformView] = useState<PlatformViewPayload | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -133,9 +135,30 @@ export function AppShell({
                     })}
                   </span>
                 </div>
-                <div className="hidden items-center gap-2 rounded-full border border-approved-solid/20 bg-approved-bg px-3 py-2 text-sm font-medium text-approved-fg sm:flex">
+                <div
+                  className={`hidden items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium sm:flex ${
+                    healthLoading
+                      ? "border-surface-border bg-surface text-fg-secondary"
+                      : apiHealthy && !healthError
+                        ? "border-approved-solid/20 bg-approved-bg text-approved-fg"
+                        : "border-denied-solid/20 bg-denied-bg text-denied-fg"
+                  }`}
+                  title={
+                    healthLoading
+                      ? "Checking API connectivity"
+                      : apiHealthy && !healthError
+                        ? "API health check passed"
+                        : "Cannot reach API — check connection or deployment"
+                  }
+                >
                   <Activity className="h-4 w-4" />
-                  <span>System online</span>
+                  <span>
+                    {healthLoading
+                      ? "Checking API…"
+                      : apiHealthy && !healthError
+                        ? "API online"
+                        : "API unreachable"}
+                  </span>
                 </div>
               </div>
             </div>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { apiSuper, SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
+import { apiSuper, SUPER_ADMIN_REFRESH_TOKEN_KEY, SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
 import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { enterPlatformView } from "@/lib/platformViewSession";
@@ -176,7 +176,12 @@ export default function SuperAdminConsolePage() {
   }, [router, loadSocieties, loadAppVersionConfigs]);
 
   function logout() {
+    const refreshToken = localStorage.getItem(SUPER_ADMIN_REFRESH_TOKEN_KEY);
+    if (refreshToken) {
+      apiSuper.post("/auth/logout", { refreshToken }).catch(() => {});
+    }
     localStorage.removeItem(SUPER_ADMIN_TOKEN_KEY);
+    localStorage.removeItem(SUPER_ADMIN_REFRESH_TOKEN_KEY);
     router.push("/super-admin/login");
   }
 

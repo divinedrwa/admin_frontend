@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
+  BellRing,
   Building2,
   CalendarDays,
   CarFront,
@@ -79,6 +80,7 @@ const linkSections: SidebarSection[] = [
       { href: "/resident-management", label: "Residents", icon: UserRoundCheck },
       { href: "/maintenance-management", label: "Maintenance", icon: HandCoins },
       { href: "/maintenance-billing", label: "Billing cycles", icon: ScrollText },
+      { href: "/maintenance-reminders", label: "Dues reminders", icon: BellRing },
       { href: "/payment-methods", label: "Payment methods", icon: CreditCard },
       { href: "/bank-accounts", label: "Bank accounts", icon: Building2 },
       { href: "/upi-payments", label: "UPI verification", icon: CreditCard },

@@ -1,9 +1,12 @@
 "use client";
 
 import { ShieldCheck } from "lucide-react";
+import { Suspense, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { Pagination } from "@/components/Pagination";
 import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { api } from "@/lib/api";
@@ -12,14 +15,59 @@ import { usePreApprovedVisitors } from "@/hooks/useVisitors";
 import { PreApprovedVisitor } from "@/types/visitor";
 
 export default function PreApprovedVisitorsPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell title="Pre-Approved Visitors">
+          <div className="loading-state">
+            <div className="loading-spinner w-10 h-10" />
+          </div>
+        </AppShell>
+      }
+    >
+      <PreApprovedVisitorsPageInner />
+    </Suspense>
+  );
+}
+
+function PreApprovedVisitorsPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const { data, isLoading: loading, error: queryError } = usePreApprovedVisitors();
-  const visitors = (data ?? []) as PreApprovedVisitor[];
-  const error = queryError ? String(queryError) : "";
   const { confirm, ConfirmUI } = useConfirm();
 
+  const initialOffset = Number(searchParams.get("offset")) || 0;
+  const queryParams = useMemo(
+    () => ({ limit: 50, offset: initialOffset }),
+    [initialOffset],
+  );
+
+  const { data, isLoading: loading, error: queryError } = usePreApprovedVisitors(queryParams);
+  const visitors = (data?.visitors ?? []) as PreApprovedVisitor[];
+  const pgMeta = {
+    total: data?.total ?? 0,
+    limit: data?.limit ?? 50,
+    offset: data?.offset ?? 0,
+  };
+  const error = queryError ? String(queryError) : "";
+
+  const handlePageChange = (newOffset: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newOffset > 0) params.set("offset", String(newOffset));
+    else params.delete("offset");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const handleDelete = async (id: string) => {
-    if (!(await confirm({ title: "Remove visitor", message: "Remove this pre-approved visitor?", confirmLabel: "Remove" }))) return;
+    if (
+      !(await confirm({
+        title: "Remove visitor",
+        message: "Remove this pre-approved visitor?",
+        confirmLabel: "Remove",
+      }))
+    ) {
+      return;
+    }
 
     try {
       await api.delete(`/pre-approved-visitors/${id}`);
@@ -55,37 +103,63 @@ export default function PreApprovedVisitorsPage() {
           <div className="empty-state">
             <span className="empty-state-icon">👥</span>
             <p className="empty-state-title">No pre-approved visitors found</p>
-            <p className="empty-state-text">Pre-approved visitors will appear here once residents add them.</p>
+            <p className="empty-state-text">
+              Pre-approved visitors will appear here once residents add them.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {visitors.map((visitor) => (
-              <div key={visitor.id} className="card">
-                <div className="card-body">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-fg-primary">{visitor.name}</h3>
-                    <p className="text-sm text-fg-secondary">{visitor.phone}</p>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {visitors.map((visitor) => (
+                <div key={visitor.id} className="card">
+                  <div className="card-body">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-fg-primary">{visitor.name}</h3>
+                        <p className="text-sm text-fg-secondary">{visitor.phone}</p>
+                      </div>
+                      <span className="badge badge-success">Approved</span>
+                    </div>
+                    <div className="space-y-2 text-sm mb-4">
+                      <p>
+                        <span className="text-fg-secondary">Villa:</span>{" "}
+                        <span className="font-medium">
+                          {visitor.villa?.villaNumber || "N/A"}
+                        </span>
+                      </p>
+                      <p>
+                        <span className="text-fg-secondary">Valid Until:</span>{" "}
+                        <span className="font-medium">
+                          {visitor.validUntil
+                            ? new Date(visitor.validUntil).toLocaleDateString()
+                            : "Indefinite"}
+                        </span>
+                      </p>
+                      {visitor.purpose && (
+                        <p>
+                          <span className="text-fg-secondary">Purpose:</span> {visitor.purpose}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(visitor.id)}
+                      className="btn btn-danger w-full text-sm"
+                    >
+                      Remove Approval
+                    </button>
                   </div>
-                  <span className="badge badge-success">
-                    Approved
-                  </span>
                 </div>
-                <div className="space-y-2 text-sm mb-4">
-                  <p><span className="text-fg-secondary">Villa:</span> <span className="font-medium">{visitor.villa?.villaNumber || "N/A"}</span></p>
-                  <p><span className="text-fg-secondary">Valid Until:</span> <span className="font-medium">{visitor.validUntil ? new Date(visitor.validUntil).toLocaleDateString() : "Indefinite"}</span></p>
-                  {visitor.purpose && <p><span className="text-fg-secondary">Purpose:</span> {visitor.purpose}</p>}
-                </div>
-                <button
-                  onClick={() => handleDelete(visitor.id)}
-                  className="btn btn-danger w-full text-sm"
-                >
-                  Remove Approval
-                </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {pgMeta.total > pgMeta.limit && (
+              <Pagination
+                total={pgMeta.total}
+                limit={pgMeta.limit}
+                offset={pgMeta.offset}
+                onPageChange={handlePageChange}
+              />
+            )}
+          </>
         )}
       </div>
       {ConfirmUI}

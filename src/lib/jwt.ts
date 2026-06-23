@@ -30,3 +30,21 @@ export function readSocietyIdFromToken(token: string | null): string {
   if (!payload) return "";
   return typeof payload.societyId === "string" ? payload.societyId.trim() : "";
 }
+
+/** Roles allowed to use the society admin web UI. */
+export const TENANT_ADMIN_ROLES = ["ADMIN", "RESIDENT_CUM_ADMIN"] as const;
+
+export type TenantAdminRole = (typeof TENANT_ADMIN_ROLES)[number];
+
+/** Read the `role` claim from a JWT. Returns "" if absent. */
+export function readRoleFromToken(token: string | null): string {
+  const payload = parseJwtPayload(token);
+  if (!payload) return "";
+  return typeof payload.role === "string" ? payload.role.trim() : "";
+}
+
+/** True when the token belongs to a society admin (not resident/guard/super). */
+export function isTenantAdminToken(token: string | null): boolean {
+  const role = readRoleFromToken(token);
+  return (TENANT_ADMIN_ROLES as readonly string[]).includes(role);
+}

@@ -5,15 +5,14 @@ import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useStaff } from "@/hooks/useStaff";
-import { useVillas } from "@/hooks/useVillas";
 import { Staff, StaffForm } from "@/types/staff";
-import { VillaOption } from "@/types/villa";
 
 export default function StaffPage() {
   const queryClient = useQueryClient();
@@ -40,15 +39,6 @@ export default function StaffPage() {
     }));
   }, [staffData?.staff]);
 
-  const { data: villaData } = useVillas();
-  const villas = useMemo(
-    () => sortByVillaNumber(
-      (villaData?.villas ?? []) as VillaOption[],
-      (v) => v.villaNumber,
-    ),
-    [villaData?.villas],
-  );
-
   const handleOpenForm = () => {
     setFormData({
       name: "",
@@ -62,15 +52,6 @@ export default function StaffPage() {
 
   const handleCloseForm = () => {
     setShowForm(false);
-  };
-
-  const toggleVilla = (villaId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      villaIds: prev.villaIds.includes(villaId)
-        ? prev.villaIds.filter(id => id !== villaId)
-        : [...prev.villaIds, villaId]
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -193,42 +174,19 @@ export default function StaffPage() {
 
               <div>
                 <label className="block text-sm font-medium text-fg-primary mb-2">
-                  Assign to Villas * (Select multiple)
+                  Assign to Villas *
                 </label>
-                <div className="border border-surface-border rounded p-3 max-h-60 overflow-y-auto bg-surface-background">
-                  {villas.length === 0 ? (
-                    <p className="text-sm text-fg-secondary">No villas available</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {villas.map((villa) => (
-                        <label
-                          key={villa.id}
-                          className="flex items-center space-x-3 p-2 hover:bg-surface-elevated rounded cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.villaIds.includes(villa.id)}
-                            onChange={() => toggleVilla(villa.id)}
-                            className="w-4 h-4 text-brand-primary"
-                          />
-                          <span className="text-sm">
-                            {villa.villaNumber}
-                            {villa.block ? ` (Block ${villa.block})` : ""} - {villa.ownerName}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-fg-secondary mt-1">
-                  Selected: {formData.villaIds.length} villa(s)
-                </p>
+                <VillaTypeahead
+                  multiple
+                  value={formData.villaIds}
+                  onChange={(villaIds) => setFormData((prev) => ({ ...prev, villaIds }))}
+                />
               </div>
 
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  disabled={submitting || villas.length === 0}
+                  disabled={submitting || formData.villaIds.length === 0}
                   className="btn btn-primary"
                 >
                   {submitting ? "Registering..." : "Register Staff"}

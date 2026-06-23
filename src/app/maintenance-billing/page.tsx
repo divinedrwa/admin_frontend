@@ -68,6 +68,8 @@ export default function MaintenanceBillingPage() {
   const [sortBy, setSortBy] = useState<string>("");
   const [residentRows, setResidentRows] = useState<ResidentRow[]>([]);
   const [residentsLoading, setResidentsLoading] = useState(false);
+  const [residentOffset, setResidentOffset] = useState(0);
+  const [residentPgMeta, setResidentPgMeta] = useState({ total: 0, limit: 50, offset: 0 });
   const [residentTotals, setResidentTotals] = useState<ResidentTotals>({
     totalExpected: 0,
     totalCollected: 0,
@@ -177,8 +179,11 @@ export default function MaintenanceBillingPage() {
     return () => controller.abort();
   }, [tab, loadAudit]);
 
-  const loadResidents = useCallback(async (signal?: AbortSignal) => {
-    const params: Record<string, string> = {};
+  const loadResidents = useCallback(async (signal?: AbortSignal, offset = residentOffset) => {
+    const params: Record<string, string | number> = {
+      limit: 50,
+      offset,
+    };
     if (filterMonth) params.cycleMonth = filterMonth;
     if (filterStatus) params.status = filterStatus;
     if (sortBy) params.sortBy = sortBy;
@@ -199,6 +204,11 @@ export default function MaintenanceBillingPage() {
         totalShortfall: Number(t.totalShortfall ?? 0),
         totalAdvanceCredit: Number(t.totalAdvanceCredit ?? 0),
       });
+      setResidentPgMeta({
+        total: Number(r.data.total ?? rows.length),
+        limit: Number(r.data.limit ?? 50),
+        offset: Number(r.data.offset ?? offset),
+      });
       setLastSyncedAt(new Date());
     } catch (error) {
       if ((error as { name?: string }).name === "CanceledError") return;
@@ -206,14 +216,18 @@ export default function MaintenanceBillingPage() {
     } finally {
       setResidentsLoading(false);
     }
+  }, [filterMonth, filterStatus, sortBy, residentOffset]);
+
+  useEffect(() => {
+    setResidentOffset(0);
   }, [filterMonth, filterStatus, sortBy]);
 
   useEffect(() => {
     if (tab !== "residents") return;
     const controller = new AbortController();
-    void loadResidents(controller.signal);
+    void loadResidents(controller.signal, residentOffset);
     return () => controller.abort();
-  }, [tab, loadResidents]);
+  }, [tab, loadResidents, residentOffset]);
 
   const cycleOptions = useMemo(() => cycles.map((c) => ({ id: c.id, label: `${c.cycleKey} · ${c.title}` })), [cycles]);
 
@@ -611,6 +625,8 @@ export default function MaintenanceBillingPage() {
             cycles={cycles}
             residentsLoading={residentsLoading}
             residentRows={residentRows}
+            residentPgMeta={residentPgMeta}
+            onResidentPageChange={(offset) => setResidentOffset(offset)}
           />
         )}
 

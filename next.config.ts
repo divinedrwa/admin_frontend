@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_API_URL?.trim()) {
+  throw new Error(
+    "NEXT_PUBLIC_API_URL is required for production builds (e.g. https://gatepass-v037.onrender.com/api).",
+  );
+}
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,

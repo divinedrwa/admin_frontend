@@ -3,9 +3,12 @@
 import { Briefcase, Clock3, LayoutDashboard, RefreshCw } from "lucide-react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
-import { api } from "@/lib/api";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  type FundTrendPoint,
+  useDashboard,
+} from "@/hooks/useDashboard";
 
 const fmtInr = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(
@@ -22,54 +25,6 @@ const STAT_ACCENTS = {
   yellow: { iconBg: "bg-pending-bg", badge: "bg-pending-bg text-pending-fg" },
   pink: { iconBg: "bg-denied-bg", badge: "bg-denied-bg text-denied-fg" },
 } as const;
-
-type CurrentMonthMaintenance = {
-  totalExpected: number;
-  totalCollected: number;
-  totalPending: number;
-  collectionRate: number;
-};
-
-type BillingResidentsTotals = {
-  totalExpected: number;
-  totalCollected: number;
-  totalShortfall: number;
-  totalAdvanceCredit: number;
-};
-
-type SocietyFundSnapshot = {
-  /** Cash on hand: maintenance cash + additional inflows − expenses. */
-  currentFundBalance: number;
-  /** Total inflow ever (maintenance + additional, both lifetime). */
-  allTimeCollected: number;
-  /** Total expense outflow ever. */
-  allTimeSpent: number;
-  additionalMergedInflowAllTime?: number;
-  additionalMergedInflowMonth?: number;
-  /** Cash flow this month (cash received + additional − expenses). */
-  monthNet: number;
-  /**
-   * Surplus residents have parked as advance credit toward future cycles.
-   * Already counted inside `currentFundBalance` (it really is cash in the
-   * bank); shown separately so admins can see "₹X is mine to spend, ₹Y
-   * already belongs to a future cycle".
-   */
-  totalAdvanceCredit?: number;
-};
-
-type FundTrendPoint = {
-  key: string;
-  label: string;
-  net: number;
-};
-
-// Narrow API response shapes for the count-card endpoints. Only the
-// length-bearing arrays are typed; the rest of each row is irrelevant for
-// this page so it stays as a record. Backend list endpoints return
-// `{ <domainKey>: [...], total?, limit?, ... }` after the pagination
-// rollout — see [src/lib/pagination.ts] in the backend.
-type VillasListResponse = { villas: Array<{ id: string }>; total?: number };
-type UsersListResponse = { users: Array<{ id: string }>; total?: number };
 
 function buildFundSparklinePath(points: FundTrendPoint[]) {
   if (points.length === 0) return "";
@@ -112,331 +67,30 @@ function ClockDisplay() {
 }
 
 export default function DashboardPage() {
-  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [failedEndpoints, setFailedEndpoints] = useState<string[]>([]);
+  const { data, isLoading: loading, isFetching, refetch, dataUpdatedAt } = useDashboard();
+  const [dismissedFails, setDismissedFails] = useState(false);
 
-  const [villaCount, setVillaCount] = useState(0);
-  const [residentCount, setResidentCount] = useState(0);
-  const [guardCount, setGuardCount] = useState(0);
-  const [maint, setMaint] = useState<CurrentMonthMaintenance | null>(null);
-  const [billingMaint, setBillingMaint] = useState<CurrentMonthMaintenance | null>(null);
-  const [fund, setFund] = useState<SocietyFundSnapshot | null>(null);
-  const [fundTrend, setFundTrend] = useState<FundTrendPoint[]>([]);
+  const lastSyncedAt = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
+  const loadError = data?.loadError ?? null;
+  const failedEndpoints = dismissedFails ? [] : (data?.failedEndpoints ?? []);
 
-  const [visitorTodayCount, setVisitorTodayCount] = useState(0);
-  const [parcelPendingCount, setParcelPendingCount] = useState(0);
-  const [complaintOpenCount, setComplaintOpenCount] = useState(0);
-  const [sosActiveCount, setSosActiveCount] = useState(0);
-
-  const [gates, setGates] = useState<
-    Array<{
-      id: string;
-      name: string;
-      isActive: boolean;
-      assignedGuard?: { name: string | null } | null;
-    }>
-  >([]);
-
-  const [billingSnippet, setBillingSnippet] = useState<{
-    cycleKey?: string | null;
-    status?: string | null;
-    paidUsersCount?: number;
-    pendingUsersCount?: number;
-  } | null>(null);
-
-  const [timeline, setTimeline] = useState<
-    Array<{ id: string; at: number; icon: string; text: string; tag: string; tagClass: string }>
-  >([]);
-
-  const [activeProjectCount, setActiveProjectCount] = useState(0);
-  const [projectOutstanding, setProjectOutstanding] = useState(0);
-
-  const [userStats, setUserStats] = useState<{
-    byRole: Record<string, { active: number; inactive: number }>;
-    totalActive: number;
-    totalInactive: number;
-  } | null>(null);
-
-  const abortRef = useRef<AbortController | null>(null);
-
-  const load = useCallback(async () => {
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-    const signal = ac.signal;
-
-    setLoadError(null);
-    setFailedEndpoints([]);
-    setLoading(true);
-    try {
-      const safeGet = async <T,>(request: Promise<T>) => {
-        try {
-          const data = await request;
-          return { ok: true as const, data };
-        } catch (error) {
-          return { ok: false as const, error };
-        }
-      };
-
-      const [
-        maintRes,
-        financialRes,
-        villasRes,
-        residentsRes,
-        guardsRes,
-        visitorsRes,
-        parcelsRes,
-        complaintsRes,
-        sosRes,
-        gatesRes,
-        billingRes,
-        noticesRes,
-        specialProjectsRes,
-        userStatsRes,
-      ] = await Promise.all([
-        api.get("/maintenance/dashboard", { signal }).catch(() => null),
-        api.get("/maintenance-management/financial-dashboard", { signal }).catch(() => null),
-        safeGet(api.get<VillasListResponse>("/villas", { signal })),
-        safeGet(api.get<UsersListResponse>("/users", { params: { role: "RESIDENT", isActive: "true" }, signal })),
-        safeGet(api.get<UsersListResponse>("/users", { params: { role: "GUARD", isActive: "true" }, signal })),
-        api.get("/visitors", { signal }).catch(() => null),
-        api.get("/parcels", { signal }).catch(() => null),
-        api.get("/complaints", { signal }).catch(() => null),
-        api.get("/sos-alerts/active", { signal }).catch(() => null),
-        api.get("/gates", { signal }).catch(() => null),
-        api.get("/v1/admin/cycles", { signal }).catch(() => null),
-        api.get("/notices", { signal }).catch(() => null),
-        api.get("/special-projects?status=ACTIVE&limit=200", { signal }).catch(() => null),
-        api.get("/users/stats", { signal }).catch(() => null),
-      ]);
-
-      if (signal.aborted) return;
-
-      const silentFails: string[] = [];
-      if (!maintRes) silentFails.push("maintenance");
-      if (!financialRes) silentFails.push("finance");
-      if (!visitorsRes) silentFails.push("visitors");
-      if (!parcelsRes) silentFails.push("parcels");
-      if (!complaintsRes) silentFails.push("complaints");
-      if (!sosRes) silentFails.push("SOS alerts");
-      if (!gatesRes) silentFails.push("gates");
-      if (!billingRes) silentFails.push("billing");
-      if (!noticesRes) silentFails.push("notices");
-      if (silentFails.length > 0) setFailedEndpoints(silentFails);
-
-      const m = maintRes?.data?.currentMonth as CurrentMonthMaintenance | undefined;
-      setMaint(m ?? null);
-      const f = financialRes?.data?.fund as SocietyFundSnapshot | undefined;
-      setFund(f ?? null);
-
-      // Build 6-month trend from the maintenance dashboard's monthWise data
-      // (already returned in the initial call) instead of making 6 extra API
-      // requests to financial-dashboard.
-      const monthWise = (maintRes?.data?.monthWise ?? []) as Array<{
-        month: number;
-        year: number;
-        monthName: string;
-        net: number;
-      }>;
-      // monthWise comes newest-first; reverse for left-to-right chronological.
-      const trendPoints: FundTrendPoint[] = [...monthWise]
-        .reverse()
-        .map((mw) => {
-          const net = typeof mw.net === "number" && Number.isFinite(mw.net) ? mw.net : 0;
-          return {
-            key: `${mw.year}-${String(mw.month).padStart(2, "0")}`,
-            label: mw.monthName,
-            net,
-          };
-        });
-      setFundTrend(trendPoints);
-
-      const countErrors: string[] = [];
-
-      // `safeGet(api.get<T>(...))` returns `{ ok, data: AxiosResponse<T> }`,
-      // so the typed body lives at `.data.data.<key>`.
-      if (villasRes.ok && Array.isArray(villasRes.data.data?.villas)) {
-        const vd = villasRes.data.data;
-        setVillaCount(typeof vd.total === "number" ? vd.total : vd.villas.length);
-      } else {
-        countErrors.push("villas");
-      }
-      if (residentsRes.ok && Array.isArray(residentsRes.data.data?.users)) {
-        const rd = residentsRes.data.data;
-        setResidentCount(typeof rd.total === "number" ? rd.total : rd.users.length);
-      } else {
-        countErrors.push("residents");
-      }
-      if (guardsRes.ok && Array.isArray(guardsRes.data.data?.users)) {
-        const gd = guardsRes.data.data;
-        setGuardCount(typeof gd.total === "number" ? gd.total : gd.users.length);
-      } else {
-        countErrors.push("guards");
-      }
-      if (countErrors.length > 0) {
-        setLoadError(
-          `Some live counts could not be refreshed (${countErrors.join(
-            ", ",
-          )}). Please re-login and verify society selection.`,
-        );
-      }
-
-      // Use server-side counts for accurate stat cards (arrays are capped).
-      const visitorsData = visitorsRes?.data ?? {};
-      const visitors = (visitorsData.visitors ?? []) as Array<{
-        id: string;
-        checkInAt: string;
-        name: string;
-      }>;
-      setVisitorTodayCount(typeof visitorsData.todayCount === "number" ? visitorsData.todayCount : visitors.length);
-
-      const parcelsData = parcelsRes?.data ?? {};
-      const parcels = (parcelsData.parcels ?? []) as Array<{
-        id: string;
-        receivedAt: string;
-        description: string;
-        status: string;
-        villa?: { villaNumber?: string };
-      }>;
-      setParcelPendingCount(typeof parcelsData.pendingCount === "number" ? parcelsData.pendingCount : parcels.filter((p) => p.status !== "DELIVERED" && p.status !== "COLLECTED").length);
-
-      const complaintsData = complaintsRes?.data ?? {};
-      const complaints = (complaintsData.complaints ?? []) as Array<{
-        id: string;
-        createdAt: string;
-        title: string;
-        status: string;
-      }>;
-      setComplaintOpenCount(typeof complaintsData.openCount === "number" ? complaintsData.openCount : complaints.filter((c) => c.status !== "CLOSED").length);
-
-      const sosList = (sosRes?.data?.alerts ?? []) as unknown[];
-      setSosActiveCount(sosList.length);
-
-      const g = gatesRes?.data?.gates as typeof gates | undefined;
-      setGates(Array.isArray(g) ? g : []);
-
-      const cycles = billingRes?.data?.cycles as Array<{
-        cycleKey: string;
-        status: string;
-        paidUsersCount: number;
-        pendingUsersCount: number;
-      }> | undefined;
-      if (Array.isArray(cycles) && cycles[0]) {
-        const cycleKey = cycles[0].cycleKey;
-        const residentPayRes = await api
-          .get("/v1/admin/residents/payments", { params: { cycleMonth: cycleKey }, signal })
-          .catch(() => null);
-        const t = residentPayRes?.data?.totals as BillingResidentsTotals | undefined;
-        if (t) {
-          const totalExpected = Number(t.totalExpected ?? 0);
-          const totalCollected = Number(t.totalCollected ?? 0);
-          const totalPending = Math.max(0, totalExpected - totalCollected);
-          const collectionRate =
-            totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0;
-          setBillingMaint({
-            totalExpected,
-            totalCollected,
-            totalPending,
-            collectionRate,
-          });
-        } else {
-          setBillingMaint(null);
-        }
-        setBillingSnippet({
-          cycleKey,
-          status: cycles[0].status,
-          paidUsersCount: cycles[0].paidUsersCount,
-          pendingUsersCount: cycles[0].pendingUsersCount,
-        });
-      } else {
-        setBillingSnippet(null);
-        setBillingMaint(null);
-      }
-
-      const activities: typeof timeline = [];
-      const vin = visitors.slice(0, 40);
-      for (const v of vin) {
-        activities.push({
-          id: `v-${v.id}`,
-          at: new Date(v.checkInAt).getTime(),
-          icon: "👋",
-          text: `Visitor checked in · ${v.name}`,
-          tag: "visitor",
-          tagClass: "badge-primary",
-        });
-      }
-
-      const par = parcels.slice(0, 40);
-      for (const p of par) {
-        activities.push({
-          id: `p-${p.id}`,
-          at: new Date(p.receivedAt).getTime(),
-          icon: "📦",
-          text: `Parcel · Villa ${p.villa?.villaNumber ?? "?"} · ${String(p.description).slice(0, 48)}`,
-          tag: "parcel",
-          tagClass: "badge-warning",
-        });
-      }
-
-      const comp = complaints.slice(0, 40);
-      for (const c of comp) {
-        activities.push({
-          id: `c-${c.id}`,
-          at: new Date(c.createdAt).getTime(),
-          icon: "⚠️",
-          text: `${c.status}: ${c.title}`,
-          tag: "complaint",
-          tagClass: c.status === "CLOSED" ? "badge-success" : "badge-warning",
-        });
-      }
-
-      const noticeList = (noticesRes?.data?.notices ?? []) as Array<{ id: string; createdAt: string; title: string }>;
-      for (const n of noticeList.slice(0, 8)) {
-        activities.push({
-          id: `n-${n.id}`,
-          at: new Date(n.createdAt).getTime(),
-          icon: "📌",
-          text: `Notice: ${n.title}`,
-          tag: "notice",
-          tagClass: "badge-success",
-        });
-      }
-
-      // Special Projects
-      const spList = (specialProjectsRes?.data?.projects ?? []) as Array<{
-        id: string; totalCollected: number; targetAmount: number;
-      }>;
-      setActiveProjectCount(spList.length);
-      const totalOutstanding = spList.reduce(
-        (sum, p) => sum + Math.max(0, (p.targetAmount ?? 0) - (p.totalCollected ?? 0)),
-        0,
-      );
-      setProjectOutstanding(totalOutstanding);
-
-      // User stats
-      const us = userStatsRes?.data as typeof userStats | undefined;
-      setUserStats(us && typeof us.totalActive === "number" ? us : null);
-
-      activities.sort((a, b) => b.at - a.at);
-      setTimeline(activities.slice(0, 10));
-      setLastSyncedAt(new Date());
-    } catch {
-      setLoadError("Some dashboard figures could not be loaded.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-    const interval = setInterval(() => void load(), 60_000);
-    return () => {
-      clearInterval(interval);
-      abortRef.current?.abort();
-    };
-  }, [load]);
+  const villaCount = data?.villaCount ?? 0;
+  const residentCount = data?.residentCount ?? 0;
+  const guardCount = data?.guardCount ?? 0;
+  const maint = data?.maint ?? null;
+  const billingMaint = data?.billingMaint ?? null;
+  const fund = data?.fund ?? null;
+  const fundTrend = data?.fundTrend ?? [];
+  const visitorTodayCount = data?.visitorTodayCount ?? 0;
+  const parcelPendingCount = data?.parcelPendingCount ?? 0;
+  const complaintOpenCount = data?.complaintOpenCount ?? 0;
+  const sosActiveCount = data?.sosActiveCount ?? 0;
+  const gates = data?.gates ?? [];
+  const billingSnippet = data?.billingSnippet ?? null;
+  const timeline = data?.timeline ?? [];
+  const activeProjectCount = data?.activeProjectCount ?? 0;
+  const projectOutstanding = data?.projectOutstanding ?? 0;
+  const userStats = data?.userStats ?? null;
 
   const stats = useMemo(() => {
     const maintenanceView = billingMaint ?? maint;
@@ -581,7 +235,7 @@ export default function DashboardPage() {
         {failedEndpoints.length > 0 && !loadError ? (
           <div className="flex items-center justify-between rounded-xl border border-pending-bg bg-pending-bg px-4 py-3 text-sm text-pending-fg">
             <span>Some data could not be loaded ({failedEndpoints.join(", ")}). Try refreshing.</span>
-            <button type="button" onClick={() => setFailedEndpoints([])} className="ml-3 shrink-0 font-semibold hover:opacity-80">Dismiss</button>
+            <button type="button" onClick={() => setDismissedFails(true)} className="ml-3 shrink-0 font-semibold hover:opacity-80">Dismiss</button>
           </div>
         ) : null}
 
@@ -594,12 +248,12 @@ export default function DashboardPage() {
             <>
               <button
                 type="button"
-                disabled={loading}
-                onClick={() => void load()}
+                disabled={loading || isFetching}
+                onClick={() => void refetch()}
                 className="btn btn-primary gap-2 px-4 py-3 text-sm font-semibold"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                {loading ? "Refreshing..." : "Refresh data"}
+                <RefreshCw className={`h-4 w-4 ${loading || isFetching ? "animate-spin" : ""}`} />
+                {loading || isFetching ? "Refreshing..." : "Refresh data"}
               </button>
               <ClockDisplay />
             </>

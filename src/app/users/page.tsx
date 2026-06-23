@@ -11,7 +11,6 @@ import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { User, UserForm } from "@/types/user";
-import { VillaOption } from "@/types/villa";
 import { UserFormModal } from "./components/UserFormModal";
 import { UsersTable } from "./components/UsersTable";
 import { CsvImportExport } from "./components/CsvImportExport";
@@ -19,11 +18,6 @@ import { BulkSelectionToolbar } from "./components/BulkSelectionToolbar";
 
 function isResidentLike(role: string): boolean {
   return role === "RESIDENT" || role === "ADMIN" || role === "RESIDENT_CUM_ADMIN";
-}
-
-function firstUnitIdForVilla(villas: VillaOption[], villaId: string): string {
-  const list = villas.find((v) => v.id === villaId)?.units ?? [];
-  return list[0]?.id ?? "";
 }
 
 const EMPTY_FORM: UserForm = {
@@ -44,7 +38,6 @@ function UsersPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
-  const [villas, setVillas] = useState<VillaOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<UserForm>({ ...EMPTY_FORM });
@@ -82,21 +75,13 @@ function UsersPageInner() {
     loadUsers(undefined, newOffset);
   };
 
-  const loadVillas = (signal?: AbortSignal) => {
-    api.get("/villas", { signal })
-      .then((response) => setVillas(response.data.villas ?? []))
-      .catch((error: unknown) => { if (signal?.aborted) return; showToast(parseApiError(error, "Failed to load villas").message, "error"); });
-  };
-
   useEffect(() => {
     const ac = new AbortController();
     abortRef.current = ac;
     loadUsers(ac.signal);
-    loadVillas(ac.signal);
     return () => ac.abort();
   }, [loadUsers]);
 
-  const sortedVillas = useMemo(() => sortByVillaNumber(villas, (v) => v.villaNumber), [villas]);
   const sortedUsers = useMemo(() => sortByVillaNumber(users, (u) => u.villa?.villaNumber ?? null), [users]);
   const residentsList = users.filter((u) => isResidentLike(u.role));
 
@@ -109,7 +94,7 @@ function UsersPageInner() {
       role: user.role, residentType: user.residentType ?? "OWNER",
       maintenanceBillingRole: user.maintenanceBillingRole ?? "PRIMARY",
       villaId: user.villaId || "",
-      unitId: user.unitId ?? user.linkedUnitId ?? (user.villaId ? firstUnitIdForVilla(villas, user.villaId) : ""),
+      unitId: user.unitId ?? user.linkedUnitId ?? "",
       moveInDate: user.moveInDate ? user.moveInDate.split("T")[0] : new Date().toISOString().split("T")[0],
       isActive: user.isActive,
     });
@@ -260,8 +245,6 @@ function UsersPageInner() {
             formData={formData}
             setFormData={setFormData}
             editingUser={editingUser}
-            villas={villas}
-            sortedVillas={sortedVillas}
             submitting={submitting}
             onSubmit={handleSubmit}
             onClose={handleCloseForm}

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { api, setTenantSocietyIdFromLogin } from "@/lib/api";
 import { SUPER_ADMIN_TOKEN_KEY } from "@/lib/apiSuper";
+import { isTenantAdminToken } from "@/lib/jwt";
 import { showToast } from "@/components/Toast";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { LOGIN_SUCCESS_TOAST } from "@/lib/branding";
@@ -119,7 +120,12 @@ function LoginPageInner() {
         username: emailOrUsername,
         password,
       });
-      localStorage.setItem("token", response.data.token);
+      const token = response.data.token as string | undefined;
+      if (!token || !isTenantAdminToken(token)) {
+        showToast("This account cannot access the admin dashboard.", "error");
+        return;
+      }
+      localStorage.setItem("token", token);
       if (response.data.refreshToken) {
         localStorage.setItem("refresh_token", response.data.refreshToken);
       }

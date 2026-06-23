@@ -8,7 +8,7 @@ import { parseApiError } from "@/utils/errorHandler";
 const API_BASE_URL = getResolvedApiBaseUrl();
 
 export const SUPER_ADMIN_TOKEN_KEY = "super_admin_token";
-const SUPER_ADMIN_REFRESH_TOKEN_KEY = "super_admin_refresh_token";
+export const SUPER_ADMIN_REFRESH_TOKEN_KEY = "super_admin_refresh_token";
 
 export const apiSuper = axios.create({
   baseURL: API_BASE_URL,

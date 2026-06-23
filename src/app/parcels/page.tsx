@@ -10,12 +10,10 @@ import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
-import { sortByVillaNumber } from "@/utils/villaSort";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useParcels } from "@/hooks/useParcels";
-import { useVillas } from "@/hooks/useVillas";
+import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { Parcel } from "@/types/parcel";
-import { VillaOption } from "@/types/villa";
 
 export default function ParcelsPage() {
   return (
@@ -66,15 +64,6 @@ function ParcelsPageInner() {
     limit: parcelData?.limit ?? 50,
     offset: parcelData?.offset ?? 0,
   };
-
-  const { data: villaData } = useVillas();
-  const villas = useMemo(
-    () => sortByVillaNumber(
-      (villaData?.villas ?? []) as VillaOption[],
-      (v) => v.villaNumber,
-    ),
-    [villaData?.villas],
-  );
 
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -215,19 +204,11 @@ function ParcelsPageInner() {
                   <label className="block text-sm font-medium text-fg-primary mb-1">
                     Villa *
                   </label>
-                  <select
+                  <VillaTypeahead
                     required
                     value={formData.villaId}
-                    onChange={(e) => setFormData({ ...formData, villaId: e.target.value })}
-                    className="input"
-                  >
-                    <option value="">Select villa</option>
-                    {villas.map((villa) => (
-                      <option key={villa.id} value={villa.id}>
-                        Villa {villa.villaNumber} {villa.block && `- Block ${villa.block}`} ({villa.ownerName})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(villaId) => setFormData({ ...formData, villaId })}
+                  />
                 </div>
               )}
               {editingParcel && (

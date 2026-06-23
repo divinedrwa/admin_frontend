@@ -5,6 +5,9 @@ import { Visitor } from "@/types/visitor";
 export type VisitorsResponse = {
   visitors: Visitor[];
   total?: number;
+  limit?: number;
+  offset?: number;
+  todayCount?: number;
 };
 
 export function useVisitors(
@@ -16,17 +19,33 @@ export function useVisitors(
     queryKey: ["visitors", filter ?? "all", params],
     queryFn: async () => {
       const res = await api.get<VisitorsResponse>(endpoint, { params });
-      return res.data;
+      const data = res.data;
+      return {
+        visitors: data.visitors ?? [],
+        total: typeof data.total === "number" ? data.total : undefined,
+        limit: typeof data.limit === "number" ? data.limit : (params?.limit as number | undefined),
+        offset: typeof data.offset === "number" ? data.offset : (params?.offset as number | undefined),
+        todayCount: typeof data.todayCount === "number" ? data.todayCount : undefined,
+      };
     },
   });
 }
 
-export function usePreApprovedVisitors() {
+export function usePreApprovedVisitors(params?: { limit?: number; offset?: number }) {
+  const limit = params?.limit ?? 50;
+  const offset = params?.offset ?? 0;
   return useQuery({
-    queryKey: ["preApprovedVisitors"],
+    queryKey: ["preApprovedVisitors", { limit, offset }],
     queryFn: async () => {
-      const res = await api.get("/pre-approved-visitors");
-      return res.data.visitors ?? res.data;
+      const res = await api.get("/pre-approved-visitors", {
+        params: { limit, offset },
+      });
+      return {
+        visitors: res.data.visitors ?? [],
+        total: typeof res.data.total === "number" ? res.data.total : 0,
+        limit: typeof res.data.limit === "number" ? res.data.limit : limit,
+        offset: typeof res.data.offset === "number" ? res.data.offset : offset,
+      };
     },
   });
 }

@@ -1,17 +1,15 @@
 "use client";
 
 import { Link2 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
-import { sortByVillaNumber } from "@/utils/villaSort";
 import { parseApiError } from "@/utils/errorHandler";
 import { useInvitations } from "@/hooks/useInvitations";
-import { useVillas } from "@/hooks/useVillas";
-import { VillaOption } from "@/types/villa";
 
 export default function InvitationsAdminPage() {
   const queryClient = useQueryClient();
@@ -25,15 +23,6 @@ export default function InvitationsAdminPage() {
 
   const { data: invitationData, isLoading: loading } = useInvitations();
   const rows = invitationData?.invitations ?? [];
-
-  const { data: villaData } = useVillas();
-  const villas = useMemo(
-    () => sortByVillaNumber(
-      (villaData?.villas ?? []) as VillaOption[],
-      (v) => v.villaNumber,
-    ),
-    [villaData?.villas],
-  );
 
   const acceptBase =
     typeof window !== "undefined" ? `${window.location.origin}/invite/accept` : "";
@@ -132,23 +121,12 @@ export default function InvitationsAdminPage() {
               {(role === "RESIDENT" || role === "RESIDENT_CUM_ADMIN") ? (
                 <div className="space-y-2">
                   <p>Optional: attach a villa so the resident does not need to enter an id at signup.</p>
-                  {villas.length > 0 ? (
-                    <select
-                      className="input max-w-md"
-                      value={selectedVillaId}
-                      onChange={(e) => setSelectedVillaId(e.target.value)}
-                    >
-                      <option value="">No villa (they can pick at signup if allowed)</option>
-                      {villas.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.villaNumber}
-                          {v.block ? ` (${v.block})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-pending-fg">No villas loaded — add villas first.</p>
-                  )}
+                  <VillaTypeahead
+                    value={selectedVillaId}
+                    onChange={(id) => setSelectedVillaId(id)}
+                    placeholder="No villa (optional — search to attach)"
+                    className="max-w-md"
+                  />
                 </div>
               ) : (
                 <p>Villa attachment applies only to resident invitations.</p>

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -13,9 +14,7 @@ import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useVehicles } from "@/hooks/useVehicles";
-import { useVillas } from "@/hooks/useVillas";
 import { Vehicle, VehicleForm } from "@/types/vehicle";
-import { VillaOption } from "@/types/villa";
 
 function formatVehicleType(vehicleType: Vehicle["vehicleType"]): string {
   const raw = typeof vehicleType === "string" ? vehicleType.trim() : "";
@@ -80,15 +79,6 @@ function VehiclesPageInner() {
     offset: vehicleData?.offset ?? 0,
   };
 
-  const { data: villaData } = useVillas();
-  const villas = useMemo(
-    () => sortByVillaNumber(
-      (villaData?.villas ?? []) as VillaOption[],
-      (v) => v.villaNumber,
-    ),
-    [villaData?.villas],
-  );
-
   const handlePageChange = (newOffset: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newOffset > 0) params.set("offset", String(newOffset));
@@ -119,17 +109,13 @@ function VehiclesPageInner() {
   const handleOpenForm = (vehicle?: Vehicle) => {
     if (vehicle) {
       setEditingVehicle(vehicle);
-      // Find the villaId from the villas list by matching villaNumber + block
-      const matchedVilla = villas.find(
-        (v) => v.villaNumber === vehicle.villa.villaNumber && v.block === vehicle.villa.block,
-      );
       setFormData({
         vehicleNumber: vehicle.vehicleNumber,
         vehicleType: (vehicle.vehicleType as VehicleForm["vehicleType"]) || "FOUR_WHEELER",
         model: vehicle.model && vehicle.model !== "Unknown" ? vehicle.model : "",
         color: vehicle.color && vehicle.color !== "Unknown" ? vehicle.color : "",
         parkingSlot: vehicle.parkingSlot || "",
-        villaId: matchedVilla?.id ?? "",
+        villaId: "",
       });
     } else {
       setEditingVehicle(null);
@@ -274,19 +260,11 @@ function VehiclesPageInner() {
                     <label className="block text-sm font-medium text-fg-primary mb-1">
                       Villa *
                     </label>
-                    <select
+                    <VillaTypeahead
                       required
                       value={formData.villaId}
-                      onChange={(e) => setFormData({ ...formData, villaId: e.target.value })}
-                      className="input"
-                    >
-                      <option value="">Select villa</option>
-                      {villas.map((villa) => (
-                        <option key={villa.id} value={villa.id}>
-                          {villa.villaNumber} {villa.block ? `(Block ${villa.block})` : ""} - {villa.ownerName}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(villaId) => setFormData({ ...formData, villaId })}
+                    />
                   </div>
                 )}
 

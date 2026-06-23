@@ -1,17 +1,15 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
-import { sortByVillaNumber } from "@/utils/villaSort";
 import { useSosAlerts } from "@/hooks/useSosAlerts";
-import { useVillas } from "@/hooks/useVillas";
-import { VillaOption } from "@/types/villa";
 
 export default function SOSAlertsPage() {
   const queryClient = useQueryClient();
@@ -28,15 +26,6 @@ export default function SOSAlertsPage() {
   const queryFilter = filter === "active" ? "active" : "all";
   const { data: alertData, isLoading: loading } = useSosAlerts(queryFilter, { refetchInterval: 30000 });
   const alerts = alertData?.alerts ?? [];
-
-  const { data: villaData } = useVillas();
-  const villas = useMemo(
-    () => sortByVillaNumber(
-      (villaData?.villas ?? []) as VillaOption[],
-      (v) => v.villaNumber,
-    ),
-    [villaData?.villas],
-  );
 
   const handleOpenForm = () => {
     setFormData({
@@ -245,19 +234,11 @@ export default function SOSAlertsPage() {
                 <label className="block text-sm font-medium text-fg-primary mb-1">
                   Villa *
                 </label>
-                <select
+                <VillaTypeahead
                   required
                   value={formData.villaId}
-                  onChange={(e) => setFormData({ ...formData, villaId: e.target.value })}
-                  className="input"
-                >
-                  <option value="">Select villa</option>
-                  {villas.map((villa) => (
-                    <option key={villa.id} value={villa.id}>
-                      Villa {villa.villaNumber} {villa.block && `- Block ${villa.block}`} ({villa.ownerName})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(villaId) => setFormData({ ...formData, villaId })}
+                />
               </div>
 
               <div>

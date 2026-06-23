@@ -1,5 +1,6 @@
 "use client";
 
+import { Pagination } from "@/components/Pagination";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
@@ -17,6 +18,8 @@ export interface ResidentsTabProps {
   cycles: BillingCycleRow[];
   residentsLoading: boolean;
   residentRows: ResidentRow[];
+  residentPgMeta: { total: number; limit: number; offset: number };
+  onResidentPageChange: (offset: number) => void;
 }
 
 export function ResidentsTab({
@@ -30,6 +33,8 @@ export function ResidentsTab({
   cycles,
   residentsLoading,
   residentRows,
+  residentPgMeta,
+  onResidentPageChange,
 }: ResidentsTabProps) {
   return (
     <div className="space-y-4">
@@ -137,6 +142,14 @@ export function ResidentsTab({
           </tbody>
         </table>
       </div>
+      {residentPgMeta.total > residentPgMeta.limit && (
+        <Pagination
+          total={residentPgMeta.total}
+          limit={residentPgMeta.limit}
+          offset={residentPgMeta.offset}
+          onPageChange={onResidentPageChange}
+        />
+      )}
     </div>
   );
 }

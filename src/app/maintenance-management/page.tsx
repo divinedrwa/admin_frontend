@@ -2,12 +2,18 @@
 
 import { Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
-import { sortByVillaNumber } from "@/utils/villaSort";
+import {
+  useBillingCycles,
+  useFinancialYears,
+  useMaintenanceGrid,
+} from "@/hooks/useMaintenanceManagement";
 import {
   MaintenanceStatsCards,
   MaintenanceTable,
@@ -20,41 +26,18 @@ import {
 import type {
   PaymentMode,
   PaymentStatus,
-  FinancialYear,
-  CycleRow,
-  VillaBasic,
-  GridSummary,
   ResidentRow,
-  GridCycleInfo,
   PaymentFormState,
   RowEditState,
 } from "./components";
 
-type BillingCycleApiRow = {
-  id: string;
-  financialYearId?: string | null;
-  cycleKey: string;
-  title: string;
-  paymentEndDate: string;
-  status: string;
-};
-
 export default function MaintenanceManagementPage() {
-  const [loading, setLoading] = useState(false);
-  const [gridLoading, setGridLoading] = useState(false);
-  const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
+  const queryClient = useQueryClient();
+  const [actionLoading, setActionLoading] = useState(false);
   const [selectedFinancialYearId, setSelectedFinancialYearId] = useState("");
-  const [cycles, setCycles] = useState<CycleRow[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState("");
-  const [selectedMaintenanceCycleId, setSelectedMaintenanceCycleId] = useState("");
-
-  const [villas, setVillas] = useState<VillaBasic[]>([]);
   const [selectedVillaId, setSelectedVillaId] = useState("");
   const [customAmount, setCustomAmount] = useState("");
-
-  const [summary, setSummary] = useState<GridSummary | null>(null);
-  const [residents, setResidents] = useState<ResidentRow[]>([]);
-  const [gridCycle, setGridCycle] = useState<GridCycleInfo | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | PaymentStatus | "EXCLUDED">("all");
   const [search, setSearch] = useState("");
 
@@ -83,9 +66,42 @@ export default function MaintenanceManagementPage() {
     remarks: "",
   });
 
+  const { data: financialYears = [], isLoading: fyLoading } = useFinancialYears();
+  const { data: cycles = [] } = useBillingCycles(selectedFinancialYearId);
+  const {
+    data: gridData,
+    isLoading: gridLoading,
+    isFetching: gridFetching,
+  } = useMaintenanceGrid(selectedCycleId);
+
+  const selectedMaintenanceCycleId = gridData?.maintenanceCycleId ?? "";
+  const summary = gridData?.summary ?? null;
+  const residents = gridData?.residents ?? [];
+  const loading = actionLoading || fyLoading;
+
+  useEffect(() => {
+    if (financialYears.length > 0 && !selectedFinancialYearId) {
+      setSelectedFinancialYearId(financialYears[0].id);
+    }
+  }, [financialYears, selectedFinancialYearId]);
+
+  useEffect(() => {
+    if (cycles.length > 0) {
+      setSelectedCycleId((prev) =>
+        prev && cycles.some((c) => c.billingCycleId === prev) ? prev : cycles[0]?.billingCycleId ?? "",
+      );
+    } else {
+      setSelectedCycleId("");
+    }
+  }, [cycles]);
+
+  const invalidateGrid = () => {
+    void queryClient.invalidateQueries({ queryKey: ["maintenanceGrid", selectedCycleId] });
+  };
+
   const selectedCycle = useMemo(
     () => cycles.find((c) => c.billingCycleId === selectedCycleId) ?? null,
-    [cycles, selectedCycleId]
+    [cycles, selectedCycleId],
   );
 
   const filteredResidents = useMemo(() => {
@@ -98,118 +114,11 @@ export default function MaintenanceManagementPage() {
     if (search.trim()) {
       const q = search.toLowerCase();
       rows = rows.filter(
-        (r) => r.villaNumber.toLowerCase().includes(q) || r.ownerName.toLowerCase().includes(q)
+        (r) => r.villaNumber.toLowerCase().includes(q) || r.ownerName.toLowerCase().includes(q),
       );
     }
     return rows;
   }, [residents, filterStatus, search]);
-
-  async function loadFinancialYears() {
-    const r = await api.get("/v1/admin/financial-years");
-    const rows: FinancialYear[] = r.data.financialYears ?? [];
-    setFinancialYears(rows);
-    if (rows.length > 0) {
-      setSelectedFinancialYearId((prev) => prev || rows[0].id);
-    }
-  }
-
-  async function loadCycles(fyId: string) {
-    if (!fyId) {
-      setCycles([]);
-      setSelectedCycleId("");
-      return;
-    }
-    const r = await api.get("/v1/admin/cycles");
-    const list: CycleRow[] = ((r.data.cycles ?? []) as BillingCycleApiRow[])
-      .filter((c) => c.financialYearId === fyId)
-      .map((c) => {
-        const m = /^(\d{4})-(\d{2})$/.exec(c.cycleKey ?? "");
-        const periodYear = m ? Number(m[1]) : new Date(c.paymentEndDate).getFullYear();
-        const periodMonth = m ? Number(m[2]) : new Date(c.paymentEndDate).getMonth() + 1;
-        return {
-          billingCycleId: c.id,
-          cycleKey: c.cycleKey,
-          title: c.title,
-          periodMonth,
-          periodYear,
-          dueDate: c.paymentEndDate,
-          status: c.status,
-        } as CycleRow;
-      })
-      .sort((a: CycleRow, b: CycleRow) => {
-        if (a.periodYear !== b.periodYear) return a.periodYear - b.periodYear;
-        return a.periodMonth - b.periodMonth;
-      });
-    setCycles(list);
-    setSelectedCycleId((prev) =>
-      prev && list.some((c) => c.billingCycleId === prev) ? prev : list[0]?.billingCycleId ?? ""
-    );
-  }
-
-  async function loadGrid(billingCycleId: string) {
-    if (!billingCycleId) {
-      setSummary(null);
-      setResidents([]);
-      setGridCycle(null);
-      setSelectedMaintenanceCycleId("");
-      return;
-    }
-    const sync = await api.post(
-      `/maintenance-management/collection/billing-cycles/${billingCycleId}/sync`
-    );
-    const maintenanceCycleId = sync.data.maintenanceCollectionCycleId as string;
-    setSelectedMaintenanceCycleId(maintenanceCycleId);
-    const r = await api.get(`/maintenance-management/collection/cycles/${maintenanceCycleId}/grid`);
-    setSummary(r.data.summary ?? null);
-    setResidents(
-      sortByVillaNumber(
-        (r.data.villaPayments ?? []) as ResidentRow[],
-        (row) => row.villaNumber,
-      ),
-    );
-    const c = r.data.cycle;
-    setGridCycle(
-      c && typeof c.id === "string" && typeof c.status === "string"
-        ? { id: c.id, status: c.status, title: c.title }
-        : null
-    );
-  }
-
-  async function loadVillas() {
-    const r = await api.get("/villas");
-    const list = sortByVillaNumber(
-      (r.data.villas ?? []) as VillaBasic[],
-      (v) => v.villaNumber,
-    );
-    setVillas(list);
-    if (list.length > 0) {
-      setSelectedVillaId((prev) => prev || list[0].id);
-    }
-  }
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([loadFinancialYears(), loadVillas()])
-      .catch(() => showToast("Failed to load maintenance setup", "error"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    void loadCycles(selectedFinancialYearId).catch(() =>
-      showToast("Failed to load months for selected financial year", "error")
-    );
-  }, [selectedFinancialYearId]);
-
-  useEffect(() => {
-    setGridLoading(true);
-    void loadGrid(selectedCycleId)
-      .catch((err: unknown) => {
-        showToast(parseApiError(err, "Failed to load residents").message, "error");
-        setSummary(null);
-        setResidents([]);
-      })
-      .finally(() => setGridLoading(false));
-  }, [selectedCycleId]);
 
   async function saveVillaCustomAmount() {
     if (!selectedMaintenanceCycleId) {
@@ -227,7 +136,7 @@ export default function MaintenanceManagementPage() {
     }
 
     try {
-      setLoading(true);
+      setActionLoading(true);
       await api.put(`/maintenance-management/collection/cycles/${selectedMaintenanceCycleId}/custom-amount`, {
         villaId: selectedVillaId,
         amount: value,
@@ -239,13 +148,13 @@ export default function MaintenanceManagementPage() {
       } catch (genErr: unknown) {
         if ((genErr as { response?: { status?: number } })?.response?.status !== 409) throw genErr;
       }
-      await loadGrid(selectedCycleId);
+      invalidateGrid();
       showToast("Amount saved for selected month and financial year", "success");
       setCustomAmount("");
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to save custom amount").message, "error");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
@@ -274,7 +183,7 @@ export default function MaintenanceManagementPage() {
       return;
     }
     try {
-      setLoading(true);
+      setActionLoading(true);
       await api.put(
         `/maintenance-management/collection/cycles/${selectedMaintenanceCycleId}/villa-grid-row`,
         {
@@ -285,12 +194,12 @@ export default function MaintenanceManagementPage() {
       );
       setShowRowEditModal(false);
       setRowEdit(null);
-      await loadGrid(selectedCycleId);
+      invalidateGrid();
       showToast("Villa row updated", "success");
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to update row").message, "error");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
@@ -320,7 +229,7 @@ export default function MaintenanceManagementPage() {
       return;
     }
     try {
-      setLoading(true);
+      setActionLoading(true);
       await api.post("/maintenance-management/mark-paid", {
         villaId: paymentForm.villaId,
         year: selectedCycle.periodYear,
@@ -333,12 +242,12 @@ export default function MaintenanceManagementPage() {
         maintenanceCollectionCycleId: selectedMaintenanceCycleId,
       });
       setShowPaymentModal(false);
-      await loadGrid(selectedCycleId);
+      invalidateGrid();
       showToast("Payment marked for selected financial year and month", "success");
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to mark payment").message, "error");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
@@ -359,7 +268,7 @@ export default function MaintenanceManagementPage() {
     if (!creditRow || !selectedMaintenanceCycleId) return;
 
     try {
-      setLoading(true);
+      setActionLoading(true);
 
       if (creditAction === "apply") {
         const r = await api.post("/maintenance-management/apply-credit", {
@@ -375,12 +284,12 @@ export default function MaintenanceManagementPage() {
         const amt = parseFloat(creditAmount);
         if (!Number.isFinite(amt) || amt <= 0) {
           showToast("Enter a valid amount", "error");
-          setLoading(false);
+          setActionLoading(false);
           return;
         }
         if (!creditRemarks.trim()) {
           showToast("Please enter a reason", "error");
-          setLoading(false);
+          setActionLoading(false);
           return;
         }
         const adjustedAmount = creditAction === "deduct" ? -amt : amt;
@@ -394,11 +303,11 @@ export default function MaintenanceManagementPage() {
       }
 
       setShowCreditModal(false);
-      await loadGrid(selectedCycleId);
+      invalidateGrid();
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed").message, "error");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
@@ -412,7 +321,7 @@ export default function MaintenanceManagementPage() {
     e.preventDefault();
     if (!excludeTarget || !selectedMaintenanceCycleId) return;
     try {
-      setLoading(true);
+      setActionLoading(true);
       await api.post(
         `/maintenance-management/collection/cycles/${selectedMaintenanceCycleId}/exclude-villa`,
         {
@@ -422,28 +331,28 @@ export default function MaintenanceManagementPage() {
       );
       setShowExcludeModal(false);
       setExcludeTarget(null);
-      await loadGrid(selectedCycleId);
+      invalidateGrid();
       showToast(`Villa ${excludeTarget.villaNumber} excluded from this cycle`, "success");
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to exclude villa").message, "error");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
   async function includeVilla(row: ResidentRow) {
     if (!selectedMaintenanceCycleId) return;
     try {
-      setLoading(true);
+      setActionLoading(true);
       await api.delete(
         `/maintenance-management/collection/cycles/${selectedMaintenanceCycleId}/exclude-villa/${row.villaId}`
       );
-      await loadGrid(selectedCycleId);
+      invalidateGrid();
       showToast(`Villa ${row.villaNumber} re-included in this cycle`, "success");
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to include villa").message, "error");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
@@ -457,7 +366,7 @@ export default function MaintenanceManagementPage() {
     e.preventDefault();
     if (!unpaidTarget || !selectedMaintenanceCycleId) return;
     try {
-      setLoading(true);
+      setActionLoading(true);
       await api.post("/maintenance-management/reverse-payment", {
         villaId: unpaidTarget.villaId,
         maintenanceCollectionCycleId: selectedMaintenanceCycleId,
@@ -465,12 +374,12 @@ export default function MaintenanceManagementPage() {
       });
       setShowUnpaidModal(false);
       setUnpaidTarget(null);
-      await loadGrid(selectedCycleId);
+      invalidateGrid();
       showToast(`Payment reversed for Villa ${unpaidTarget.villaNumber}`, "success");
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to reverse payment").message, "error");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
@@ -533,18 +442,11 @@ export default function MaintenanceManagementPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
             <div>
               <label className="block text-sm font-medium text-fg-primary mb-1">Villa</label>
-              <select
+              <VillaTypeahead
                 value={selectedVillaId}
-                onChange={(e) => setSelectedVillaId(e.target.value)}
-                className="input w-full disabled:opacity-50"
-              >
-                <option value="">Select villa...</option>
-                {villas.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.villaNumber} - {v.ownerName}
-                  </option>
-                ))}
-              </select>
+                onChange={(id) => setSelectedVillaId(id)}
+                placeholder="Search villa number or block…"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-fg-primary mb-1">Custom amount (₹)</label>
@@ -580,7 +482,7 @@ export default function MaintenanceManagementPage() {
           onSearchChange={setSearch}
           filteredResidents={filteredResidents}
           selectedCycleId={selectedCycleId}
-          gridLoading={gridLoading}
+          gridLoading={gridLoading || gridFetching}
           loading={loading}
           showCreditHelp={showCreditHelp}
           onToggleCreditHelp={() => setShowCreditHelp(!showCreditHelp)}

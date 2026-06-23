@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { isJwtUnexpired } from "@/lib/jwt";
+import { isJwtUnexpired, isTenantAdminToken } from "@/lib/jwt";
 import { attemptTokenRefresh } from "@/lib/tokenRefresh";
 
 function isTenantPublicPath(pathname: string): boolean {
@@ -37,6 +37,13 @@ export function useAuth(requireAuth: boolean = true) {
         if (!valid) {
           localStorage.removeItem("token");
         }
+      }
+
+      const activeToken = localStorage.getItem("token");
+      if (valid && requireAuth && activeToken && !isTenantAdminToken(activeToken)) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refresh_token");
+        valid = false;
       }
 
       if (requireAuth && !valid && !isTenantPublicPath(pathname ?? "")) {

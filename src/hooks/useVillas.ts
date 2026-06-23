@@ -2,9 +2,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Villa, VillaForm } from "@/types/villa";
 
+/** Backend caps list `limit` at 200 — use for villa pickers in forms. */
+export const VILLA_SELECT_LIMIT = 200;
+
 export type VillasParams = {
   limit?: number;
   offset?: number;
+  search?: string;
 };
 
 export type VillasResponse = {
@@ -15,15 +19,56 @@ export type VillasResponse = {
 };
 
 export function useVillas(params?: VillasParams) {
+  const limit = params?.limit ?? 50;
+  const offset = params?.offset ?? 0;
+  const search = params?.search?.trim() || undefined;
   return useQuery({
-    queryKey: ["villas", params],
+    queryKey: ["villas", { limit, offset, search }],
     queryFn: async () => {
       const res = await api.get<VillasResponse>("/villas", {
-        params: { limit: params?.limit ?? 50, offset: params?.offset ?? 0 },
+        params: { limit, offset, ...(search ? { search } : {}) },
       });
       return res.data;
     },
   });
+}
+
+/** Debounced server search for villa typeahead pickers. */
+export function useVillaSearch(
+  search: string,
+  options?: { limit?: number; enabled?: boolean },
+) {
+  const limit = options?.limit ?? 20;
+  const q = search.trim();
+  return useQuery({
+    queryKey: ["villas", "search", { q, limit }],
+    queryFn: async () => {
+      const res = await api.get<VillasResponse>("/villas", {
+        params: { limit, offset: 0, ...(q ? { search: q } : {}) },
+      });
+      return res.data;
+    },
+    enabled: options?.enabled !== false,
+    staleTime: 30_000,
+  });
+}
+
+/** Fetch one villa (units, residents) when a picker has a pre-selected id. */
+export function useVilla(id: string | undefined) {
+  return useQuery({
+    queryKey: ["villas", id],
+    queryFn: async () => {
+      const res = await api.get<{ villa: Villa }>(`/villas/${id}`);
+      return res.data;
+    },
+    enabled: Boolean(id),
+    staleTime: 60_000,
+  });
+}
+
+/** All villas for dropdowns (visitors, parcels, invitations, etc.). */
+export function useVillaOptions() {
+  return useVillas({ limit: VILLA_SELECT_LIMIT, offset: 0 });
 }
 
 export function useCreateVilla() {
