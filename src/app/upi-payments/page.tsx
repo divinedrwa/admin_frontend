@@ -25,7 +25,8 @@ interface UpiSubmission {
   status: "PENDING" | "VERIFIED" | "REJECTED";
   remark: string | null;
   rejectionReason: string | null;
-  createdAt: string;
+  submittedAt: string;
+  createdAt?: string;
   user?: { name: string; email: string } | null;
   villa?: { villaNumber: string | null; block: string | null } | null;
 }
@@ -182,8 +183,9 @@ export default function UpiPaymentsPage() {
                   <th scope="col" className="table-th">Period</th>
                   <th scope="col" className="table-th">Amount</th>
                   <th scope="col" className="table-th">UPI Ref</th>
+                  <th scope="col" className="table-th">Remark</th>
                   <th scope="col" className="table-th">Status</th>
-                  <th scope="col" className="table-th">Date</th>
+                  <th scope="col" className="table-th">Submitted</th>
                   {statusFilter === "PENDING" && (
                     <th scope="col" className="table-th text-right">Actions</th>
                   )}
@@ -192,7 +194,7 @@ export default function UpiPaymentsPage() {
               <tbody className="bg-surface divide-y">
                 {submissions.length === 0 ? (
                   <tr>
-                    <td colSpan={statusFilter === "PENDING" ? 8 : 7} className="px-6 py-12 text-center">
+                    <td colSpan={statusFilter === "PENDING" ? 9 : 8} className="px-6 py-12 text-center">
                       <div className="empty-state">
                         <p className="empty-state-title">No submissions found</p>
                       </div>
@@ -217,9 +219,12 @@ export default function UpiPaymentsPage() {
                       <td className="table-td text-sm font-mono">
                         {sub.upiTransactionRef || "—"}
                       </td>
+                      <td className="table-td text-sm text-fg-secondary max-w-[140px] truncate" title={sub.remark ?? undefined}>
+                        {sub.remark || "—"}
+                      </td>
                       <td className="table-td">{statusBadge(sub.status)}</td>
                       <td className="table-td text-sm text-fg-secondary">
-                        {new Date(sub.createdAt).toLocaleDateString("en-IN", {
+                        {new Date(sub.submittedAt ?? sub.createdAt ?? "").toLocaleDateString("en-IN", {
                           day: "numeric",
                           month: "short",
                         })}
