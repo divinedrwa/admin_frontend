@@ -13,6 +13,7 @@ import {
   THEME_COLOR_USAGE,
   type ThemeColors,
 } from "@/theme/defaultThemeColors";
+import { THEME_TEMPLATES } from "@/theme/themeTemplates";
 
 type SocietySettings = {
   id: string;
@@ -296,6 +297,7 @@ export default function SocietySettingsPage() {
   // Theme colors form
   const [themeForm, setThemeForm] = useState<ThemeColors>(DEFAULT_THEME_COLORS);
   const [savingTheme, setSavingTheme] = useState(false);
+  const [templateMode, setTemplateMode] = useState<"light" | "dark">("light");
 
   const savedTheme = useMemo(
     () => savedThemeFromSettings(settings),
@@ -312,6 +314,13 @@ export default function SocietySettingsPage() {
       (Object.keys(themeForm) as (keyof ThemeColors)[]).some(
         (key) => !isValidThemeColor(themeForm[key], key),
       ),
+    [themeForm],
+  );
+
+  const activeTemplateId = useMemo(
+    () =>
+      THEME_TEMPLATES.find((t) => themeColorsEqual(t.colors, themeForm))?.id ??
+      null,
     [themeForm],
   );
 
@@ -454,6 +463,23 @@ export default function SocietySettingsPage() {
       await load();
     } catch (error) {
       showToast(parseApiError(error, "Failed to save theme").message, "error");
+    } finally {
+      setSavingTheme(false);
+    }
+  };
+
+  /** One-tap: apply a ready-made template — sets the form, persists, and re-skins. */
+  const applyTemplate = async (colors: ThemeColors) => {
+    setThemeForm(colors);
+    setSavingTheme(true);
+    try {
+      const payload = themeColorsEqual(colors, DEFAULT_THEME_COLORS) ? null : colors;
+      await api.patch("/society-settings", { themeColors: payload });
+      applyThemeColors(payload);
+      showToast("Theme applied", "success");
+      await load();
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to apply theme").message, "error");
     } finally {
       setSavingTheme(false);
     }
@@ -774,6 +800,84 @@ export default function SocietySettingsPage() {
           </div>
 
           <div className="card-body space-y-8">
+            {/* Ready-made templates — one tap applies & saves for the whole society */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-fg-primary">Quick themes</p>
+                  <p className="text-xs text-fg-tertiary">
+                    Tap a template to instantly apply it across the app and dashboard.
+                  </p>
+                </div>
+                <div className="inline-flex rounded-lg border border-surface-border p-0.5">
+                  {(["light", "dark"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setTemplateMode(m)}
+                      className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition ${
+                        templateMode === m
+                          ? "bg-brand-primary text-white"
+                          : "text-fg-secondary hover:text-fg-primary"
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {THEME_TEMPLATES.filter((t) => t.mode === templateMode).map((t) => {
+                  const active = activeTemplateId === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      disabled={savingTheme}
+                      onClick={() => void applyTemplate(t.colors)}
+                      title={`Apply ${t.name}`}
+                      className={`group overflow-hidden rounded-xl border text-left transition disabled:opacity-60 ${
+                        active
+                          ? "border-brand-primary ring-2 ring-brand-primary/40"
+                          : "border-surface-border hover:border-brand-primary/50 hover:shadow-md"
+                      }`}
+                    >
+                      <div
+                        className="h-12 w-full"
+                        style={{
+                          background: `linear-gradient(135deg, ${t.colors.gradientStart}, ${t.colors.gradientMiddle}, ${t.colors.gradientEnd})`,
+                        }}
+                      />
+                      <div
+                        className="flex items-center gap-1.5 px-2 py-2"
+                        style={{ backgroundColor: t.colors.cardColor }}
+                      >
+                        {[t.colors.primaryColor, t.colors.secondaryColor, t.colors.accentColor].map(
+                          (c, i) => (
+                            <span
+                              key={i}
+                              className="h-3 w-3 rounded-full ring-1 ring-black/10"
+                              style={{ backgroundColor: c }}
+                            />
+                          ),
+                        )}
+                        <span
+                          className="ml-auto truncate text-[11px] font-semibold"
+                          style={{ color: t.colors.headingColor }}
+                        >
+                          {t.name}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-fg-tertiary">
+                Or fine-tune any color below. Tip: dark templates look best on the mobile app once
+                its remaining screens finish moving to theme tokens.
+              </p>
+            </div>
+
             {/* Live previews */}
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-2">
