@@ -122,8 +122,8 @@ const SEEDS: Seed[] = [
   { id: "terracotta", name: "Terracotta", primary: "#C2410C", primaryDark: "#9A3412", secondary: "#EA580C", accent: "#F97316", sidebar: "#431407" },
   { id: "bronze-amber", name: "Bronze Amber", primary: "#92400E", primaryDark: "#78350F", secondary: "#B45309", accent: "#D97706", sidebar: "#1C1917" },
   // Indian & spiritual palettes
-  // Indian flag: saffron primary, India green secondary, true saffron accent, chakra-navy sidebar (white surfaces = the white band)
-  { id: "indian-tricolor", name: "Indian Tricolor", primary: "#E2670A", primaryDark: "#B85309", secondary: "#138808", accent: "#FF9933", sidebar: "#0A1A6B" },
+  // Indian flag: saffron primary, white surfaces (the white band), India green secondary + sidebar, true saffron accent
+  { id: "indian-tricolor", name: "Indian Tricolor", primary: "#E2670A", primaryDark: "#B85309", secondary: "#138808", accent: "#FF9933", sidebar: "#0B5226" },
   { id: "bhagwa-saffron", name: "Bhagwa Saffron", primary: "#B5530E", primaryDark: "#8A3E08", secondary: "#E2670A", accent: "#FF9933", sidebar: "#5A2D0C" },
   { id: "temple-maroon", name: "Temple Maroon", primary: "#7F1D1D", primaryDark: "#641515", secondary: "#9F1239", accent: "#EA580C", sidebar: "#450A0A" },
   { id: "marigold-gold", name: "Marigold Gold", primary: "#A16207", primaryDark: "#854D0E", secondary: "#CA8A04", accent: "#EAB308", sidebar: "#713F12" },
