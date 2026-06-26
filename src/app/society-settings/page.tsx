@@ -27,6 +27,7 @@ type SocietySettings = {
   letterheadUrl: string | null;
   signatureUrl: string | null;
   stampUrl: string | null;
+  splashUrl: string | null;
   lateFeePercentage: number;
   lateFeeFixedAmount: number;
   maintenanceGracePeriodDays: number;
@@ -272,10 +273,12 @@ export default function SocietySettingsPage() {
   const [uploadingLetterhead, setUploadingLetterhead] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
   const [uploadingStamp, setUploadingStamp] = useState(false);
+  const [uploadingSplash, setUploadingSplash] = useState(false);
   const qrFileRef = useRef<HTMLInputElement>(null);
   const letterheadFileRef = useRef<HTMLInputElement>(null);
   const signatureFileRef = useRef<HTMLInputElement>(null);
   const stampFileRef = useRef<HTMLInputElement>(null);
+  const splashFileRef = useRef<HTMLInputElement>(null);
 
   // Visitor settings form
   const [visitorForm, setVisitorForm] = useState({
@@ -404,7 +407,7 @@ export default function SocietySettingsPage() {
 
   const uploadImage = async (
     file: File,
-    field: "qrImage" | "letterhead" | "signature" | "stamp",
+    field: "qrImage" | "letterhead" | "signature" | "stamp" | "splash",
     endpoint: string,
     setBusy: (v: boolean) => void,
     inputRef: React.RefObject<HTMLInputElement | null>,
@@ -779,6 +782,59 @@ export default function SocietySettingsPage() {
                   {settings.stampUrl && (
                     <button
                       onClick={() => removeImage("/society-settings/stamp", "Stamp removed")}
+                      className="btn btn-ghost flex items-center gap-1 text-brand-danger"
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            {/* App splash image (mobile) */}
+            <div>
+              <label className="block text-sm font-medium text-fg-primary mb-2">
+                App splash image (mobile)
+              </label>
+              <p className="mb-2 text-xs text-fg-tertiary">
+                Shown full-screen on the app launch, under a brand-color tint that follows the
+                theme. Appears from the next app launch (cached on device).
+              </p>
+              <div className="flex items-start gap-4">
+                {settings.splashUrl ? (
+                  <img
+                    src={settings.splashUrl}
+                    alt="Splash"
+                    className="h-40 w-24 rounded border border-surface-border object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="flex h-40 w-24 items-center justify-center rounded border border-dashed border-surface-border text-center text-xs text-fg-tertiary">
+                    No splash
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={splashFileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        uploadImage(file, "splash", "/society-settings/upload-splash", setUploadingSplash, splashFileRef, "Splash uploaded");
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => splashFileRef.current?.click()}
+                    disabled={uploadingSplash}
+                    className="btn btn-secondary flex items-center gap-1"
+                  >
+                    <Upload size={14} /> {uploadingSplash ? "Uploading…" : settings.splashUrl ? "Replace splash" : "Upload splash"}
+                  </button>
+                  {settings.splashUrl && (
+                    <button
+                      onClick={() => removeImage("/society-settings/splash", "Splash removed")}
                       className="btn btn-ghost flex items-center gap-1 text-brand-danger"
                     >
                       <Trash2 size={14} /> Remove
