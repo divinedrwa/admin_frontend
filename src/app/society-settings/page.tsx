@@ -297,7 +297,6 @@ export default function SocietySettingsPage() {
   // Theme colors form
   const [themeForm, setThemeForm] = useState<ThemeColors>(DEFAULT_THEME_COLORS);
   const [savingTheme, setSavingTheme] = useState(false);
-  const [templateMode, setTemplateMode] = useState<"light" | "dark">("light");
 
   const savedTheme = useMemo(
     () => savedThemeFromSettings(settings),
@@ -802,32 +801,15 @@ export default function SocietySettingsPage() {
           <div className="card-body space-y-8">
             {/* Ready-made templates — one tap applies & saves for the whole society */}
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-fg-primary">Quick themes</p>
-                  <p className="text-xs text-fg-tertiary">
-                    Tap a template to instantly apply it across the app and dashboard.
-                  </p>
-                </div>
-                <div className="inline-flex rounded-lg border border-surface-border p-0.5">
-                  {(["light", "dark"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setTemplateMode(m)}
-                      className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition ${
-                        templateMode === m
-                          ? "bg-brand-primary text-white"
-                          : "text-fg-secondary hover:text-fg-primary"
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
+              <div>
+                <p className="text-sm font-semibold text-fg-primary">Quick themes</p>
+                <p className="text-xs text-fg-tertiary">
+                  {THEME_TEMPLATES.length} professional palettes — tap one to instantly apply it
+                  across the app and dashboard.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                {THEME_TEMPLATES.filter((t) => t.mode === templateMode).map((t) => {
+                {THEME_TEMPLATES.map((t) => {
                   const active = activeTemplateId === t.id;
                   return (
                     <button
@@ -873,8 +855,7 @@ export default function SocietySettingsPage() {
                 })}
               </div>
               <p className="text-[11px] text-fg-tertiary">
-                Or fine-tune any color below. Tip: dark templates look best on the mobile app once
-                its remaining screens finish moving to theme tokens.
+                Or fine-tune any individual color below after picking a template.
               </p>
             </div>
 

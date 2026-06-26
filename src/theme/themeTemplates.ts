@@ -1,21 +1,20 @@
 /**
  * Professional ready-made theme templates for the Society Settings theme picker.
  *
- * Each template is a full {@link ThemeColors} palette. They're generated from a
- * compact seed (brand hues) plus fixed, WCAG-safe surface/text rules so every
- * palette stays internally consistent and readable:
- *   - LIGHT: dark text on light surfaces, brand-colored primary/buttons.
- *   - DARK:  light text on dark surfaces, vivid brand primary.
+ * A curated set of 20 polished LIGHT palettes (deep, tasteful brand hues on clean
+ * neutral surfaces — the "Slate Professional" aesthetic). Each is generated from a
+ * compact seed plus fixed, WCAG-safe surface/text rules so every palette stays
+ * consistent and readable. Button label color is auto-chosen (white or near-black)
+ * from the fill's luminance, so no combination is ever unreadable.
  *
- * Applying a template just sets the society's `themeColors`, which the web admin
- * and the mobile app both read — so it re-skins everywhere over-the-air.
+ * Applying a template just sets the society's `themeColors`, which the web admin and
+ * the mobile app both read — so it re-skins everywhere over-the-air, no rebuild.
  */
 import type { ThemeColors } from "./defaultThemeColors";
 
 export type ThemeTemplate = {
   id: string;
   name: string;
-  mode: "light" | "dark";
   colors: ThemeColors;
 };
 
@@ -29,16 +28,29 @@ type Seed = {
   sidebar: string;
 };
 
+const channels = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+
 /** Linear-mix two #rrggbb hex colors. t=0 → a, t=1 → b. */
 function mix(a: string, b: string, t: number): string {
-  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
-  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  const pa = channels(a);
+  const pb = channels(b);
   const c = pa.map((v, i) => Math.round(v + (pb[i] - v) * t));
   return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
 }
 
-// ---- Fixed light surface/text system (AA verified) ----
-const L = {
+/** WCAG-readable label color for a given fill — white on dark fills, ink on light. */
+function readableText(bg: string): string {
+  const [r, g, b] = channels(bg).map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const contrastWithWhite = 1.05 / (lum + 0.05);
+  return contrastWithWhite >= 3.2 ? "#FFFFFF" : "#0B1220";
+}
+
+// Fixed, professional light surface/text system (AA verified, theme-agnostic).
+const S = {
   heading: "#111827",
   body: "#4B5563",
   muted: "#6B7280",
@@ -53,23 +65,7 @@ const L = {
   error: "#B42318",
 };
 
-// ---- Fixed dark surface/text system (AA verified) ----
-const D = {
-  heading: "#F0F6FC",
-  body: "#C9D1D9",
-  muted: "#8B949E",
-  background: "#0D1117",
-  card: "#161B22",
-  fieldBg: "#1C2128",
-  fieldText: "#E6EDF3",
-  border: "#30363D",
-  icon: "#8B949E",
-  iconBg: "#1C2128",
-  warning: "#D29922",
-  error: "#F85149",
-};
-
-function buildLight(s: Seed): ThemeColors {
+function build(s: Seed): ThemeColors {
   const tint = mix(s.primary, "#FFFFFF", 0.9);
   return {
     primaryColor: s.primary,
@@ -82,86 +78,53 @@ function buildLight(s: Seed): ThemeColors {
     gradientMiddle: s.primary,
     gradientEnd: s.secondary,
     buttonBg: s.primary,
-    buttonText: "#FFFFFF",
+    buttonText: readableText(s.primary),
     secondaryButtonBg: s.secondary,
-    secondaryButtonText: "#FFFFFF",
-    headingColor: L.heading,
-    bodyTextColor: L.body,
-    mutedTextColor: L.muted,
-    backgroundColor: L.background,
-    cardColor: L.card,
-    fieldBg: L.fieldBg,
-    fieldText: L.fieldText,
+    secondaryButtonText: readableText(s.secondary),
+    headingColor: S.heading,
+    bodyTextColor: S.body,
+    mutedTextColor: S.muted,
+    backgroundColor: S.background,
+    cardColor: S.card,
+    fieldBg: S.fieldBg,
+    fieldText: S.fieldText,
     sidebarBg: s.sidebar,
     sidebarActiveColor: s.primary,
-    borderColor: L.border,
-    iconColor: L.icon,
-    iconBg: L.iconBg,
-    warningColor: L.warning,
-    errorColor: L.error,
+    borderColor: S.border,
+    iconColor: S.icon,
+    iconBg: S.iconBg,
+    warningColor: S.warning,
+    errorColor: S.error,
   };
 }
 
-function buildDark(s: Seed): ThemeColors {
-  const tint = mix(s.primary, D.card, 0.78);
-  return {
-    primaryColor: s.primary,
-    primaryHover: s.primaryDark,
-    primaryLight: tint,
-    primaryContainer: tint,
-    secondaryColor: s.secondary,
-    accentColor: s.accent,
-    gradientStart: s.primaryDark,
-    gradientMiddle: s.primary,
-    gradientEnd: s.accent,
-    buttonBg: s.primary,
-    buttonText: "#FFFFFF",
-    secondaryButtonBg: s.secondary,
-    secondaryButtonText: "#FFFFFF",
-    headingColor: D.heading,
-    bodyTextColor: D.body,
-    mutedTextColor: D.muted,
-    backgroundColor: D.background,
-    cardColor: D.card,
-    fieldBg: D.fieldBg,
-    fieldText: D.fieldText,
-    sidebarBg: s.sidebar,
-    sidebarActiveColor: s.primary,
-    borderColor: D.border,
-    iconColor: D.icon,
-    iconBg: D.iconBg,
-    warningColor: D.warning,
-    errorColor: D.error,
-  };
-}
-
-const LIGHT_SEEDS: Seed[] = [
-  { id: "forest-teal", name: "Forest Teal", primary: "#004D40", primaryDark: "#003D33", secondary: "#00695C", accent: "#00C853", sidebar: "#003D33" },
-  { id: "ocean-blue", name: "Ocean Blue", primary: "#0B66D8", primaryDark: "#0A57BD", secondary: "#0C8BC4", accent: "#06B6D4", sidebar: "#0F172A" },
-  { id: "royal-indigo", name: "Royal Indigo", primary: "#4338CA", primaryDark: "#3730A3", secondary: "#6D28D9", accent: "#7C3AED", sidebar: "#1E1B4B" },
-  { id: "emerald-green", name: "Emerald Green", primary: "#047857", primaryDark: "#065F46", secondary: "#059669", accent: "#10B981", sidebar: "#052E2B" },
-  { id: "sunset-orange", name: "Sunset Orange", primary: "#C2410C", primaryDark: "#9A3412", secondary: "#EA580C", accent: "#F59E0B", sidebar: "#431407" },
-  { id: "crimson-rose", name: "Crimson Rose", primary: "#BE123C", primaryDark: "#9F1239", secondary: "#E11D48", accent: "#F43F5E", sidebar: "#4C0519" },
-  { id: "plum-purple", name: "Plum Purple", primary: "#7E22CE", primaryDark: "#6B21A8", secondary: "#9333EA", accent: "#C026D3", sidebar: "#3B0764" },
-  { id: "teal-cyan", name: "Teal Cyan", primary: "#0E7490", primaryDark: "#155E75", secondary: "#0891B2", accent: "#06B6D4", sidebar: "#083344" },
+// Curated for variety + professionalism: teals/greens, blues, indigo/violet,
+// refined neutrals, and tasteful warm tones. Deep brand hues, muted accents.
+const SEEDS: Seed[] = [
+  { id: "forest-teal", name: "Forest Teal", primary: "#004D40", primaryDark: "#00352C", secondary: "#00695C", accent: "#0F9D74", sidebar: "#00352C" },
+  { id: "emerald", name: "Emerald", primary: "#047857", primaryDark: "#065F46", secondary: "#059669", accent: "#10B981", sidebar: "#043D2E" },
+  { id: "pine-green", name: "Pine Green", primary: "#15803D", primaryDark: "#166534", secondary: "#16A34A", accent: "#22C55E", sidebar: "#14532D" },
+  { id: "teal-cyan", name: "Teal Cyan", primary: "#0E7490", primaryDark: "#155E75", secondary: "#0891B2", accent: "#06B6D4", sidebar: "#0A3A47" },
+  { id: "muted-teal", name: "Muted Teal", primary: "#0F766E", primaryDark: "#115E59", secondary: "#14B8A6", accent: "#2DD4BF", sidebar: "#134E4A" },
+  { id: "ocean-blue", name: "Ocean Blue", primary: "#0B66D8", primaryDark: "#0A52AE", secondary: "#0C7BC4", accent: "#0EA5E9", sidebar: "#0F2547" },
+  { id: "sapphire", name: "Sapphire", primary: "#1D4ED8", primaryDark: "#1A43B8", secondary: "#2563EB", accent: "#3B82F6", sidebar: "#13224A" },
+  { id: "midnight-navy", name: "Midnight Navy", primary: "#1E3A8A", primaryDark: "#172B66", secondary: "#2546A8", accent: "#3B82F6", sidebar: "#111C3A" },
+  { id: "steel-blue", name: "Steel Blue", primary: "#0369A1", primaryDark: "#075985", secondary: "#0284C7", accent: "#0EA5E9", sidebar: "#0B2E45" },
+  { id: "royal-indigo", name: "Royal Indigo", primary: "#4338CA", primaryDark: "#3730A3", secondary: "#6366F1", accent: "#818CF8", sidebar: "#1E1B4B" },
+  { id: "violet", name: "Violet", primary: "#6D28D9", primaryDark: "#5B21B6", secondary: "#7C3AED", accent: "#A78BFA", sidebar: "#2E1065" },
+  { id: "plum", name: "Plum", primary: "#7E22CE", primaryDark: "#6B21A8", secondary: "#9333EA", accent: "#A855F7", sidebar: "#3B0764" },
   { id: "slate-pro", name: "Slate Professional", primary: "#334155", primaryDark: "#1E293B", secondary: "#475569", accent: "#0EA5E9", sidebar: "#0F172A" },
-  { id: "bronze-charcoal", name: "Bronze Charcoal", primary: "#92400E", primaryDark: "#78350F", secondary: "#B45309", accent: "#D97706", sidebar: "#1C1917" },
+  { id: "charcoal-blue", name: "Charcoal Blue", primary: "#1F2937", primaryDark: "#111827", secondary: "#374151", accent: "#3B82F6", sidebar: "#0B1220" },
+  { id: "graphite", name: "Graphite", primary: "#3F3F46", primaryDark: "#27272A", secondary: "#52525B", accent: "#6366F1", sidebar: "#18181B" },
+  { id: "espresso", name: "Espresso", primary: "#57534E", primaryDark: "#44403C", secondary: "#78716C", accent: "#D97706", sidebar: "#292524" },
+  { id: "burgundy", name: "Burgundy", primary: "#9F1239", primaryDark: "#881337", secondary: "#BE123C", accent: "#E11D48", sidebar: "#4C0519" },
+  { id: "ruby", name: "Ruby", primary: "#B91C1C", primaryDark: "#991B1B", secondary: "#DC2626", accent: "#EF4444", sidebar: "#450A0A" },
+  { id: "terracotta", name: "Terracotta", primary: "#C2410C", primaryDark: "#9A3412", secondary: "#EA580C", accent: "#F97316", sidebar: "#431407" },
+  { id: "bronze-amber", name: "Bronze Amber", primary: "#92400E", primaryDark: "#78350F", secondary: "#B45309", accent: "#D97706", sidebar: "#1C1917" },
 ];
 
-const DARK_SEEDS: Seed[] = [
-  { id: "midnight-blue", name: "Midnight Blue", primary: "#1F6FEB", primaryDark: "#1A5FCC", secondary: "#388BFD", accent: "#2DD4BF", sidebar: "#010409" },
-  { id: "obsidian-teal", name: "Obsidian Teal", primary: "#0D9488", primaryDark: "#0F766E", secondary: "#14B8A6", accent: "#2DD4BF", sidebar: "#02100E" },
-  { id: "carbon-indigo", name: "Carbon Indigo", primary: "#6366F1", primaryDark: "#4F46E5", secondary: "#818CF8", accent: "#A78BFA", sidebar: "#0B0B1E" },
-  { id: "dark-emerald", name: "Dark Emerald", primary: "#059669", primaryDark: "#047857", secondary: "#10B981", accent: "#34D399", sidebar: "#02140E" },
-  { id: "crimson-night", name: "Crimson Night", primary: "#DC2626", primaryDark: "#B91C1C", secondary: "#EF4444", accent: "#F87171", sidebar: "#1A0606" },
-  { id: "amber-charcoal", name: "Amber Charcoal", primary: "#B45309", primaryDark: "#92400E", secondary: "#D97706", accent: "#F59E0B", sidebar: "#1C1206" },
-  { id: "slate-night", name: "Slate Night", primary: "#3B82F6", primaryDark: "#2563EB", secondary: "#60A5FA", accent: "#38BDF8", sidebar: "#020617" },
-  { id: "royal-purple-dark", name: "Royal Purple", primary: "#7C3AED", primaryDark: "#6D28D9", secondary: "#8B5CF6", accent: "#A78BFA", sidebar: "#14081F" },
-  { id: "cyber-cyan", name: "Cyber Cyan", primary: "#0891B2", primaryDark: "#0E7490", secondary: "#06B6D4", accent: "#22D3EE", sidebar: "#04141A" },
-  { id: "rose-dark", name: "Rose Dark", primary: "#BE185D", primaryDark: "#9D174D", secondary: "#DB2777", accent: "#F472B6", sidebar: "#1A0610" },
-];
-
-export const THEME_TEMPLATES: ThemeTemplate[] = [
-  ...LIGHT_SEEDS.map((s) => ({ id: s.id, name: s.name, mode: "light" as const, colors: buildLight(s) })),
-  ...DARK_SEEDS.map((s) => ({ id: s.id, name: s.name, mode: "dark" as const, colors: buildDark(s) })),
-];
+export const THEME_TEMPLATES: ThemeTemplate[] = SEEDS.map((s) => ({
+  id: s.id,
+  name: s.name,
+  colors: build(s),
+}));
