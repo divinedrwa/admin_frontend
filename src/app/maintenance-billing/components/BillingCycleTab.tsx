@@ -35,6 +35,8 @@ export interface BillingCycleTabProps {
   onOpenCreate: () => void;
   onPublish?: (cycleId: string) => void;
   publishingId?: string | null;
+  onUnpublish?: (cycleId: string) => void;
+  unpublishingId?: string | null;
 
   /* Action cards */
   cycleOptions: Array<{ id: string; label: string }>;
@@ -91,6 +93,8 @@ export function BillingCycleTab({
   onOpenCreate,
   onPublish,
   publishingId,
+  onUnpublish,
+  unpublishingId,
   cycleOptions,
   primaryMaintenanceUsers,
   reopenId,
@@ -145,6 +149,8 @@ export function BillingCycleTab({
         onOpenCreate={onOpenCreate}
         onPublish={onPublish}
         publishingId={publishingId}
+        onUnpublish={onUnpublish}
+        unpublishingId={unpublishingId}
       />
 
       <CashPaymentModal

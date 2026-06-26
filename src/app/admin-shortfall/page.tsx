@@ -195,10 +195,10 @@ export default function AdminShortfallPage() {
           <>
             {/* Fund health overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="card p-5 border-l-4 border-l-blue-500">
+              <div className="card p-5 border-l-4 border-l-info-solid">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-fg-secondary">Fund Balance</span>
-                  <PiggyBank className="h-5 w-5 text-blue-500" />
+                  <PiggyBank className="h-5 w-5 text-info-solid" />
                 </div>
                 <p className={`text-2xl font-bold ${report.currentFundBalance >= 0 ? "text-fg-primary" : "text-brand-danger"}`}>
                   {fmt(report.currentFundBalance)}
@@ -208,10 +208,10 @@ export default function AdminShortfallPage() {
                 </p>
               </div>
 
-              <div className="card p-5 border-l-4 border-l-amber-500">
+              <div className="card p-5 border-l-4 border-l-pending-solid">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-fg-secondary">Outstanding Dues</span>
-                  <CircleAlert className="h-5 w-5 text-amber-500" />
+                  <CircleAlert className="h-5 w-5 text-pending-solid" />
                 </div>
                 <p className="text-2xl font-bold text-fg-primary">
                   {fmt(report.outstandingDues)}
@@ -221,10 +221,10 @@ export default function AdminShortfallPage() {
                 </p>
               </div>
 
-              <div className="card p-5 border-l-4 border-l-emerald-500">
+              <div className="card p-5 border-l-4 border-l-approved-solid">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-fg-secondary">Advance Credit</span>
-                  <TrendingUp className="h-5 w-5 text-emerald-500" />
+                  <TrendingUp className="h-5 w-5 text-approved-solid" />
                 </div>
                 <p className="text-2xl font-bold text-fg-primary">
                   {fmt(report.totalAdvanceCredit)}
@@ -234,14 +234,14 @@ export default function AdminShortfallPage() {
                 </p>
               </div>
 
-              <div className={`card p-5 border-l-4 ${report.totalShortfall > 0 ? "border-l-orange-500" : "border-l-brand-success"}`}>
+              <div className={`card p-5 border-l-4 ${report.totalShortfall > 0 ? "border-l-pending-solid" : "border-l-approved-solid"}`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-fg-secondary">Total Shortfall</span>
                   {report.totalShortfall > 0
-                    ? <ArrowDownRight className="h-5 w-5 text-orange-500" />
-                    : <CheckCircle2 className="h-5 w-5 text-brand-success" />}
+                    ? <ArrowDownRight className="h-5 w-5 text-pending-solid" />
+                    : <CheckCircle2 className="h-5 w-5 text-approved-fg" />}
                 </div>
-                <p className={`text-2xl font-bold ${report.totalShortfall > 0 ? "text-orange-600" : "text-brand-success"}`}>
+                <p className={`text-2xl font-bold ${report.totalShortfall > 0 ? "text-pending-fg" : "text-approved-fg"}`}>
                   {report.totalShortfall > 0 ? fmt(report.totalShortfall) : "None"}
                 </p>
                 <p className="text-xs text-fg-tertiary mt-1">
@@ -264,11 +264,11 @@ export default function AdminShortfallPage() {
                 </div>
                 <div>
                   <span className="text-fg-tertiary">Collected</span>
-                  <p className="font-semibold text-brand-success">{fmt(totalCollected)}</p>
+                  <p className="font-semibold text-approved-fg">{fmt(totalCollected)}</p>
                 </div>
                 <div>
                   <span className="text-fg-tertiary">Collection Rate</span>
-                  <p className={`font-semibold ${collectionRate >= 80 ? "text-brand-success" : collectionRate >= 50 ? "text-amber-600" : "text-brand-danger"}`}>
+                  <p className={`font-semibold ${collectionRate >= 80 ? "text-approved-fg" : collectionRate >= 50 ? "text-pending-fg" : "text-brand-danger"}`}>
                     {collectionRate}%
                   </p>
                 </div>
@@ -278,7 +278,7 @@ export default function AdminShortfallPage() {
                 </div>
                 <div>
                   <span className="text-fg-tertiary">Deficit Cycles</span>
-                  <p className={`font-semibold ${deficitCycles.length > 0 ? "text-orange-600" : "text-brand-success"}`}>
+                  <p className={`font-semibold ${deficitCycles.length > 0 ? "text-pending-fg" : "text-approved-fg"}`}>
                     {deficitCycles.length} of {cycles.length}
                   </p>
                 </div>
@@ -287,14 +287,14 @@ export default function AdminShortfallPage() {
 
             {/* Explanation banner */}
             {report.totalShortfall > 0 && (
-              <div className="card p-4 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+              <div className="card p-4 bg-pending-bg border-pending-solid/30">
                 <div className="flex gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+                  <AlertTriangle className="h-5 w-5 text-pending-fg shrink-0 mt-0.5" />
+                  <div className="text-sm text-pending-fg space-y-1">
                     <p className="font-medium">
                       {fmt(report.totalShortfall)} shortfall across {report.deficitCycleCount} cycle{report.deficitCycleCount > 1 ? "s" : ""} where expenses exceeded collections
                     </p>
-                    <p className="text-amber-700 dark:text-amber-300">
+                    <p className="text-pending-fg/90">
                       This was covered from the society fund balance.
                       {report.outstandingDues > 0
                         ? ` As residents clear their pending dues (${fmt(report.outstandingDues)}), the fund will recover.`
@@ -358,12 +358,12 @@ export default function AdminShortfallPage() {
                           .sort(([, a], [, b]) => b - a)
                           .slice(0, 3);
                         return (
-                          <tr key={c.periodKey} className={`table-row ${isDeficit ? "bg-orange-50/50 dark:bg-orange-950/10" : ""}`}>
+                          <tr key={c.periodKey} className={`table-row ${isDeficit ? "bg-pending-bg/40" : ""}`}>
                             <td className="table-td font-medium">
                               <div className="flex items-center gap-2">
                                 {cycleLabel(c)}
                                 {isDeficit && (
-                                  <span className="inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700 dark:text-orange-300">
+                                  <span className="inline-flex items-center rounded-full bg-pending-bg px-1.5 py-0.5 text-[10px] font-semibold text-pending-fg">
                                     DEFICIT
                                   </span>
                                 )}
@@ -372,17 +372,17 @@ export default function AdminShortfallPage() {
                             <td className="table-td text-right text-fg-secondary font-medium">
                               {fmt(c.totalExpected)}
                             </td>
-                            <td className="table-td text-right text-brand-success font-medium">
+                            <td className="table-td text-right text-approved-fg font-medium">
                               {fmt(c.totalCollected)}
                             </td>
                             <td className="table-td text-center text-fg-secondary">
-                              <span className="text-brand-success font-medium">{c.paidCount}</span>
+                              <span className="text-approved-fg font-medium">{c.paidCount}</span>
                               <span className="text-fg-tertiary"> / {c.paidCount + c.unpaidCount}</span>
                             </td>
                             <td className="table-td text-right text-brand-danger font-medium">
                               {c.totalExpense > 0 ? fmt(c.totalExpense) : "—"}
                             </td>
-                            <td className={`table-td text-right font-semibold ${isDeficit ? "text-orange-600" : "text-brand-success"}`}>
+                            <td className={`table-td text-right font-semibold ${isDeficit ? "text-pending-fg" : "text-approved-fg"}`}>
                               {isDeficit ? "" : "+"}{fmt(c.net)}
                             </td>
                             <td className="table-td">
@@ -408,11 +408,11 @@ export default function AdminShortfallPage() {
                         <td className="table-td text-right">
                           {fmt(displayCycles.reduce((s, c) => s + c.totalExpected, 0))}
                         </td>
-                        <td className="table-td text-right text-brand-success">
+                        <td className="table-td text-right text-approved-fg">
                           {fmt(displayCycles.reduce((s, c) => s + c.totalCollected, 0))}
                         </td>
                         <td className="table-td text-center">
-                          <span className="text-brand-success">{displayCycles.reduce((s, c) => s + c.paidCount, 0)}</span>
+                          <span className="text-approved-fg">{displayCycles.reduce((s, c) => s + c.paidCount, 0)}</span>
                           <span className="text-fg-tertiary"> / {displayCycles.reduce((s, c) => s + c.paidCount + c.unpaidCount, 0)}</span>
                         </td>
                         <td className="table-td text-right text-brand-danger">
@@ -420,8 +420,8 @@ export default function AdminShortfallPage() {
                         </td>
                         <td className={`table-td text-right ${
                           displayCycles.reduce((s, c) => s + c.net, 0) >= 0
-                            ? "text-brand-success"
-                            : "text-orange-600"
+                            ? "text-approved-fg"
+                            : "text-pending-fg"
                         }`}>
                           {fmt(displayCycles.reduce((s, c) => s + c.net, 0))}
                         </td>
@@ -456,21 +456,21 @@ export default function AdminShortfallPage() {
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
                             <div
-                              className="h-3 rounded-sm bg-emerald-400 dark:bg-emerald-500 transition-all"
+                              className="h-3 rounded-sm bg-approved-solid transition-all"
                               style={{ width: `${Math.max(collectWidth, 0.5)}%` }}
                             />
                             <span className="text-fg-tertiary shrink-0">{fmt(c.totalCollected)}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div
-                              className={`h-3 rounded-sm transition-all ${isDeficit ? "bg-orange-400 dark:bg-orange-500" : "bg-red-300 dark:bg-red-400"}`}
+                              className={`h-3 rounded-sm transition-all ${isDeficit ? "bg-pending-solid" : "bg-denied-solid"}`}
                               style={{ width: `${Math.max(expenseWidth, 0.5)}%` }}
                             />
                             <span className="text-fg-tertiary shrink-0">{fmt(c.totalExpense)}</span>
                           </div>
                         </div>
                         {isDeficit && (
-                          <span className="text-orange-600 font-semibold shrink-0">
+                          <span className="text-pending-fg font-semibold shrink-0">
                             {fmt(Math.abs(c.net))}
                           </span>
                         )}
@@ -480,13 +480,13 @@ export default function AdminShortfallPage() {
                 </div>
                 <div className="flex items-center gap-4 mt-4 pt-3 border-t text-xs text-fg-tertiary">
                   <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded-sm bg-emerald-400" /> Collected
+                    <span className="inline-block w-3 h-3 rounded-sm bg-approved-solid" /> Collected
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded-sm bg-red-300" /> Expenses
+                    <span className="inline-block w-3 h-3 rounded-sm bg-denied-solid" /> Expenses
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded-sm bg-orange-400" /> Expenses (exceeds collected)
+                    <span className="inline-block w-3 h-3 rounded-sm bg-pending-solid" /> Expenses (exceeds collected)
                   </span>
                 </div>
               </div>

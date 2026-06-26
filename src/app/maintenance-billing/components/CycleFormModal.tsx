@@ -21,6 +21,8 @@ export interface CycleFormModalProps {
   onOpenCreate: () => void;
   onPublish?: (cycleId: string) => void;
   publishingId?: string | null;
+  onUnpublish?: (cycleId: string) => void;
+  unpublishingId?: string | null;
 }
 
 export function CycleFormModal({
@@ -42,6 +44,8 @@ export function CycleFormModal({
   onOpenCreate,
   onPublish,
   publishingId,
+  onUnpublish,
+  unpublishingId,
 }: CycleFormModalProps) {
   return (
     <>
@@ -125,7 +129,7 @@ export function CycleFormModal({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-fg-secondary">Payment start (local → ISO)</span>
+            <span className="text-fg-secondary">Payment start (UTC)</span>
             <input
               className="input border rounded-lg px-3 py-2"
               required
@@ -135,7 +139,7 @@ export function CycleFormModal({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-fg-secondary">Payment end (deadline inclusive)</span>
+            <span className="text-fg-secondary">Payment end (UTC, deadline inclusive)</span>
             <input
               className="input border rounded-lg px-3 py-2"
               required
@@ -222,8 +226,8 @@ export function CycleFormModal({
                 <td className="table-td">{c.paidUsersCount}</td>
                 <td className="table-td">{c.pendingUsersCount}</td>
                 <td className="table-td">
-                  <div className="flex items-center gap-3">
-                    {!c.publishedAt && c.status !== "CLOSED" && onPublish && (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {!c.publishedAt && onPublish && (
                       <button
                         type="button"
                         className="text-approved-fg text-xs font-semibold hover:underline disabled:opacity-50"
@@ -231,6 +235,16 @@ export function CycleFormModal({
                         onClick={() => onPublish(c.id)}
                       >
                         {publishingId === c.id ? "Publishing..." : "Publish"}
+                      </button>
+                    )}
+                    {c.publishedAt && onUnpublish && (
+                      <button
+                        type="button"
+                        className="text-fg-secondary text-xs font-semibold hover:underline disabled:opacity-50"
+                        disabled={unpublishingId === c.id}
+                        onClick={() => onUnpublish(c.id)}
+                      >
+                        {unpublishingId === c.id ? "Unpublishing..." : "Unpublish"}
                       </button>
                     )}
                     <button
@@ -300,7 +314,7 @@ export function CycleFormModal({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-fg-secondary">Payment start</span>
+            <span className="text-fg-secondary">Payment start (UTC)</span>
             <input
               className="input border rounded-lg px-3 py-2"
               type="datetime-local"
@@ -309,7 +323,7 @@ export function CycleFormModal({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-fg-secondary">Payment end</span>
+            <span className="text-fg-secondary">Payment end (UTC)</span>
             <input
               className="input border rounded-lg px-3 py-2"
               type="datetime-local"

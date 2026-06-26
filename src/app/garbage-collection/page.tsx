@@ -90,9 +90,9 @@ export default function GarbageCollectionPage() {
 
         {/* Active Event */}
         {activeEvent && (
-          <div className="card p-4 border-l-4 border-l-brand-success">
+          <div className="card p-4 border-l-4 border-l-approved-solid">
             <div className="flex items-center gap-3">
-              <div className="h-3 w-3 rounded-full bg-brand-success animate-pulse" />
+              <div className="h-3 w-3 rounded-full bg-approved-solid animate-pulse" />
               <div>
                 <p className="font-semibold text-fg-primary">Collector currently inside</p>
                 <p className="text-sm text-fg-secondary">

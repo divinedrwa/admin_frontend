@@ -76,58 +76,55 @@ export interface Theme {
 }
 
 // =============================================================
-//  Clean blue palette
-//
-//  Blue (#2563EB) primary with emerald (#10B981) accent,
-//  neutral gray surfaces, dark charcoal text.
-//  Keep in sync with `scripts/generate-theme-css.mjs`.
+//  GatePass+ brand palette — navy sidebar, blue brand, cool surfaces.
+//  Keep in sync with `defaultThemeColors.ts` and `generate-theme-css.mjs`.
 // =============================================================
 
 export const lightTheme: Theme = {
   brand: {
-    primary: "#2563EB",
-    primaryHover: "#1D4ED8",
-    primaryLight: "#EFF6FF",
-    accent: "#10B981",
-    danger: "#EF4444",
+    primary: "#0B66D8",
+    primaryHover: "#0A57BD",
+    primaryLight: "#EAF2FD",
+    accent: "#0E9F6E",
+    danger: "#D92D20",
   },
   sidebar: {
-    from: "#2D3036",
-    via: "#2D3036",
-    to: "#2D3036",
+    from: "#0F172A",
+    via: "#1E293B",
+    to: "#0F172A",
     activeText: "#FFFFFF",
-    activeBg: "#3B82F6",
-    hoverBg: "rgba(255,255,255,0.06)",
-    mutedText: "#6B7580",
-    border: "rgba(255,255,255,0.06)",
+    activeBg: "#0B66D8",
+    hoverBg: "rgba(255,255,255,0.08)",
+    mutedText: "#94A3B8",
+    border: "rgba(255,255,255,0.08)",
   },
   login: {
-    from: "#111827",
-    via: "#1E3A5F",
-    to: "#0F172A",
+    from: "#0F172A",
+    via: "#1E3A6E",
+    to: "#0B66D8",
   },
   superLogin: {
-    from: "#111827",
-    via: "#1E3A5F",
-    to: "#0F172A",
+    from: "#0D1322",
+    via: "#141B2D",
+    to: "#000000",
   },
   surface: {
-    background: "#FFFFFF",
-    default: "#FAFAFA",
-    elevated: "#F3F4F6",
-    border: "#E5E7EB",
+    background: "#F7F9FD",
+    default: "#FFFFFF",
+    elevated: "#F8FBFE",
+    border: "#E5EDF8",
   },
   text: {
-    primary: "#111827",
-    secondary: "#6B7280",
-    tertiary: "#9CA3AF",
+    primary: "#0F2A57",
+    secondary: "#5A6472",
+    tertiary: "#6B7480",
     inverse: "#FFFFFF",
   },
   state: {
-    approved: { bg: "#D1FAE5", fg: "#065F46", solid: "#10B981" },
-    pending: { bg: "#FEF3C7", fg: "#92400E", solid: "#F59E0B" },
-    denied: { bg: "#FEE2E2", fg: "#991B1B", solid: "#EF4444" },
-    info: { bg: "#DBEAFE", fg: "#1E40AF", solid: "#3B82F6" },
+    approved: { bg: "#E3F6EE", fg: "#065F46", solid: "#0E9F6E" },
+    pending: { bg: "#FFF4E0", fg: "#92400E", solid: "#C77700" },
+    denied: { bg: "#FDEDEC", fg: "#991B1B", solid: "#D92D20" },
+    info: { bg: "#EAF2FD", fg: "#1E40AF", solid: "#0B66D8" },
   },
 };
 

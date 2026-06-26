@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { FinancialYear, ExistingAttachment } from '@/types/expense';
+import { useBillingCycleMonthOptions } from "@/hooks/useBillingCycleMonthOptions";
 
 type FormState = {
   categoryId: string;
@@ -186,25 +187,29 @@ export default function EditExpensePage() {
     }
   }, [formData.amount, formData.tdsPercentage]);
 
-  const monthOptions = useMemo(() => {
-    const fy = financialYears.find(x => x.id === formData.financialYearId);
-    if (!fy) return [];
-    const start = new Date(fy.startDate);
-    const end = new Date(fy.endDate);
-    const rows: { month: number; year: number; label: string }[] = [];
-    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-    while (cursor <= end) {
-      rows.push({
-        month: cursor.getMonth() + 1,
-        year: cursor.getFullYear(),
-        label: cursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-      });
-      cursor.setMonth(cursor.getMonth() + 1);
-    }
-    return rows;
-  }, [financialYears, formData.financialYearId]);
+  const { monthOptions: billingCycleMonths, loading: loadingCycleMonths } = useBillingCycleMonthOptions(
+    formData.financialYearId,
+  );
 
-  // Auto-sync: paymentDate → FY + Month (only when user changes the date, not on initial load)
+  const monthOptions = useMemo(() => {
+    const hasCurrent = billingCycleMonths.some(
+      o => o.month === formData.month && o.year === formData.year,
+    );
+    if (hasCurrent || !formData.month || !formData.year) return billingCycleMonths;
+    const date = new Date(formData.year, formData.month - 1, 1);
+    const legacyLabel = `${date.toLocaleDateString("en-US", { month: "long", year: "numeric" })} (no billing cycle)`;
+    return [
+      {
+        month: formData.month,
+        year: formData.year,
+        label: legacyLabel,
+        cycleKey: `${formData.year}-${String(formData.month).padStart(2, "0")}`,
+      },
+      ...billingCycleMonths,
+    ];
+  }, [billingCycleMonths, formData.month, formData.year]);
+
+  // Auto-sync: paymentDate → FY (month only when user changes date and a cycle matches)
   useEffect(() => {
     if (!formData.paymentDate || financialYears.length === 0) return;
     if (!userChangedDate.current) return;
@@ -218,13 +223,16 @@ export default function EditExpensePage() {
       return date >= start && date <= end;
     });
 
+    const fromDate = billingCycleMonths.find(
+      o => o.month === date.getMonth() + 1 && o.year === date.getFullYear(),
+    );
+
     setFormData(prev => ({
       ...prev,
       financialYearId: matchedFy?.id ?? '',
-      month: date.getMonth() + 1,
-      year: date.getFullYear(),
+      ...(fromDate ? { month: fromDate.month, year: fromDate.year } : {}),
     }));
-  }, [formData.paymentDate, financialYears]);
+  }, [formData.paymentDate, financialYears, billingCycleMonths]);
 
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
@@ -554,9 +562,15 @@ export default function EditExpensePage() {
                     setFormData(prev => ({ ...prev, month: m, year: y }));
                   }}
                   className="input"
-                  disabled={!formData.financialYearId || monthOptions.length === 0}
+                  disabled={!formData.financialYearId || loadingCycleMonths || monthOptions.length === 0}
                 >
-                  <option value="">Select Month</option>
+                  <option value="">
+                    {loadingCycleMonths
+                      ? 'Loading billing cycles…'
+                      : formData.financialYearId && monthOptions.length === 0
+                        ? 'No billing cycles for this FY'
+                        : 'Select Month'}
+                  </option>
                   {monthOptions.map(opt => (
                     <option key={`${opt.month}-${opt.year}`} value={`${opt.month}-${opt.year}`}>
                       {opt.label}
@@ -566,7 +580,7 @@ export default function EditExpensePage() {
               </div>
             </div>
             <p className="text-xs text-fg-secondary -mt-2">
-              Auto-selected from payment date. Change manually if needed.
+              Only billing cycles created under Maintenance Billing are listed. Auto-selected from payment date when a matching cycle exists.
             </p>
           </div>
         </div>

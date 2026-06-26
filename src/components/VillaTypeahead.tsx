@@ -7,7 +7,6 @@ import { VillaOption } from "@/types/villa";
 import { formatVillaLabel } from "@/utils/villaLabel";
 
 const SEARCH_DEBOUNCE_MS = 300;
-const SEARCH_LIMIT = 20;
 
 type BaseProps = {
   placeholder?: string;

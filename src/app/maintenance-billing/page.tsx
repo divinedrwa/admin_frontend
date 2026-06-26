@@ -20,7 +20,7 @@ import type {
   CycleFormData,
   FyFormData,
 } from "./components/types";
-import { utcInputValue } from "./components/types";
+import { utcInputValue, utcIsoFromDatetimeLocal } from "./components/types";
 import { BillingCycleTab } from "./components/BillingCycleTab";
 import { ResidentsTab } from "./components/ResidentsTab";
 import { AuditLogTab } from "./components/AuditLogTab";
@@ -88,6 +88,7 @@ export default function MaintenanceBillingPage() {
   const [reopenEnd, setReopenEnd] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<BillingCycleRow | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [unpublishingId, setUnpublishingId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   const loadCycles = useCallback(async (signal?: AbortSignal) => {
@@ -241,8 +242,12 @@ export default function MaintenanceBillingPage() {
     if (creatingCycle) return;
     try {
       setCreatingCycle(true);
-      const paymentStartDate = new Date(form.paymentStart).toISOString();
-      const paymentEndDate = new Date(form.paymentEnd).toISOString();
+      const paymentStartDate = utcIsoFromDatetimeLocal(form.paymentStart);
+      const paymentEndDate = utcIsoFromDatetimeLocal(form.paymentEnd);
+      if (!paymentStartDate || !paymentEndDate) {
+        showToast("Payment start and end dates are required", "error");
+        return;
+      }
       await api.post("/v1/admin/cycles", {
         financialYearId: form.financialYearId,
         cycleMonth: form.cycleMonth,
@@ -375,12 +380,32 @@ export default function MaintenanceBillingPage() {
     }
   }
 
+  async function handleUnpublish(cycleId: string) {
+    const yes = await confirm({
+      title: "Unpublish billing cycle",
+      message:
+        "Residents will no longer see this cycle or be able to pay until you publish again. Continue?",
+      confirmLabel: "Unpublish",
+    });
+    if (!yes) return;
+    setUnpublishingId(cycleId);
+    try {
+      await api.post(`/v1/admin/cycles/${cycleId}/unpublish`);
+      showToast("Cycle unpublished — hidden from residents", "success");
+      await loadCycles();
+    } catch (err: unknown) {
+      showToast(parseApiError(err, "Unpublish failed").message, "error");
+    } finally {
+      setUnpublishingId(null);
+    }
+  }
+
   async function submitEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editId) return;
     try {
-      const paymentStartDate = form.paymentStart ? new Date(form.paymentStart).toISOString() : undefined;
-      const paymentEndDate = form.paymentEnd ? new Date(form.paymentEnd).toISOString() : undefined;
+      const paymentStartDate = utcIsoFromDatetimeLocal(form.paymentStart);
+      const paymentEndDate = utcIsoFromDatetimeLocal(form.paymentEnd);
       await api.put(`/v1/admin/cycles/${editId}`, {
         title: form.title,
         amount: Number(form.amount),
@@ -420,7 +445,7 @@ export default function MaintenanceBillingPage() {
     setActionBusy("reopen");
     try {
       await api.post(`/v1/admin/cycles/${reopenId}/reopen`, {
-        paymentEndDate: new Date(reopenEnd).toISOString(),
+        paymentEndDate: utcIsoFromDatetimeLocal(reopenEnd),
       });
       showToast("Cycle updated (reopen)", "success");
       setReopenId("");
@@ -590,6 +615,8 @@ export default function MaintenanceBillingPage() {
             onOpenCreate={handleOpenCreate}
             onPublish={handlePublish}
             publishingId={publishingId}
+            onUnpublish={handleUnpublish}
+            unpublishingId={unpublishingId}
             cycleOptions={cycleOptions}
             primaryMaintenanceUsers={primaryMaintenanceUsers}
             reopenId={reopenId}

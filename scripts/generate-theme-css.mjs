@@ -23,100 +23,109 @@ const outPath = resolve(root, "src/theme/theme-vars.css");
 // Simpler: re-implement the constants here. The two-line duplication is
 // worth keeping the generator dependency-free.
 
-// Legacy palette — keep in sync with `src/theme/tokens.ts`.
+// GatePass+ brand palette — Primary Brand Blue.
+// Keep in sync with divine_app/lib/core/theme/app_colors.dart
 const lightTheme = {
   brand: {
-    primary: "#2563EB",
-    "primary-hover": "#1D4ED8",
-    "primary-light": "#EFF6FF",
-    accent: "#10B981",
-    danger: "#EF4444",
+    primary: "#0B66D8",          // Primary Brand Blue (WCAG-tuned)
+    "primary-hover": "#0A57BD",  // Pressed / hover
+    "primary-light": "#EAF2FD",  // Blue tint
+    secondary: "#0C8BC4",        // Deep sky (white labels readable)
+    accent: "#0E9F6E",           // Emerald accent
+    "gradient-start": "#0B66D8",
+    "gradient-middle": "#0C8BC4",
+    "gradient-end": "#0E9F6E",
+    danger: "#D92D20",           // Error Red
   },
   sidebar: {
-    from: "#2D3036",
-    via: "#2D3036",
-    to: "#2D3036",
+    from: "#0F172A",             // Deep navy (slate-900)
+    via: "#1E293B",              // Slate-800
+    to: "#0F172A",               // Deep navy
     "active-text": "#FFFFFF",
-    "active-bg": "#3B82F6",
-    "hover-bg": "rgba(255,255,255,0.06)",
-    "muted-text": "#6B7580",
-    border: "rgba(255,255,255,0.06)",
+    "active-bg": "#0B66D8",      // Brand blue active pill
+    "hover-bg": "rgba(255,255,255,0.08)",
+    "muted-text": "#94A3B8",     // Slate-400
+    border: "rgba(255,255,255,0.08)",
   },
   login: {
-    from: "#111827",
-    via: "#1E3A5F",
-    to: "#0F172A",
+    from: "#0F172A",
+    via: "#1E3A6E",
+    to: "#0B66D8",
   },
   "super-login": {
-    from: "#111827",
-    via: "#1E3A5F",
-    to: "#0F172A",
+    from: "#0D1322",
+    via: "#141B2D",
+    to: "#000000",
   },
   surface: {
-    background: "#FFFFFF",
-    default: "#FAFAFA",
-    elevated: "#F3F4F6",
-    border: "#E5E7EB",
+    background: "#F7F9FD",       // Cool blue-white
+    default: "#FFFFFF",
+    elevated: "#F8FBFE",
+    border: "#E5EDF8",
   },
   text: {
-    primary: "#111827",
-    secondary: "#6B7280",
-    tertiary: "#9CA3AF",
+    primary: "#0F2A57",          // Deep navy text
+    secondary: "#5A6472",
+    tertiary: "#6B7480",
     inverse: "#FFFFFF",
   },
   state: {
-    approved: { bg: "#D1FAE5", fg: "#065F46", solid: "#10B981" },
-    pending: { bg: "#FEF3C7", fg: "#92400E", solid: "#F59E0B" },
-    denied: { bg: "#FEE2E2", fg: "#991B1B", solid: "#EF4444" },
-    info: { bg: "#DBEAFE", fg: "#1E40AF", solid: "#3B82F6" },
+    approved: { bg: "#E3F6EE", fg: "#065F46", solid: "#0E9F6E" },
+    pending:  { bg: "#FFF4E0", fg: "#92400E", solid: "#C77700" },
+    denied:   { bg: "#FDEDEC", fg: "#991B1B", solid: "#D92D20" },
+    info:     { bg: "#EAF2FD", fg: "#1E40AF", solid: "#0B66D8" },
   },
 };
 
 const darkTheme = {
   brand: {
-    primary: "#F9FAFB",
-    "primary-hover": "#E5E7EB",
-    "primary-light": "#1E3A5F",
-    accent: "#3B82F6",
+    primary: "#3B8EFF",          // Brightened blue for dark bg
+    "primary-hover": "#0A74F5",
+    "primary-light": "#0E2A52",
+    secondary: "#32C5FF",
+    accent: "#22D6A0",
+    "gradient-start": "#3B8EFF",
+    "gradient-middle": "#32C5FF",
+    "gradient-end": "#22D6A0",
     danger: "#F87171",
   },
   sidebar: {
-    from: "#1A1D22",
-    via: "#1A1D22",
-    to: "#1A1D22",
+    from: "#141B2D",
+    via: "#141B2D",
+    to: "#141B2D",
     "active-text": "#FFFFFF",
-    "active-bg": "#3B82F6",
-    "hover-bg": "rgba(255,255,255,0.06)",
-    "muted-text": "#6B7580",
+    "active-bg": "#0A74F5",
+    "hover-bg": "rgba(59,142,255,0.10)",
+    "muted-text": "#4A5568",
     border: "rgba(255,255,255,0.06)",
   },
   login: {
-    from: "#1E40AF",
-    via: "#1E3A5F",
-    to: "#111827",
+    from: "#0D1322",
+    via: "#141B2D",
+    to: "#0A1A3D",
   },
   "super-login": {
-    from: "#0F172A",
-    via: "#1E1E1E",
+    from: "#0D1322",
+    via: "#141B2D",
     to: "#000000",
   },
   surface: {
-    background: "#121212",
-    default: "#1E1E1E",
-    elevated: "#2C2C2C",
-    border: "#374151",
+    background: "#0D1322",       // Very deep navy
+    default: "#141B2D",
+    elevated: "#1A2338",
+    border: "#1E2D4A",
   },
   text: {
-    primary: "#FFFFFF",
-    secondary: "#D1D5DB",
-    tertiary: "#9CA3AF",
-    inverse: "#111827",
+    primary: "#F1F5F9",
+    secondary: "#94A3B8",
+    tertiary: "#64748B",
+    inverse: "#102A5C",
   },
   state: {
-    approved: { bg: "#064E3B", fg: "#6EE7B7", solid: "#34D399" },
-    pending: { bg: "#78350F", fg: "#FCD34D", solid: "#FBBF24" },
-    denied: { bg: "#7F1D1D", fg: "#FCA5A5", solid: "#F87171" },
-    info: { bg: "#1E3A8A", fg: "#93C5FD", solid: "#60A5FA" },
+    approved: { bg: "#0A2E1F", fg: "#22D6A0", solid: "#22D6A0" },
+    pending:  { bg: "#2D1A00", fg: "#F5A524", solid: "#F5A524" },
+    denied:   { bg: "#2D0A0A", fg: "#F87171", solid: "#F04438" },
+    info:     { bg: "#0E2A52", fg: "#93C5FD", solid: "#3B8EFF" },
   },
 };
 

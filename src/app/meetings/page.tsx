@@ -117,13 +117,13 @@ export default function MeetingsPage() {
               {["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"].map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          <button onClick={() => { resetForm(); setShowForm(true); setViewing(null); }} className="flex items-center gap-1 rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">
+          <button onClick={() => { resetForm(); setShowForm(true); setViewing(null); }} className="flex items-center gap-1 rounded bg-brand-primary px-4 py-2 text-sm text-white transition-colors hover:bg-brand-primary-hover">
             <Plus size={16} /> Schedule Meeting
           </button>
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="rounded border bg-white p-4 shadow space-y-3">
+          <form onSubmit={handleSubmit} className="rounded border bg-surface p-4 shadow space-y-3">
             <h3 className="font-semibold">{editing ? "Edit Meeting" : "Schedule Meeting"}</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
@@ -170,47 +170,47 @@ export default function MeetingsPage() {
               </div>
             )}
             <div className="flex gap-2">
-              <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">{editing ? "Update" : "Create"}</button>
+              <button type="submit" className="rounded bg-brand-primary px-4 py-2 text-sm text-white transition-colors hover:bg-brand-primary-hover">{editing ? "Update" : "Create"}</button>
               <button type="button" onClick={resetForm} className="rounded border px-4 py-2 text-sm">Cancel</button>
             </div>
           </form>
         )}
 
         {viewing && (
-          <div className="rounded border bg-white p-4 shadow space-y-3">
+          <div className="rounded border bg-surface p-4 shadow space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{viewing.title}</h3>
-              <button onClick={() => setViewing(null)} className="text-gray-400 hover:text-gray-600 text-sm">Close</button>
+              <h3 className="text-lg font-semibold text-fg-primary">{viewing.title}</h3>
+              <button onClick={() => setViewing(null)} className="text-fg-tertiary hover:text-fg-secondary text-sm">Close</button>
             </div>
             <div className="flex gap-2 text-sm">
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[viewing.type] || "bg-gray-100"}`}>{viewing.type}</span>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[viewing.status] || "bg-gray-100"}`}>{viewing.status}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[viewing.type] || "bg-surface-elevated text-fg-secondary"}`}>{viewing.type}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[viewing.status] || "bg-surface-elevated text-fg-secondary"}`}>{viewing.status}</span>
             </div>
-            <p className="text-sm text-gray-600">{fmtDate(viewing.scheduledAt)}{viewing.location ? ` | ${viewing.location}` : ""}</p>
+            <p className="text-sm text-fg-secondary">{fmtDate(viewing.scheduledAt)}{viewing.location ? ` | ${viewing.location}` : ""}</p>
             {viewing.attendeeCount != null && <p className="text-sm">Attendees: {viewing.attendeeCount}</p>}
             {viewing.agenda && (
               <div>
                 <h4 className="font-medium text-sm">Agenda</h4>
-                <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{viewing.agenda}</p>
+                <p className="mt-1 text-sm text-fg-secondary whitespace-pre-wrap">{viewing.agenda}</p>
               </div>
             )}
             {viewing.minutes && (
               <div>
                 <h4 className="font-medium text-sm">Minutes</h4>
-                <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{viewing.minutes}</p>
+                <p className="mt-1 text-sm text-fg-secondary whitespace-pre-wrap">{viewing.minutes}</p>
               </div>
             )}
           </div>
         )}
 
         {loading ? (
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-fg-tertiary">Loading...</p>
         ) : meetings.length === 0 ? (
-          <p className="text-gray-500">No meetings found.</p>
+          <p className="text-fg-tertiary">No meetings found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+              <thead className="bg-surface-background text-left text-xs uppercase text-fg-tertiary">
                 <tr>
                   <th className="px-4 py-2">Title</th>
                   <th className="px-4 py-2">Type</th>
@@ -223,22 +223,22 @@ export default function MeetingsPage() {
               </thead>
               <tbody className="divide-y">
                 {meetings.map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 font-medium">{m.title}</td>
+                  <tr key={m.id} className="hover:bg-surface-background">
+                    <td className="px-4 py-2 font-medium text-fg-primary">{m.title}</td>
                     <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[m.type] || "bg-gray-100"}`}>{m.type}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[m.type] || "bg-surface-elevated text-fg-secondary"}`}>{m.type}</span>
                     </td>
                     <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[m.status] || "bg-gray-100"}`}>{m.status}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[m.status] || "bg-surface-elevated text-fg-secondary"}`}>{m.status}</span>
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">{fmtDate(m.scheduledAt)}</td>
                     <td className="px-4 py-2">{m.location || "-"}</td>
                     <td className="px-4 py-2">{m.attendeeCount ?? "-"}</td>
                     <td className="px-4 py-2">
                       <div className="flex gap-1">
-                        <button onClick={() => { setViewing(m); setShowForm(false); }} className="rounded p-1 text-gray-600 hover:bg-gray-100"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(m)} className="rounded p-1 text-blue-600 hover:bg-blue-50"><Pencil size={14} /></button>
-                        <button onClick={() => handleDelete(m.id)} className="rounded p-1 text-red-600 hover:bg-red-50"><Trash2 size={14} /></button>
+                        <button onClick={() => { setViewing(m); setShowForm(false); }} className="rounded p-1 text-fg-secondary hover:bg-surface-background"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(m)} className="rounded p-1 text-brand-primary hover:bg-brand-primary-light"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(m.id)} className="rounded p-1 text-denied-fg hover:bg-denied-bg"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>

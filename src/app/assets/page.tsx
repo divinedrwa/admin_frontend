@@ -131,7 +131,7 @@ export default function AssetsPage() {
           <div className="flex flex-wrap gap-2">
             {categories.map((c) => (
               <button key={c.name} onClick={() => { setCatFilter(catFilter === c.name ? "" : c.name); setPage(1); }}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${catFilter === c.name ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${catFilter === c.name ? "bg-brand-primary text-white" : "bg-surface-elevated text-fg-secondary hover:bg-surface-border"}`}>
                 {c.name} ({c.count})
               </button>
             ))}
@@ -143,13 +143,13 @@ export default function AssetsPage() {
             <option value="">All conditions</option>
             {["NEW", "GOOD", "FAIR", "POOR", "DECOMMISSIONED"].map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-          <button onClick={() => { resetForm(); setShowForm(true); }} className="flex items-center gap-1 rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">
+          <button onClick={() => { resetForm(); setShowForm(true); }} className="flex items-center gap-1 rounded bg-brand-primary px-4 py-2 text-sm text-white transition-colors hover:bg-brand-primary-hover">
             <Plus size={16} /> Add Asset
           </button>
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="rounded border bg-white p-4 shadow space-y-3">
+          <form onSubmit={handleSubmit} className="rounded border bg-surface p-4 shadow space-y-3">
             <h3 className="font-semibold">{editing ? "Edit Asset" : "New Asset"}</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div>
@@ -200,20 +200,20 @@ export default function AssetsPage() {
               <textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="mt-1 w-full rounded border px-3 py-2 text-sm" />
             </div>
             <div className="flex gap-2">
-              <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">{editing ? "Update" : "Create"}</button>
+              <button type="submit" className="rounded bg-brand-primary px-4 py-2 text-sm text-white transition-colors hover:bg-brand-primary-hover">{editing ? "Update" : "Create"}</button>
               <button type="button" onClick={resetForm} className="rounded border px-4 py-2 text-sm">Cancel</button>
             </div>
           </form>
         )}
 
         {loading ? (
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-fg-tertiary">Loading...</p>
         ) : assets.length === 0 ? (
-          <p className="text-gray-500">No assets found.</p>
+          <p className="text-fg-tertiary">No assets found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+              <thead className="bg-surface-background text-left text-xs uppercase text-fg-tertiary">
                 <tr>
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Category</th>
@@ -226,25 +226,25 @@ export default function AssetsPage() {
               </thead>
               <tbody className="divide-y">
                 {assets.map((a) => (
-                  <tr key={a.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 font-medium">{a.name}</td>
+                  <tr key={a.id} className="hover:bg-surface-background">
+                    <td className="px-4 py-2 font-medium text-fg-primary">{a.name}</td>
                     <td className="px-4 py-2">{a.category}</td>
                     <td className="px-4 py-2">{a.location || "-"}</td>
                     <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CONDITION_COLORS[a.condition] || "bg-gray-100"}`}>{a.condition}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CONDITION_COLORS[a.condition] || "bg-surface-elevated text-fg-secondary"}`}>{a.condition}</span>
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">{a.currentValue ? fmt.format(Number(a.currentValue)) : a.purchaseValue ? fmt.format(Number(a.purchaseValue)) : "-"}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {a.warrantyExpiry ? (
-                        <span className={new Date(a.warrantyExpiry) < new Date() ? "text-red-600" : "text-green-600"}>
+                        <span className={new Date(a.warrantyExpiry) < new Date() ? "text-denied-fg" : "text-approved-fg"}>
                           {new Date(a.warrantyExpiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                         </span>
                       ) : "-"}
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex gap-1">
-                        <button onClick={() => openEdit(a)} className="rounded p-1 text-blue-600 hover:bg-blue-50"><Pencil size={14} /></button>
-                        <button onClick={() => handleDelete(a.id)} className="rounded p-1 text-red-600 hover:bg-red-50"><Trash2 size={14} /></button>
+                        <button onClick={() => openEdit(a)} className="rounded p-1 text-brand-primary hover:bg-brand-primary-light"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(a.id)} className="rounded p-1 text-denied-fg hover:bg-denied-bg"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>

@@ -69,11 +69,11 @@ export function AppShell({
   }
 
   return (
-    <div className="min-h-screen flex bg-surface-background">
+    <div className="flex h-screen overflow-hidden bg-surface-background">
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {platformView ? (
-          <div className="border-b border-pending-solid/30 bg-pending-bg/80 px-4 py-3 print:hidden md:px-8">
+          <div className="shrink-0 border-b border-pending-solid/30 bg-pending-bg/80 px-4 py-3 print:hidden md:px-8">
             <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-pending-fg">
                 <span className="font-semibold">Platform view:</span> you are signed in as the society
@@ -91,7 +91,7 @@ export function AppShell({
           </div>
         ) : null}
         {headerContent ? (
-          <div className="border-b border-surface-border bg-surface/85 backdrop-blur-xl">
+          <div className="shrink-0 border-b border-surface-border bg-surface/85 backdrop-blur-xl">
             <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-4 py-3.5 md:px-8">
               <div className="flex items-center gap-3">
                 <button
@@ -107,7 +107,7 @@ export function AppShell({
             </div>
           </div>
         ) : (
-          <header className="sticky top-0 z-20 border-b border-surface-border bg-surface/85 backdrop-blur-xl">
+          <header className="z-20 shrink-0 border-b border-surface-border bg-surface/85 backdrop-blur-xl">
             <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 px-4 py-4 md:px-8">
               <div className="flex items-center gap-3 md:gap-4">
                 <button
@@ -178,7 +178,7 @@ export function AppShell({
 
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto scrollbar-thin"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain scrollbar-thin"
           style={{
             background:
               "radial-gradient(circle at top right, color-mix(in srgb, var(--gp-brand-primary) 6%, transparent), transparent 20%), radial-gradient(circle at bottom left, color-mix(in srgb, var(--gp-brand-accent) 5%, transparent), transparent 24%)",

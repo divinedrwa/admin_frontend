@@ -79,7 +79,18 @@ export type FyFormData = {
 
 export function utcInputValue(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
+
+/** Parse `datetime-local` value as UTC wall time (matches table ISO display). */
+export function utcIsoFromDatetimeLocal(value: string): string | undefined {
+  if (!value.trim()) return undefined;
+  const [datePart, timePart] = value.split("T");
+  if (!datePart) return undefined;
+  const [y, m, d] = datePart.split("-").map(Number);
+  const [hh = 0, mm = 0] = (timePart ?? "00:00").split(":").map(Number);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return undefined;
+  return new Date(Date.UTC(y, m - 1, d, hh, mm)).toISOString();
 }
 
 export const fmtInr = (n: number) =>

@@ -31,12 +31,6 @@ interface UpiSubmission {
   villa?: { villaNumber: string | null; block: string | null } | null;
 }
 
-interface UpiStats {
-  pending: number;
-  verified: number;
-  rejected: number;
-}
-
 const MONTH_NAMES = [
   "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -137,7 +131,7 @@ export default function UpiPaymentsPage() {
           </div>
           <div className="stat-card">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-brand-success" />
+              <CheckCircle2 className="h-5 w-5 text-approved-fg" />
               <div>
                 <div className="stat-card-label">Verified</div>
                 <div className="stat-card-value">{statsData.verified}</div>

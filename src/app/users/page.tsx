@@ -41,7 +41,7 @@ function UsersPageInner() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const roleFilter = searchParams.get("role")?.trim() || undefined;
-  const { offset, queryParams, handlePageChange } = useUrlPagination();
+  const { queryParams, handlePageChange } = useUrlPagination();
   const { data, isLoading: loading } = useUsers({
     ...queryParams,
     ...(roleFilter ? { role: roleFilter } : {}),

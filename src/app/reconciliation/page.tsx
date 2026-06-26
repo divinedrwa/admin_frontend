@@ -187,7 +187,7 @@ export default function ReconciliationPage() {
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="empty-state">
-                        <CheckCircle2 className="h-10 w-10 text-brand-success mx-auto mb-2" />
+                        <CheckCircle2 className="h-10 w-10 text-approved-fg mx-auto mb-2" />
                         <p className="empty-state-title">
                           {statusFilter === "unresolved"
                             ? "No unresolved alerts"

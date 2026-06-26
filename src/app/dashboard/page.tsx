@@ -1,6 +1,20 @@
 "use client";
 
-import { Briefcase, Clock3, LayoutDashboard, RefreshCw } from "lucide-react";
+import {
+  Briefcase,
+  Building2,
+  Clock3,
+  Users,
+  CreditCard,
+  Landmark,
+  Shield,
+  AlertTriangle,
+  UserCheck,
+  Package,
+  LayoutDashboard,
+  RefreshCw,
+  type LucideIcon,
+} from "lucide-react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import Link from "next/link";
@@ -16,14 +30,14 @@ const fmtInr = (n: number) =>
   );
 
 const STAT_ACCENTS = {
-  blue: { iconBg: "bg-info-bg", badge: "bg-info-bg text-info-fg" },
-  green: { iconBg: "bg-approved-bg", badge: "bg-approved-bg text-approved-fg" },
-  purple: { iconBg: "bg-info-bg", badge: "bg-info-bg text-info-fg" },
-  red: { iconBg: "bg-denied-bg", badge: "bg-denied-bg text-denied-fg" },
-  cyan: { iconBg: "bg-info-bg", badge: "bg-info-bg text-info-fg" },
-  orange: { iconBg: "bg-pending-bg", badge: "bg-pending-bg text-pending-fg" },
-  yellow: { iconBg: "bg-pending-bg", badge: "bg-pending-bg text-pending-fg" },
-  pink: { iconBg: "bg-denied-bg", badge: "bg-denied-bg text-denied-fg" },
+  blue:   { iconBg: "bg-brand-primary-light", iconColor: "text-brand-primary", badge: "bg-info-bg text-info-fg" },
+  green:  { iconBg: "bg-approved-bg", iconColor: "text-approved-fg", badge: "bg-approved-bg text-approved-fg" },
+  purple: { iconBg: "bg-info-bg",     iconColor: "text-info-fg",     badge: "bg-info-bg text-info-fg" },
+  red:    { iconBg: "bg-denied-bg",   iconColor: "text-denied-fg",   badge: "bg-denied-bg text-denied-fg" },
+  cyan:   { iconBg: "bg-info-bg",     iconColor: "text-info-fg",     badge: "bg-info-bg text-info-fg" },
+  orange: { iconBg: "bg-pending-bg",  iconColor: "text-pending-fg",  badge: "bg-pending-bg text-pending-fg" },
+  yellow: { iconBg: "bg-pending-bg",  iconColor: "text-pending-fg",  badge: "bg-pending-bg text-pending-fg" },
+  pink:   { iconBg: "bg-denied-bg",   iconColor: "text-denied-fg",   badge: "bg-denied-bg text-denied-fg" },
 } as const;
 
 function buildFundSparklinePath(points: FundTrendPoint[]) {
@@ -107,14 +121,14 @@ export default function DashboardPage() {
     })();
     return [
       {
-        icon: "🏘️",
+        icon: Building2 as LucideIcon,
         label: "Villas",
         value: String(villaCount),
         sub: `${residentCount} residents`,
         accent: STAT_ACCENTS.blue,
       },
       {
-        icon: "👥",
+        icon: Users as LucideIcon,
         label: "Active users",
         value: String(userStats?.totalActive ?? 0),
         sub: userStats
@@ -131,14 +145,14 @@ export default function DashboardPage() {
         accent: STAT_ACCENTS.green,
       },
       {
-        icon: "💰",
+        icon: CreditCard as LucideIcon,
         label: "Maint. pending (month)",
         value: fmtInr(pendingRupee),
         sub: `${maintenanceView?.collectionRate ?? 0}% collected`,
         accent: STAT_ACCENTS.yellow,
       },
       {
-        icon: "🏦",
+        icon: Landmark as LucideIcon,
         label: credit > 0.5 ? "Society fund (spendable)" : "Society fund balance",
         value: fmtInr(credit > 0.5 ? spendable : fundBalance),
         sub: fundSub,
@@ -146,42 +160,42 @@ export default function DashboardPage() {
         trend: fundTrend,
       },
       {
-        icon: "🛡️",
+        icon: Shield as LucideIcon,
         label: "Active guards",
         value: String(guardCount),
         sub: `${gates.filter((g) => g.isActive).length} gates`,
         accent: STAT_ACCENTS.purple,
       },
       {
-        icon: "🆘",
+        icon: AlertTriangle as LucideIcon,
         label: "Active SOS",
         value: String(sosActiveCount),
         sub: sosActiveCount ? "Attention" : "Clear",
         accent: sosActiveCount ? STAT_ACCENTS.red : STAT_ACCENTS.green,
       },
       {
-        icon: "👋",
+        icon: UserCheck as LucideIcon,
         label: "Visitors today",
         value: String(visitorTodayCount),
         sub: "Check-ins since midnight",
         accent: STAT_ACCENTS.cyan,
       },
       {
-        icon: "📦",
+        icon: Package as LucideIcon,
         label: "Parcels queued",
         value: String(parcelPendingCount),
         sub: "Pending / awaiting pickup",
         accent: STAT_ACCENTS.orange,
       },
       {
-        icon: "⚠️",
+        icon: AlertTriangle as LucideIcon,
         label: "Open complaints",
         value: String(complaintOpenCount),
         sub: "Excludes closed",
         accent: STAT_ACCENTS.pink,
       },
       {
-        icon: "🧾",
+        icon: CreditCard as LucideIcon,
         label: "Billing cycle",
         value: billingSnippet?.cycleKey ?? "—",
         sub: billingSnippet ? `${billingSnippet.status ?? ""}` : "Configure in Billing cycles",
@@ -206,15 +220,15 @@ export default function DashboardPage() {
   ]);
 
   const quickActions = [
-    { icon: "👥", label: "Residents", href: "/resident-management", box: "hover:bg-brand-primary-light border-surface-border text-brand-primary" },
-    { icon: "👋", label: "Visitors", href: "/visitors", box: "hover:bg-approved-bg border-surface-border text-approved-fg" },
-    { icon: "🆘", label: "SOS alerts", href: "/sos-alerts", box: "hover:bg-denied-bg border-surface-border text-denied-fg" },
-    { icon: "📢", label: "Notices", href: "/notices", box: "hover:bg-brand-primary-light border-surface-border text-brand-primary" },
-    { icon: "💰", label: "Maintenance", href: "/maintenance-management", box: "hover:bg-pending-bg border-surface-border text-pending-fg" },
-    { icon: "🧾", label: "Billing cycles", href: "/maintenance-billing", box: "hover:bg-brand-primary-light border-surface-border text-brand-primary" },
-    { icon: "⚠️", label: "Complaints", href: "/complaints", box: "hover:bg-pending-bg border-pending-bg text-pending-fg" },
-    { icon: "🚪", label: "Gates", href: "/gates", box: "hover:bg-surface-background border-surface-border text-fg-primary" },
-  ] as const;
+    { icon: Users,        label: "Residents",      href: "/resident-management",  iconCls: "text-brand-primary", boxCls: "hover:bg-brand-primary-light border-surface-border" },
+    { icon: UserCheck,    label: "Visitors",        href: "/visitors",             iconCls: "text-approved-fg",   boxCls: "hover:bg-approved-bg border-surface-border" },
+    { icon: AlertTriangle,label: "SOS alerts",     href: "/sos-alerts",           iconCls: "text-denied-fg",     boxCls: "hover:bg-denied-bg border-surface-border" },
+    { icon: Building2,    label: "Notices",         href: "/notices",              iconCls: "text-brand-primary", boxCls: "hover:bg-brand-primary-light border-surface-border" },
+    { icon: CreditCard,   label: "Maintenance",     href: "/maintenance-management",iconCls:"text-pending-fg",    boxCls: "hover:bg-pending-bg border-surface-border" },
+    { icon: Landmark,     label: "Billing cycles",  href: "/maintenance-billing",  iconCls: "text-info-fg",       boxCls: "hover:bg-info-bg border-surface-border" },
+    { icon: AlertTriangle,label: "Complaints",      href: "/complaints",           iconCls: "text-pending-fg",    boxCls: "hover:bg-pending-bg border-surface-border" },
+    { icon: Shield,       label: "Gates",           href: "/gates",                iconCls: "text-fg-secondary",  boxCls: "hover:bg-surface-background border-surface-border" },
+  ];
 
   function relTime(ms: number) {
     const s = Math.max(0, Math.floor((Date.now() - ms) / 1000));
@@ -261,13 +275,17 @@ export default function DashboardPage() {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {stats.map((stat) => (
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+            return (
             <div
               key={stat.label}
               className="stat-card bg-surface rounded-xl border border-surface-border shadow-sm p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between gap-2">
-                <div className={`rounded-xl p-3 text-2xl ${stat.accent.iconBg}`}>{stat.icon}</div>
+                <div className={`rounded-xl p-2.5 ${stat.accent.iconBg}`}>
+                  <Icon className={`h-5 w-5 ${stat.accent.iconColor}`} />
+                </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stat.accent.badge}`}>{stat.sub}</span>
               </div>
               <div className="mt-4 text-2xl font-bold text-fg-primary leading-tight break-words">{stat.value}</div>
@@ -290,7 +308,8 @@ export default function DashboardPage() {
                 </div>
               ) : null}
             </div>
-          ))}
+          );
+          })}
         </div>
 
         {/* Special Projects widget */}
@@ -390,7 +409,7 @@ export default function DashboardPage() {
                       key={a.id}
                       className="flex items-start gap-4 p-4 rounded-xl border border-surface-border bg-surface-background/50 hover:bg-surface-background transition-colors"
                     >
-                      <div className="text-2xl shrink-0">{a.icon}</div>
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-background text-lg border border-surface-border">{a.icon}</div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-fg-primary">{a.text}</p>
                         <p className="text-xs text-fg-secondary mt-1">{relTime(a.at)}</p>
@@ -410,16 +429,19 @@ export default function DashboardPage() {
               </div>
               <div className="card-body">
                 <div className="grid grid-cols-2 gap-2">
-                  {quickActions.map((action) => (
+                  {quickActions.map((action) => {
+                    const QIcon = action.icon;
+                    return (
                     <Link
                       key={action.href}
                       href={action.href}
-                      className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all hover:shadow-sm hover:scale-[1.02] ${action.box}`}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all hover:shadow-sm hover:scale-[1.02] ${action.boxCls}`}
                     >
-                      <span className="text-2xl mb-1">{action.icon}</span>
-                      <span className="text-xs font-semibold text-center">{action.label}</span>
+                      <QIcon className={`h-5 w-5 mb-1.5 ${action.iconCls}`} />
+                      <span className="text-xs font-semibold text-center text-fg-primary">{action.label}</span>
                     </Link>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

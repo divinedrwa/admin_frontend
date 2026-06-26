@@ -154,13 +154,13 @@ export default function VendorContractsPage() {
               ))}
             </select>
           </div>
-          <button onClick={() => { resetForm(); setShowForm(true); }} className="flex items-center gap-1 rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">
+          <button onClick={() => { resetForm(); setShowForm(true); }} className="flex items-center gap-1 rounded bg-brand-primary px-4 py-2 text-sm text-white transition-colors hover:bg-brand-primary-hover">
             <Plus size={16} /> New Contract
           </button>
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="rounded border bg-white p-4 shadow space-y-3">
+          <form onSubmit={handleSubmit} className="rounded border bg-surface p-4 shadow space-y-3">
             <h3 className="font-semibold">{editing ? "Edit Contract" : "New Contract"}</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
@@ -210,20 +210,20 @@ export default function VendorContractsPage() {
               <textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="mt-1 w-full rounded border px-3 py-2 text-sm" />
             </div>
             <div className="flex gap-2">
-              <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">{editing ? "Update" : "Create"}</button>
+              <button type="submit" className="rounded bg-brand-primary px-4 py-2 text-sm text-white transition-colors hover:bg-brand-primary-hover">{editing ? "Update" : "Create"}</button>
               <button type="button" onClick={resetForm} className="rounded border px-4 py-2 text-sm">Cancel</button>
             </div>
           </form>
         )}
 
         {loading ? (
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-fg-tertiary">Loading...</p>
         ) : contracts.length === 0 ? (
-          <p className="text-gray-500">No contracts found.</p>
+          <p className="text-fg-tertiary">No contracts found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+              <thead className="bg-surface-background text-left text-xs uppercase text-fg-tertiary">
                 <tr>
                   <th className="px-4 py-2">Title</th>
                   <th className="px-4 py-2">Vendor</th>
@@ -236,24 +236,24 @@ export default function VendorContractsPage() {
               </thead>
               <tbody className="divide-y">
                 {contracts.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 font-medium">
+                  <tr key={c.id} className="hover:bg-surface-background">
+                    <td className="px-4 py-2 font-medium text-fg-primary">
                       {c.title}
                       {c.documentUrl && (
-                        <a href={c.documentUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-500"><ExternalLink size={12} className="inline" /></a>
+                        <a href={c.documentUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-brand-primary"><ExternalLink size={12} className="inline" /></a>
                       )}
                     </td>
                     <td className="px-4 py-2">{c.vendor.name}</td>
                     <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[c.status] || "bg-gray-100"}`}>{c.status}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[c.status] || "bg-surface-elevated text-fg-secondary"}`}>{c.status}</span>
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">{fmtDate(c.startDate)} - {fmtDate(c.endDate)}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{fmt.format(Number(c.amount))}</td>
                     <td className="px-4 py-2">{c.autoRenew ? "Yes" : "No"}</td>
                     <td className="px-4 py-2">
                       <div className="flex gap-1">
-                        <button onClick={() => openEdit(c)} className="rounded p-1 text-blue-600 hover:bg-blue-50"><Pencil size={14} /></button>
-                        <button onClick={() => handleDelete(c.id)} className="rounded p-1 text-red-600 hover:bg-red-50"><Trash2 size={14} /></button>
+                        <button onClick={() => openEdit(c)} className="rounded p-1 text-brand-primary hover:bg-brand-primary-light"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(c.id)} className="rounded p-1 text-denied-fg hover:bg-denied-bg"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
