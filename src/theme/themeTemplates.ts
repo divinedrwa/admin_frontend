@@ -126,6 +126,9 @@ const SEEDS: Seed[] = [
   { id: "bhagwa-saffron", name: "Bhagwa Saffron", primary: "#B5530E", primaryDark: "#8A3E08", secondary: "#E2670A", accent: "#FF9933", sidebar: "#5A2D0C" },
   { id: "temple-maroon", name: "Temple Maroon", primary: "#7F1D1D", primaryDark: "#641515", secondary: "#9F1239", accent: "#EA580C", sidebar: "#450A0A" },
   { id: "marigold-gold", name: "Marigold Gold", primary: "#A16207", primaryDark: "#854D0E", secondary: "#CA8A04", accent: "#EAB308", sidebar: "#713F12" },
+  // Monochrome / neutral
+  { id: "monochrome", name: "Black & White", primary: "#18181B", primaryDark: "#000000", secondary: "#3F3F46", accent: "#52525B", sidebar: "#000000" },
+  { id: "soft-grey", name: "White & Grey", primary: "#64748B", primaryDark: "#475569", secondary: "#78909C", accent: "#94A3B8", sidebar: "#475569" },
 ];
 
 export const THEME_TEMPLATES: ThemeTemplate[] = SEEDS.map((s) => ({
