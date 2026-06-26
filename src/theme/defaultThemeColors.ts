@@ -2,8 +2,10 @@
  * Canonical society theme defaults — keep in sync with:
  * - `scripts/generate-theme-css.mjs` (web CSS variables)
  * - `divine_app/lib/theme/app_colors.dart` (`AppColorPalette.light`)
+ * - `divine_app/lib/core/theme/app_colors_bridge.dart` (`AppColorState.defaults`)
  *
- * These are the colors users see before any society override is saved.
+ * Palette derived from the GatePass+ Play Store asset pack:
+ * deep teal-green brand, dark teal sidebar, vibrant green accents.
  */
 
 export type ThemeColors = {
@@ -15,9 +17,9 @@ export type ThemeColors = {
   primaryLight: string;
   /** Container / chip backgrounds */
   primaryContainer: string;
-  /** Secondary brand (cyan) — gradients, secondary buttons */
+  /** Secondary brand — gradients, secondary buttons */
   secondaryColor: string;
-  /** Success / accent emerald */
+  /** Success / vibrant accent (logo +, approve actions) */
   accentColor: string;
   /** Brand gradient stops (mobile headers, marketing) */
   gradientStart: string;
@@ -42,7 +44,7 @@ export type ThemeColors = {
   fieldBg: string;
   /** Typed text inside inputs */
   fieldText: string;
-  /** Admin web only: left nav gradient base (deep navy) */
+  /** Admin web only: left nav gradient base (deep teal) */
   sidebarBg: string;
   /** Admin web only: selected nav item pill */
   sidebarActiveColor: string;
@@ -58,39 +60,39 @@ export type ThemeColors = {
   errorColor: string;
 };
 
-/** GatePass+ premium defaults — navy sidebar, blue brand, cool gray surfaces. */
+/** GatePass+ Play Store asset pack — forest teal brand, dark teal sidebar. */
 export const DEFAULT_THEME_COLORS: ThemeColors = {
-  primaryColor: "#0B66D8",
-  primaryHover: "#0A57BD",
-  primaryLight: "#EAF2FD",
-  primaryContainer: "#EAF2FD",
-  secondaryColor: "#0C8BC4",
-  accentColor: "#0E9F6E",
-  gradientStart: "#0B66D8",
-  gradientMiddle: "#0C8BC4",
-  gradientEnd: "#0E9F6E",
-  buttonBg: "#0B66D8",
+  primaryColor: "#004D40",
+  primaryHover: "#003D33",
+  primaryLight: "#E0F2F1",
+  primaryContainer: "#E8F5F0",
+  secondaryColor: "#00695C",
+  accentColor: "#00C853",
+  gradientStart: "#003D33",
+  gradientMiddle: "#004D40",
+  gradientEnd: "#00796B",
+  buttonBg: "#004D40",
   buttonText: "#FFFFFF",
-  secondaryButtonBg: "#0C8BC4",
+  secondaryButtonBg: "#00695C",
   secondaryButtonText: "#FFFFFF",
-  headingColor: "#0F2A57",
+  headingColor: "#1A2B3C",
   bodyTextColor: "#5A6472",
   mutedTextColor: "#6B7480",
-  backgroundColor: "#F7F9FD",
+  backgroundColor: "#F4F7F6",
   cardColor: "#FFFFFF",
-  fieldBg: "#F8FBFE",
+  fieldBg: "#F8FAF9",
   fieldText: "#262626",
-  sidebarBg: "#0F172A",
-  sidebarActiveColor: "#0B66D8",
-  borderColor: "#E5EDF8",
-  iconColor: "#6B7480",
+  sidebarBg: "#003D33",
+  sidebarActiveColor: "#00796B",
+  borderColor: "#E0E8E4",
+  iconColor: "#5A6472",
   iconBg: "#FFFFFF",
-  warningColor: "#C77700",
-  errorColor: "#D92D20",
+  warningColor: "#FB8C00",
+  errorColor: "#E53935",
 };
 
 /** Mid-tone stop for the sidebar gradient (`--gp-sidebar-via`). */
-export const DEFAULT_SIDEBAR_VIA = "#1E293B";
+export const DEFAULT_SIDEBAR_VIA = "#004D40";
 
 /**
  * Where each key is consumed — shown as picker hints in Society Settings.

@@ -76,84 +76,84 @@ export interface Theme {
 }
 
 // =============================================================
-//  GatePass+ brand palette — navy sidebar, blue brand, cool surfaces.
+//  GatePass+ brand palette — Play Store asset pack (teal-green brand).
 //  Keep in sync with `defaultThemeColors.ts` and `generate-theme-css.mjs`.
 // =============================================================
 
 export const lightTheme: Theme = {
   brand: {
-    primary: "#0B66D8",
-    primaryHover: "#0A57BD",
-    primaryLight: "#EAF2FD",
-    accent: "#0E9F6E",
-    danger: "#D92D20",
+    primary: "#004D40",
+    primaryHover: "#003D33",
+    primaryLight: "#E0F2F1",
+    accent: "#00C853",
+    danger: "#E53935",
   },
   sidebar: {
-    from: "#0F172A",
-    via: "#1E293B",
-    to: "#0F172A",
+    from: "#003D33",
+    via: "#004D40",
+    to: "#003D33",
     activeText: "#FFFFFF",
-    activeBg: "#0B66D8",
+    activeBg: "#00796B",
     hoverBg: "rgba(255,255,255,0.08)",
     mutedText: "#94A3B8",
     border: "rgba(255,255,255,0.08)",
   },
   login: {
-    from: "#0F172A",
-    via: "#1E3A6E",
-    to: "#0B66D8",
+    from: "#003D33",
+    via: "#004D40",
+    to: "#00695C",
   },
   superLogin: {
-    from: "#0D1322",
-    via: "#141B2D",
+    from: "#00251A",
+    via: "#003D33",
     to: "#000000",
   },
   surface: {
-    background: "#F7F9FD",
+    background: "#F4F7F6",
     default: "#FFFFFF",
-    elevated: "#F8FBFE",
-    border: "#E5EDF8",
+    elevated: "#F8FAF9",
+    border: "#E0E8E4",
   },
   text: {
-    primary: "#0F2A57",
+    primary: "#1A2B3C",
     secondary: "#5A6472",
     tertiary: "#6B7480",
     inverse: "#FFFFFF",
   },
   state: {
-    approved: { bg: "#E3F6EE", fg: "#065F46", solid: "#0E9F6E" },
-    pending: { bg: "#FFF4E0", fg: "#92400E", solid: "#C77700" },
-    denied: { bg: "#FDEDEC", fg: "#991B1B", solid: "#D92D20" },
-    info: { bg: "#EAF2FD", fg: "#1E40AF", solid: "#0B66D8" },
+    approved: { bg: "#E8F5E9", fg: "#1B5E20", solid: "#00C853" },
+    pending: { bg: "#FFF3E0", fg: "#E65100", solid: "#FB8C00" },
+    denied: { bg: "#FFEBEE", fg: "#B71C1C", solid: "#E53935" },
+    info: { bg: "#E3F2FD", fg: "#1565C0", solid: "#1976D2" },
   },
 };
 
 export const darkTheme: Theme = {
   brand: {
-    primary: "#F9FAFB",
-    primaryHover: "#E5E7EB",
-    primaryLight: "#1E3A5F",
-    accent: "#3B82F6",
-    danger: "#F87171",
+    primary: "#26A69A",
+    primaryHover: "#00897B",
+    primaryLight: "#0A2E28",
+    accent: "#00E676",
+    danger: "#EF5350",
   },
   sidebar: {
-    from: "#1A1D22",
-    via: "#1A1D22",
-    to: "#1A1D22",
+    from: "#00251A",
+    via: "#003D33",
+    to: "#00251A",
     activeText: "#FFFFFF",
-    activeBg: "#3B82F6",
+    activeBg: "#00796B",
     hoverBg: "rgba(255,255,255,0.06)",
     mutedText: "#6B7580",
     border: "rgba(255,255,255,0.06)",
   },
   login: {
-    from: "#1E40AF",
-    via: "#1E3A5F",
-    to: "#111827",
+    from: "#00251A",
+    via: "#003D33",
+    to: "#004D40",
   },
   superLogin: {
-    from: "#0F172A",
-    via: "#1E1E1E",
+    from: "#001A14",
+    via: "#00251A",
     to: "#000000",
   },
   surface: {
@@ -169,10 +169,10 @@ export const darkTheme: Theme = {
     inverse: "#111827",
   },
   state: {
-    approved: { bg: "#064E3B", fg: "#6EE7B7", solid: "#34D399" },
-    pending: { bg: "#78350F", fg: "#FCD34D", solid: "#FBBF24" },
-    denied: { bg: "#7F1D1D", fg: "#FCA5A5", solid: "#F87171" },
-    info: { bg: "#1E3A8A", fg: "#93C5FD", solid: "#60A5FA" },
+    approved: { bg: "#0A2E1F", fg: "#69F0AE", solid: "#00E676" },
+    pending: { bg: "#3E2723", fg: "#FFB74D", solid: "#FB8C00" },
+    denied: { bg: "#3E1010", fg: "#EF9A9A", solid: "#EF5350" },
+    info: { bg: "#0D2137", fg: "#90CAF9", solid: "#42A5F5" },
   },
 };
 
