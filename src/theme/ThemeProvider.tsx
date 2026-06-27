@@ -17,9 +17,9 @@ import {
 } from "./tokens";
 import { api } from "@/lib/api";
 import {
-  DEFAULT_SIDEBAR_VIA,
   DEFAULT_THEME_COLORS,
   mergeThemeColors,
+  resolveSidebarVia,
 } from "./defaultThemeColors";
 
 export { mergeThemeColors, normalizeThemeColors } from "./defaultThemeColors";
@@ -100,24 +100,9 @@ const THEME_COLOR_MAP: Record<string, string[]> = {
   errorColor: ["--gp-brand-danger", "--gp-state-denied-solid"],
 };
 
-/** Lighten a #rrggbb hex for the sidebar gradient mid-stop. */
-function lightenHex(hex: string, amount: number): string {
-  const normalized = hex.replace("#", "");
-  if (normalized.length !== 6) return DEFAULT_SIDEBAR_VIA;
-  const r = parseInt(normalized.slice(0, 2), 16);
-  const g = parseInt(normalized.slice(2, 4), 16);
-  const b = parseInt(normalized.slice(4, 6), 16);
-  const mix = (c: number) =>
-    Math.min(255, Math.round(c + (255 - c) * amount));
-  const toHex = (n: number) => n.toString(16).padStart(2, "0");
-  return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
-}
-
+/** Mid-tone stop for the sidebar gradient (`--gp-sidebar-via`). */
 function sidebarViaStop(sidebarBg: string): string {
-  if (sidebarBg.toUpperCase() === DEFAULT_THEME_COLORS.sidebarBg.toUpperCase()) {
-    return DEFAULT_SIDEBAR_VIA;
-  }
-  return lightenHex(sidebarBg, 0.12);
+  return resolveSidebarVia(sidebarBg);
 }
 
 /** Remove inline society overrides so `theme-vars.css` defaults show through. */

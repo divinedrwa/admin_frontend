@@ -8,9 +8,9 @@ import { parseApiError } from "@/utils/errorHandler";
 import { Save, Upload, Trash2, Smartphone, Monitor, Eye, RotateCcw } from "lucide-react";
 import { applyThemeColors, mergeThemeColors } from "@/theme/ThemeProvider";
 import {
-  DEFAULT_SIDEBAR_VIA,
   DEFAULT_THEME_COLORS,
   THEME_COLOR_USAGE,
+  resolveSidebarVia,
   type ThemeColors,
 } from "@/theme/defaultThemeColors";
 import { THEME_TEMPLATES } from "@/theme/themeTemplates";
@@ -210,10 +210,7 @@ function MobileAppThemePreview({ theme }: ThemePreviewProps) {
 }
 
 function AdminDashboardThemePreview({ theme }: ThemePreviewProps) {
-  const sidebarVia =
-    theme.sidebarBg.toUpperCase() === DEFAULT_THEME_COLORS.sidebarBg.toUpperCase()
-      ? DEFAULT_SIDEBAR_VIA
-      : theme.sidebarBg;
+  const sidebarVia = resolveSidebarVia(theme.sidebarBg);
 
   return (
     <div className="flex overflow-hidden rounded-2xl border border-surface-border shadow-sm">

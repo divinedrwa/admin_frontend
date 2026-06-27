@@ -4,8 +4,8 @@
  * - `divine_app/lib/theme/app_colors.dart` (`AppColorPalette.light`)
  * - `divine_app/lib/core/theme/app_colors_bridge.dart` (`AppColorState.defaults`)
  *
- * Palette derived from the GatePass+ Play Store asset pack:
- * deep teal-green brand, dark teal sidebar, vibrant green accents.
+ * Platform default matches the GatePass+ brand identity (navy / blue / green).
+ * Societies can pick “Forest Teal” or other templates in Society Settings.
  */
 
 export type ThemeColors = {
@@ -60,39 +60,64 @@ export type ThemeColors = {
   errorColor: string;
 };
 
-/** GatePass+ Play Store asset pack — forest teal brand, dark teal sidebar. */
-export const DEFAULT_THEME_COLORS: ThemeColors = {
-  primaryColor: "#004D40",
-  primaryHover: "#003D33",
-  primaryLight: "#E0F2F1",
-  primaryContainer: "#E8F5F0",
-  secondaryColor: "#00695C",
-  accentColor: "#00C853",
-  gradientStart: "#003D33",
-  gradientMiddle: "#004D40",
-  gradientEnd: "#00796B",
-  buttonBg: "#004D40",
+/**
+ * Official GatePass+ brand palette — product identity guide:
+ * navy #0D1B3D, royal blue #2563EB, green #16A34A, surfaces #F4F6F8.
+ */
+export const GP_BRAND_THEME_COLORS: ThemeColors = {
+  primaryColor: "#0D1B3D",
+  primaryHover: "#091428",
+  primaryLight: "#E8ECF4",
+  primaryContainer: "#EEF2F8",
+  secondaryColor: "#2563EB",
+  accentColor: "#16A34A",
+  gradientStart: "#070F22",
+  gradientMiddle: "#0D1B3D",
+  gradientEnd: "#16A34A",
+  buttonBg: "#0D1B3D",
   buttonText: "#FFFFFF",
-  secondaryButtonBg: "#00695C",
+  secondaryButtonBg: "#2563EB",
   secondaryButtonText: "#FFFFFF",
-  headingColor: "#1A2B3C",
-  bodyTextColor: "#5A6472",
-  mutedTextColor: "#6B7480",
-  backgroundColor: "#F4F7F6",
+  headingColor: "#0D1B3D",
+  bodyTextColor: "#374151",
+  mutedTextColor: "#6B7280",
+  backgroundColor: "#F4F6F8",
   cardColor: "#FFFFFF",
-  fieldBg: "#F8FAF9",
-  fieldText: "#262626",
-  sidebarBg: "#003D33",
-  sidebarActiveColor: "#00796B",
-  borderColor: "#E0E8E4",
-  iconColor: "#5A6472",
+  fieldBg: "#F4F6F8",
+  fieldText: "#0D1B3D",
+  sidebarBg: "#0D1B3D",
+  sidebarActiveColor: "#16A34A",
+  borderColor: "#E2E8F0",
+  iconColor: "#64748B",
   iconBg: "#FFFFFF",
-  warningColor: "#FB8C00",
-  errorColor: "#E53935",
+  warningColor: "#D97706",
+  errorColor: "#DC2626",
+};
+
+/** Mid-stop for admin sidebar gradient (GP navy). */
+export const GP_SIDEBAR_VIA = "#1A3568";
+
+const FOREST_TEAL_SIDEBAR = "#003D33";
+const FOREST_TEAL_SIDEBAR_VIA = "#004D40";
+
+const SIDEBAR_VIA_BY_BG: Record<string, string> = {
+  [GP_BRAND_THEME_COLORS.sidebarBg.toUpperCase()]: GP_SIDEBAR_VIA,
+  [FOREST_TEAL_SIDEBAR]: FOREST_TEAL_SIDEBAR_VIA,
+};
+
+/** Sidebar gradient mid-stop for previews and runtime theme apply. */
+export function resolveSidebarVia(sidebarBg: string): string {
+  const key = sidebarBg.trim().toUpperCase();
+  return SIDEBAR_VIA_BY_BG[key] ?? sidebarBg;
+}
+
+/** GatePass+ brand — platform default when society has no custom theme. */
+export const DEFAULT_THEME_COLORS: ThemeColors = {
+  ...GP_BRAND_THEME_COLORS,
 };
 
 /** Mid-tone stop for the sidebar gradient (`--gp-sidebar-via`). */
-export const DEFAULT_SIDEBAR_VIA = "#004D40";
+export const DEFAULT_SIDEBAR_VIA = GP_SIDEBAR_VIA;
 
 /**
  * Where each key is consumed — shown as picker hints in Society Settings.

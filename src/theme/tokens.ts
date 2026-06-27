@@ -76,55 +76,55 @@ export interface Theme {
 }
 
 // =============================================================
-//  GatePass+ brand palette — Play Store asset pack (teal-green brand).
+//  GatePass+ brand palette — official identity (navy / blue / green).
 //  Keep in sync with `defaultThemeColors.ts` and `generate-theme-css.mjs`.
 // =============================================================
 
 export const lightTheme: Theme = {
   brand: {
-    primary: "#004D40",
-    primaryHover: "#003D33",
-    primaryLight: "#E0F2F1",
-    accent: "#00C853",
-    danger: "#E53935",
+    primary: "#0D1B3D",
+    primaryHover: "#091428",
+    primaryLight: "#E8ECF4",
+    accent: "#16A34A",
+    danger: "#DC2626",
   },
   sidebar: {
-    from: "#003D33",
-    via: "#004D40",
-    to: "#003D33",
+    from: "#0D1B3D",
+    via: "#1A3568",
+    to: "#0D1B3D",
     activeText: "#FFFFFF",
-    activeBg: "#00796B",
+    activeBg: "#16A34A",
     hoverBg: "rgba(255,255,255,0.08)",
     mutedText: "#94A3B8",
     border: "rgba(255,255,255,0.08)",
   },
   login: {
-    from: "#003D33",
-    via: "#004D40",
-    to: "#00695C",
+    from: "#070F22",
+    via: "#0D1B3D",
+    to: "#2563EB",
   },
   superLogin: {
-    from: "#00251A",
-    via: "#003D33",
+    from: "#050A14",
+    via: "#0D1B3D",
     to: "#000000",
   },
   surface: {
-    background: "#F4F7F6",
+    background: "#F4F6F8",
     default: "#FFFFFF",
-    elevated: "#F8FAF9",
-    border: "#E0E8E4",
+    elevated: "#F4F6F8",
+    border: "#E2E8F0",
   },
   text: {
-    primary: "#1A2B3C",
-    secondary: "#5A6472",
-    tertiary: "#6B7480",
+    primary: "#0D1B3D",
+    secondary: "#374151",
+    tertiary: "#6B7280",
     inverse: "#FFFFFF",
   },
   state: {
-    approved: { bg: "#E8F5E9", fg: "#1B5E20", solid: "#00C853" },
-    pending: { bg: "#FFF3E0", fg: "#E65100", solid: "#FB8C00" },
-    denied: { bg: "#FFEBEE", fg: "#B71C1C", solid: "#E53935" },
-    info: { bg: "#E3F2FD", fg: "#1565C0", solid: "#1976D2" },
+    approved: { bg: "#DCFCE7", fg: "#166534", solid: "#16A34A" },
+    pending: { bg: "#FEF3C7", fg: "#B45309", solid: "#D97706" },
+    denied: { bg: "#FEE2E2", fg: "#B91C1C", solid: "#DC2626" },
+    info: { bg: "#DBEAFE", fg: "#1D4ED8", solid: "#2563EB" },
   },
 };
 

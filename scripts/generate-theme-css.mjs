@@ -23,57 +23,57 @@ const outPath = resolve(root, "src/theme/theme-vars.css");
 // Simpler: re-implement the constants here. The two-line duplication is
 // worth keeping the generator dependency-free.
 
-// GatePass+ brand palette — Play Store asset pack (teal-green brand).
+// GatePass+ brand palette — official identity (navy / blue / green).
 // Keep in sync with divine_app/lib/theme/app_colors.dart
 const lightTheme = {
   brand: {
-    primary: "#004D40",
-    "primary-hover": "#003D33",
-    "primary-light": "#E0F2F1",
-    secondary: "#00695C",
-    accent: "#00C853",
-    "gradient-start": "#003D33",
-    "gradient-middle": "#004D40",
-    "gradient-end": "#00796B",
-    danger: "#E53935",
+    primary: "#0D1B3D",
+    "primary-hover": "#091428",
+    "primary-light": "#E8ECF4",
+    secondary: "#2563EB",
+    accent: "#16A34A",
+    "gradient-start": "#070F22",
+    "gradient-middle": "#0D1B3D",
+    "gradient-end": "#16A34A",
+    danger: "#DC2626",
   },
   sidebar: {
-    from: "#003D33",
-    via: "#004D40",
-    to: "#003D33",
+    from: "#0D1B3D",
+    via: "#1A3568",
+    to: "#0D1B3D",
     "active-text": "#FFFFFF",
-    "active-bg": "#00796B",
+    "active-bg": "#16A34A",
     "hover-bg": "rgba(255,255,255,0.08)",
     "muted-text": "#94A3B8",
     border: "rgba(255,255,255,0.08)",
   },
   login: {
-    from: "#003D33",
-    via: "#004D40",
-    to: "#00695C",
+    from: "#070F22",
+    via: "#0D1B3D",
+    to: "#2563EB",
   },
   "super-login": {
-    from: "#00251A",
-    via: "#003D33",
+    from: "#050A14",
+    via: "#0D1B3D",
     to: "#000000",
   },
   surface: {
-    background: "#F4F7F6",
+    background: "#F4F6F8",
     default: "#FFFFFF",
-    elevated: "#F8FAF9",
-    border: "#E0E8E4",
+    elevated: "#F4F6F8",
+    border: "#E2E8F0",
   },
   text: {
-    primary: "#1A2B3C",
-    secondary: "#5A6472",
-    tertiary: "#6B7480",
+    primary: "#0D1B3D",
+    secondary: "#374151",
+    tertiary: "#6B7280",
     inverse: "#FFFFFF",
   },
   state: {
-    approved: { bg: "#E8F5E9", fg: "#1B5E20", solid: "#00C853" },
-    pending:  { bg: "#FFF3E0", fg: "#E65100", solid: "#FB8C00" },
-    denied:   { bg: "#FFEBEE", fg: "#B71C1C", solid: "#E53935" },
-    info:     { bg: "#E3F2FD", fg: "#1565C0", solid: "#1976D2" },
+    approved: { bg: "#DCFCE7", fg: "#166534", solid: "#16A34A" },
+    pending:  { bg: "#FEF3C7", fg: "#B45309", solid: "#D97706" },
+    denied:   { bg: "#FEE2E2", fg: "#B91C1C", solid: "#DC2626" },
+    info:     { bg: "#DBEAFE", fg: "#1D4ED8", solid: "#2563EB" },
   },
 };
 
