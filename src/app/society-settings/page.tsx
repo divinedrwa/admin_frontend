@@ -860,8 +860,9 @@ export default function SocietySettingsPage() {
               <div>
                 <p className="text-sm font-semibold text-fg-primary">Quick themes</p>
                 <p className="text-xs text-fg-tertiary">
-                  {THEME_TEMPLATES.length} professional palettes — tap one to instantly apply it
-                  across the app and dashboard.
+                  {THEME_TEMPLATES.length} professional palettes —{" "}
+                  <span className="font-medium text-brand-primary">GatePass+</span> is the official
+                  brand theme. Tap one to apply across the app and dashboard.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -904,6 +905,11 @@ export default function SocietySettingsPage() {
                           style={{ color: t.colors.headingColor }}
                         >
                           {t.name}
+                          {t.id === "gatepass-brand" ? (
+                            <span className="ml-1 rounded bg-brand-primary/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-primary">
+                              Brand
+                            </span>
+                          ) : null}
                         </span>
                       </div>
                     </button>

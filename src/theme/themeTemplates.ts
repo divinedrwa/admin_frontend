@@ -132,8 +132,50 @@ const SEEDS: Seed[] = [
   { id: "soft-grey", name: "White & Grey", primary: "#64748B", primaryDark: "#475569", secondary: "#78909C", accent: "#94A3B8", sidebar: "#475569" },
 ];
 
-export const THEME_TEMPLATES: ThemeTemplate[] = SEEDS.map((s) => ({
-  id: s.id,
-  name: s.name,
-  colors: build(s),
-}));
+/**
+ * Official GatePass+ brand palette — from the product identity guide:
+ * navy primary (#0D1B3D), blue highlight (#2563EB), green accent (#16A34A),
+ * light surfaces (#F4F6F8), Plus Jakarta Sans typography (web uses Inter fallback).
+ */
+export const GP_BRAND_TEMPLATE: ThemeTemplate = {
+  id: "gatepass-brand",
+  name: "GatePass+",
+  colors: {
+    primaryColor: "#0D1B3D",
+    primaryHover: "#070F22",
+    primaryLight: "#E8ECF4",
+    primaryContainer: "#EEF1F7",
+    secondaryColor: "#2563EB",
+    accentColor: "#16A34A",
+    gradientStart: "#070F22",
+    gradientMiddle: "#0D1B3D",
+    gradientEnd: "#2563EB",
+    buttonBg: "#0D1B3D",
+    buttonText: "#FFFFFF",
+    secondaryButtonBg: "#2563EB",
+    secondaryButtonText: "#FFFFFF",
+    headingColor: "#0D1B3D",
+    bodyTextColor: "#4B5563",
+    mutedTextColor: "#6B7280",
+    backgroundColor: "#F4F6F8",
+    cardColor: "#FFFFFF",
+    fieldBg: "#F4F6F8",
+    fieldText: "#0D1B3D",
+    sidebarBg: "#0D1B3D",
+    sidebarActiveColor: "#16A34A",
+    borderColor: "#E5E7EB",
+    iconColor: "#6B7280",
+    iconBg: "#FFFFFF",
+    warningColor: "#B45309",
+    errorColor: "#B42318",
+  },
+};
+
+export const THEME_TEMPLATES: ThemeTemplate[] = [
+  GP_BRAND_TEMPLATE,
+  ...SEEDS.map((s) => ({
+    id: s.id,
+    name: s.name,
+    colors: build(s),
+  })),
+];
