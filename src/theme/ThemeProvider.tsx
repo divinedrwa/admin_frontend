@@ -79,10 +79,10 @@ const OVERRIDABLE_CSS_VARS = [
  * keys (primaryColor, secondaryColor, buttonText, headingColor, primaryLight).
  */
 const THEME_COLOR_MAP: Record<string, string[]> = {
-  primaryColor: ["--gp-brand-primary", "--gp-state-info-solid"],
+  primaryColor: ["--gp-brand-primary"],
   primaryHover: ["--gp-brand-primary-hover"],
   primaryLight: ["--gp-brand-primary-light"],
-  secondaryColor: ["--gp-brand-secondary"],
+  secondaryColor: ["--gp-brand-secondary", "--gp-state-info-solid"],
   accentColor: ["--gp-brand-accent", "--gp-state-approved-solid"],
   gradientStart: ["--gp-brand-gradient-start"],
   gradientMiddle: ["--gp-brand-gradient-middle"],

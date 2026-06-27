@@ -50,20 +50,20 @@ function readableText(bg: string): string {
   return contrastWithWhite >= 3.2 ? "#FFFFFF" : "#0B1220";
 }
 
-// Fixed, professional light surface/text system (AA verified, theme-agnostic).
+// Fixed, professional light surface/text system — aligned with GP brand defaults.
 const S = {
-  heading: "#111827",
-  body: "#4B5563",
-  muted: "#6B7280",
-  background: "#F6F8FA",
+  heading: "#0D1B3D",
+  body: "#475569",
+  muted: "#64748B",
+  background: "#F8FAFC",
   card: "#FFFFFF",
-  fieldBg: "#F8FAFB",
-  fieldText: "#1F2933",
-  border: "#E5E7EB",
-  icon: "#6B7280",
+  fieldBg: "#F8FAFC",
+  fieldText: "#0D1B3D",
+  border: "#E2E8F0",
+  icon: "#64748B",
   iconBg: "#FFFFFF",
-  warning: "#B45309",
-  error: "#B42318",
+  warning: "#D97706",
+  error: "#DC2626",
 };
 
 function build(s: Seed): ThemeColors {
@@ -82,7 +82,7 @@ function build(s: Seed): ThemeColors {
     buttonText: readableText(s.primary),
     secondaryButtonBg: s.secondary,
     secondaryButtonText: readableText(s.secondary),
-    headingColor: S.heading,
+    headingColor: mix(s.primary, "#0B1220", 0.12),
     bodyTextColor: S.body,
     mutedTextColor: S.muted,
     backgroundColor: S.background,
@@ -90,7 +90,7 @@ function build(s: Seed): ThemeColors {
     fieldBg: S.fieldBg,
     fieldText: S.fieldText,
     sidebarBg: s.sidebar,
-    sidebarActiveColor: s.primary,
+    sidebarActiveColor: s.accent,
     borderColor: S.border,
     iconColor: S.icon,
     iconBg: S.iconBg,

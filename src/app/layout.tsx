@@ -1,3 +1,4 @@
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -7,6 +8,12 @@ import { QueryProvider } from "@/lib/QueryProvider";
 import { ThemeFlashPrevention } from "@/theme/flash-prevention";
 import { lightTheme } from "@/theme/tokens";
 import { ADMIN_PAGE_TITLE, ADMIN_PAGE_DESCRIPTION } from "@/lib/branding";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-plus-jakarta",
+});
 
 export const metadata: Metadata = {
   title: ADMIN_PAGE_TITLE,
@@ -31,11 +38,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={plusJakartaSans.variable} suppressHydrationWarning>
       <head>
         <ThemeFlashPrevention />
       </head>
-      <body>
+      <body className={plusJakartaSans.className}>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:rounded-lg focus:bg-brand-primary focus:px-4 focus:py-2 focus:text-white">
           Skip to content
         </a>

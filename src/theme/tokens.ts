@@ -109,15 +109,15 @@ export const lightTheme: Theme = {
     to: "#000000",
   },
   surface: {
-    background: "#F4F6F8",
+    background: "#F8FAFC",
     default: "#FFFFFF",
-    elevated: "#F4F6F8",
+    elevated: "#F1F5F9",
     border: "#E2E8F0",
   },
   text: {
     primary: "#0D1B3D",
-    secondary: "#374151",
-    tertiary: "#6B7280",
+    secondary: "#475569",
+    tertiary: "#64748B",
     inverse: "#FFFFFF",
   },
   state: {
@@ -130,49 +130,49 @@ export const lightTheme: Theme = {
 
 export const darkTheme: Theme = {
   brand: {
-    primary: "#26A69A",
-    primaryHover: "#00897B",
-    primaryLight: "#0A2E28",
-    accent: "#00E676",
-    danger: "#EF5350",
+    primary: "#3B82F6",
+    primaryHover: "#2563EB",
+    primaryLight: "#1E3A5F",
+    accent: "#22C55E",
+    danger: "#EF4444",
   },
   sidebar: {
-    from: "#00251A",
-    via: "#003D33",
-    to: "#00251A",
+    from: "#060E1C",
+    via: "#0D1B3D",
+    to: "#060E1C",
     activeText: "#FFFFFF",
-    activeBg: "#00796B",
-    hoverBg: "rgba(255,255,255,0.06)",
-    mutedText: "#6B7580",
-    border: "rgba(255,255,255,0.06)",
+    activeBg: "#16A34A",
+    hoverBg: "rgba(255,255,255,0.08)",
+    mutedText: "#94A3B8",
+    border: "rgba(255,255,255,0.08)",
   },
   login: {
-    from: "#00251A",
-    via: "#003D33",
-    to: "#004D40",
+    from: "#060E1C",
+    via: "#0D1B3D",
+    to: "#2563EB",
   },
   superLogin: {
-    from: "#001A14",
-    via: "#00251A",
+    from: "#050A14",
+    via: "#0D1B3D",
     to: "#000000",
   },
   surface: {
-    background: "#121212",
-    default: "#1E1E1E",
-    elevated: "#2C2C2C",
+    background: "#0B1220",
+    default: "#111827",
+    elevated: "#1F2937",
     border: "#374151",
   },
   text: {
-    primary: "#FFFFFF",
-    secondary: "#D1D5DB",
-    tertiary: "#9CA3AF",
-    inverse: "#111827",
+    primary: "#F8FAFC",
+    secondary: "#94A3B8",
+    tertiary: "#64748B",
+    inverse: "#0D1B3D",
   },
   state: {
-    approved: { bg: "#0A2E1F", fg: "#69F0AE", solid: "#00E676" },
-    pending: { bg: "#3E2723", fg: "#FFB74D", solid: "#FB8C00" },
-    denied: { bg: "#3E1010", fg: "#EF9A9A", solid: "#EF5350" },
-    info: { bg: "#0D2137", fg: "#90CAF9", solid: "#42A5F5" },
+    approved: { bg: "#14532D", fg: "#86EFAC", solid: "#16A34A" },
+    pending: { bg: "#451A03", fg: "#FCD34D", solid: "#F59E0B" },
+    denied: { bg: "#450A0A", fg: "#FCA5A5", solid: "#EF4444" },
+    info: { bg: "#172554", fg: "#93C5FD", solid: "#3B82F6" },
   },
 };
 
@@ -206,7 +206,7 @@ export type RadiusToken = keyof typeof radius;
 
 export const typography = {
   fontFamily:
-    "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   size: {
     fs12: "12px",
     fs14: "14px",

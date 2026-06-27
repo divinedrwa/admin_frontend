@@ -24,6 +24,7 @@ const config: Config = {
           primary: "var(--gp-brand-primary)",
           "primary-hover": "var(--gp-brand-primary-hover)",
           "primary-light": "var(--gp-brand-primary-light)",
+          secondary: "var(--gp-brand-secondary)",
           accent: "var(--gp-brand-accent)",
           danger: "var(--gp-brand-danger)",
         },
