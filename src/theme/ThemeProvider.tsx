@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
@@ -180,8 +181,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.colorScheme = "light";
   }, []);
 
-  // Re-fetch when auth context changes (login → dashboard, logout → login).
+  // Re-fetch only when the auth context actually changes (login → dashboard,
+  // logout → login), not on every in-app navigation. We key the effect on
+  // `pathname` so it re-evaluates on route changes, but skip the network call
+  // unless the token transitioned (null↔value or different value).
+  const lastTokenRef = useRef<string | null>(null);
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("token");
+    if (token === lastTokenRef.current) return;
+    lastTokenRef.current = token;
     void refreshSocietyTheme();
   }, [pathname]);
 
