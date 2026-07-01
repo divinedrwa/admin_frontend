@@ -124,12 +124,13 @@ export default function PaymentMethodsPage() {
       if (createType === "PHONEPE" && config.saltIndex) {
         config.saltIndex = Number(config.saltIndex);
       }
-      await api.post("/payment-methods", {
+      const res = await api.post("/payment-methods", {
         type: createType,
         displayName: createName,
         config,
       });
-      showToast("Payment method created", "success");
+      const validation = res.data.validation as { message?: string } | undefined;
+      showToast(validation?.message ?? "Payment method created", "success");
       setShowCreate(false);
       resetCreateForm();
       fetchMethods();
@@ -167,11 +168,12 @@ export default function PaymentMethodsPage() {
       if (editingMethod.type === "PHONEPE" && config.saltIndex) {
         config.saltIndex = Number(config.saltIndex);
       }
-      await api.patch(`/payment-methods/${editingMethod.id}`, {
+      const res = await api.patch(`/payment-methods/${editingMethod.id}`, {
         displayName: editName,
         config,
       });
-      showToast("Payment method updated", "success");
+      const validation = res.data.validation as { message?: string } | undefined;
+      showToast(validation?.message ?? "Payment method updated", "success");
       setEditingMethod(null);
       fetchMethods();
     } catch (err) {
@@ -184,6 +186,22 @@ export default function PaymentMethodsPage() {
   // ── Toggle ──────────────────────────────────────────────────────
 
   const handleToggle = async (m: PaymentMethod) => {
+    if (
+      m.type === "UPI_QR" &&
+      !m.isEnabled &&
+      (!m.config.qrValidatedAt || !m.config.vpa)
+    ) {
+      showToast("Upload a valid bank UPI QR code before enabling", "error");
+      return;
+    }
+    if (
+      m.type === "UPI_VPA" &&
+      !m.isEnabled &&
+      (!m.config.vpaValidatedAt || !m.config.vpa)
+    ) {
+      showToast("Enter and save a valid UPI VPA before enabling", "error");
+      return;
+    }
     try {
       await api.patch(`/payment-methods/${m.id}`, { isEnabled: !m.isEnabled });
       setMethods((prev) =>
@@ -204,6 +222,20 @@ export default function PaymentMethodsPage() {
       fetchMethods();
     } catch (err) {
       showToast(parseApiError(err, "Failed to delete").message, "error");
+    }
+  };
+
+  const handleVerifyVpa = async (m: PaymentMethod) => {
+    setTesting(m.id);
+    try {
+      const res = await api.post(`/payment-methods/${m.id}/verify-vpa`);
+      const validation = res.data.validation as { message?: string } | undefined;
+      showToast(validation?.message ?? "UPI VPA verified", "success");
+      fetchMethods();
+    } catch (err) {
+      showToast(parseApiError(err, "VPA verification failed").message, "error");
+    } finally {
+      setTesting(null);
     }
   };
 
@@ -234,10 +266,11 @@ export default function PaymentMethodsPage() {
     try {
       const fd = new FormData();
       fd.append("qrImage", file);
-      await api.post(`/payment-methods/${m.id}/upload-qr`, fd, {
+      const res = await api.post(`/payment-methods/${m.id}/upload-qr`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      showToast("QR code uploaded", "success");
+      const validation = res.data.validation as { message?: string } | undefined;
+      showToast(validation?.message ?? "QR code uploaded and verified", "success");
       if (fileRef.current) fileRef.current.value = "";
       fetchMethods();
     } catch (err) {
@@ -254,10 +287,20 @@ export default function PaymentMethodsPage() {
     switch (m.type) {
       case "BANK_TRANSFER":
         return `${c.bankName} — ****${String(c.accountNumber ?? "").slice(-4)} (${c.accountType})`;
-      case "UPI_VPA":
-        return String(c.vpa ?? "—");
-      case "UPI_QR":
-        return c.qrCodeUrl ? "QR image uploaded" : "No QR image";
+      case "UPI_VPA": {
+        if (!c.vpaValidatedAt || !c.vpa) {
+          return c.vpa ? `Unverified · ${String(c.vpa)}` : "No VPA configured";
+        }
+        return `Verified · ${String(c.vpa)}`;
+      }
+      case "UPI_QR": {
+        if (!c.qrValidatedAt || !c.vpa) {
+          return c.qrCodeUrl ? "QR uploaded — re-upload to verify" : "No QR image";
+        }
+        const vpa = String(c.vpa);
+        const name = c.payeeName ? ` · ${String(c.payeeName)}` : "";
+        return `Verified · ${vpa}${name}`;
+      }
       case "RAZORPAY":
         return c.keyId ? `Key: ${String(c.keyId).slice(0, 12)}...` : "Not configured";
       case "PHONEPE":
@@ -311,11 +354,19 @@ export default function PaymentMethodsPage() {
           </>
         );
       case "UPI_VPA":
-        return field("UPI VPA", "vpa", { placeholder: "society@ybl" });
+        return (
+          <>
+            {field("UPI VPA", "vpa", { placeholder: "society@okhdfc" })}
+            <p className="text-sm text-fg-secondary -mt-2">
+              Format is verified when you save (name@bank, e.g. society@okhdfc).
+            </p>
+          </>
+        );
       case "UPI_QR":
         return (
           <p className="text-sm text-fg-secondary">
-            QR code image can be uploaded after creating this method.
+            Upload your bank UPI QR after creating this method. We decode it automatically and
+            residents pay via PhonePe, GPay, Paytm, etc. — no scanning required.
           </p>
         );
       case "RAZORPAY":
@@ -401,8 +452,18 @@ export default function PaymentMethodsPage() {
                       <span className="badge badge-primary text-xs">{typeLabel(m.type)}</span>
                     </div>
                     <p className="text-sm text-fg-secondary mt-0.5 truncate">{configSummary(m)}</p>
+                    {m.type === "UPI_VPA" && m.config.vpaValidatedAt ? (
+                      <span className="inline-block mt-2 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">
+                        Verified UPI VPA
+                      </span>
+                    ) : null}
+                    {m.type === "UPI_VPA" && m.config.vpa && !m.config.vpaValidatedAt ? (
+                      <span className="inline-block mt-2 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
+                        Save or verify VPA
+                      </span>
+                    ) : null}
                     {m.type === "UPI_QR" && typeof m.config.qrCodeUrl === "string" && m.config.qrCodeUrl ? (
-                      <div className="mt-2">
+                      <div className="mt-2 flex items-start gap-3">
                         <Image
                           src={m.config.qrCodeUrl}
                           alt="QR"
@@ -411,6 +472,15 @@ export default function PaymentMethodsPage() {
                           className="rounded-lg"
                           unoptimized
                         />
+                        {m.config.qrValidatedAt ? (
+                          <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">
+                            Verified UPI QR
+                          </span>
+                        ) : (
+                          <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
+                            Re-upload to verify
+                          </span>
+                        )}
                       </div>
                     ) : null}
                   </div>
@@ -430,6 +500,19 @@ export default function PaymentMethodsPage() {
                         }`}
                       />
                     </button>
+
+                    {/* Verify VPA (UPI_VPA) */}
+                    {m.type === "UPI_VPA" && (
+                      <button
+                        onClick={() => handleVerifyVpa(m)}
+                        disabled={testing === m.id || !m.config.vpa}
+                        className="btn btn-ghost text-xs flex items-center gap-1"
+                        title="Verify VPA format"
+                      >
+                        <Plug className="h-3.5 w-3.5" />
+                        {testing === m.id ? "Verifying..." : "Verify VPA"}
+                      </button>
+                    )}
 
                     {/* Test Connection (Razorpay/PhonePe) */}
                     {(m.type === "RAZORPAY" || m.type === "PHONEPE") && (

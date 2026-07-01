@@ -596,7 +596,10 @@ export default function SocietySettingsPage() {
             <input value={upiForm.upiVpa}
               onChange={(e) => setUpiForm({ upiVpa: e.target.value })}
               className="input mt-1 max-w-md"
-              placeholder="e.g. society@upi" />
+              placeholder="e.g. society@okhdfc" />
+            <p className="mt-1 text-xs text-fg-tertiary">
+              Verified on save — use name@bank format (e.g. society@okhdfc, collection@yesbank).
+            </p>
           </div>
           <button onClick={saveUpi} disabled={savingUpi} className="btn btn-primary mt-3 flex items-center gap-1">
             <Save size={14} /> {savingUpi ? "Saving…" : "Save UPI Settings"}
