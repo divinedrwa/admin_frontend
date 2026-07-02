@@ -121,7 +121,7 @@ function ExpensesPageInner() {
 
       const headers = ['Date', 'Category', 'Title', 'Paid To', 'Amount', 'Payment Mode', 'Status'];
       const rows = allExpenses.map(exp => [
-        new Date(exp.paymentDate).toLocaleDateString(),
+        new Date(exp.paymentDate).toLocaleDateString("en-IN"),
         exp.category.name,
         exp.title,
         exp.paidTo,
@@ -198,7 +198,7 @@ function ExpensesPageInner() {
         <div className="stat-card">
           <div className="stat-card-label">Total Expenses</div>
           <div className="stat-card-value">
-            ₹{stats.total.toLocaleString()}
+            ₹{stats.total.toLocaleString("en-IN")}
           </div>
           <div className="text-sm text-fg-secondary mt-1">{stats.count} entries</div>
         </div>
@@ -206,7 +206,7 @@ function ExpensesPageInner() {
         <div className="stat-card bg-brand-primary-light">
           <div className="stat-card-label text-brand-primary">This Month</div>
           <div className="stat-card-value text-info-fg">
-            ₹{stats.thisMonth.toLocaleString()}
+            ₹{stats.thisMonth.toLocaleString("en-IN")}
           </div>
           <div className="text-sm text-brand-primary mt-1">
             {MONTHS[new Date().getMonth()]} {new Date().getFullYear()}
@@ -216,7 +216,7 @@ function ExpensesPageInner() {
         <div className="stat-card bg-approved-bg">
           <div className="stat-card-label text-approved-solid">This Year</div>
           <div className="stat-card-value text-approved-fg">
-            ₹{stats.thisYear.toLocaleString()}
+            ₹{stats.thisYear.toLocaleString("en-IN")}
           </div>
           <div className="text-sm text-approved-solid mt-1">{new Date().getFullYear()}</div>
         </div>
@@ -224,7 +224,7 @@ function ExpensesPageInner() {
         <div className="stat-card bg-brand-primary-light">
           <div className="stat-card-label text-brand-primary">Avg per Month</div>
           <div className="stat-card-value text-info-fg">
-            ₹{stats.thisYear > 0 ? Math.round(stats.thisYear / (new Date().getMonth() + 1)).toLocaleString() : 0}
+            ₹{stats.thisYear > 0 ? Math.round(stats.thisYear / (new Date().getMonth() + 1)).toLocaleString("en-IN") : 0}
           </div>
           <div className="text-sm text-brand-primary mt-1">Current year</div>
         </div>
@@ -369,7 +369,7 @@ function ExpensesPageInner() {
                       <div className="flex items-center gap-2">
                         <Calendar size={16} className="text-fg-tertiary" />
                         <span className="text-sm text-fg-primary">
-                          {new Date(expense.paymentDate).toLocaleDateString()}
+                          {new Date(expense.paymentDate).toLocaleDateString("en-IN")}
                         </span>
                       </div>
                       {expense.month && expense.year && (
@@ -411,11 +411,11 @@ function ExpensesPageInner() {
                     </td>
                     <td className="table-td whitespace-nowrap">
                       <div className="text-sm font-semibold text-fg-primary">
-                        ₹{expense.amount.toLocaleString()}
+                        ₹{expense.amount.toLocaleString("en-IN")}
                       </div>
                       {expense.netAmount !== expense.amount && (
                         <div className="text-xs text-fg-secondary">
-                          Net: ₹{expense.netAmount.toLocaleString()}
+                          Net: ₹{expense.netAmount.toLocaleString("en-IN")}
                         </div>
                       )}
                     </td>

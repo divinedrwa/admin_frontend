@@ -7,6 +7,7 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { captureError } from "@/lib/captureError";
 
 type Asset = {
   id: string;
@@ -62,12 +63,17 @@ export default function AssetsPage() {
       const { data } = await api.get(`/assets?${params}`);
       setAssets(data.assets);
       setTotalPages(Math.ceil((data.total || 1) / limit));
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err: unknown) {
+      captureError(err, { source: "assets.load" });
+      showToast(parseApiError(err, "Failed to load assets").message, "error");
+    } finally { setLoading(false); }
   }, [page, catFilter, condFilter]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    api.get("/assets/categories").then(({ data }) => setCategories(data.categories || []));
+    api.get("/assets/categories")
+      .then(({ data }) => setCategories(data.categories || []))
+      .catch((err: unknown) => captureError(err, { source: "assets.categories" }));
   }, []);
 
   const resetForm = () => {

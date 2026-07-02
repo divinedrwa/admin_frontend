@@ -52,6 +52,17 @@ function PollsPageInner() {
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
+  // Reset pagination when search/filter change — a stale offset from the URL
+  // would otherwise show an empty page of the newly filtered results.
+  useEffect(() => {
+    if (initialOffset > 0) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("offset");
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, statusFilter]);
+
   const queryParams = useMemo(() => {
     const p: Record<string, unknown> = { limit: 50, offset: initialOffset };
     if (debouncedSearch) p.search = debouncedSearch;
@@ -192,7 +203,7 @@ function PollsPageInner() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    return new Date(dateStr).toLocaleDateString("en-IN", {
       month: "short",
       day: "numeric",
       year: "numeric"

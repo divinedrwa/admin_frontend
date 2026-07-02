@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { captureError } from "@/lib/captureError";
 import { Gate, GateForm } from "@/types/gate";
 import { useGates } from "@/hooks/useGates";
 
@@ -38,7 +39,9 @@ export default function GatesPage() {
         map[s.gateId] = s.currentStatus;
       }
       setWaterStatus(map);
-    } catch { /* ignore */ }
+    } catch (err: unknown) {
+      captureError(err, { source: "gates.fetchWaterStatus" });
+    }
   }, []);
 
   useEffect(() => { void fetchWaterStatus(); }, [fetchWaterStatus]);
@@ -69,7 +72,9 @@ export default function GatesPage() {
     try {
       const res = await api.get("/garbage-collection/active");
       setActiveGarbageEvent(res.data?.event ?? null);
-    } catch { /* ignore */ }
+    } catch (err: unknown) {
+      captureError(err, { source: "gates.fetchActiveGarbage" });
+    }
   }, []);
 
   useEffect(() => { void fetchActiveGarbage(); }, [fetchActiveGarbage]);

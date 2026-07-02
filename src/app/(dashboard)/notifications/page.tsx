@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell, Radio, Send, TestTube } from "lucide-react";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
+import { captureError } from "@/lib/captureError";
 
 type Diagnostics = {
   firebaseConfigured: boolean;
@@ -35,6 +36,7 @@ export default function NotificationsAdminPage() {
       setDiagnostics(res.data);
     } catch (error) {
       if ((error as { name?: string }).name === "CanceledError") return;
+      captureError(error, { source: "notifications.loadDiagnostics" });
       setDiagnostics(null);
     } finally {
       setLoadingDiag(false);

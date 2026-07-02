@@ -58,6 +58,17 @@ function AmenityBookingsPageInner() {
 
   const initialOffset = Number(searchParams.get("offset")) || 0;
 
+  // Reset pagination when search/filter change — a stale offset from the URL
+  // would otherwise show an empty page of the newly filtered results.
+  useEffect(() => {
+    if (initialOffset > 0) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("offset");
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, statusFilter]);
+
   const bookingQueryParams = useMemo(() => ({
     limit: 50,
     offset: initialOffset,
@@ -212,7 +223,7 @@ function AmenityBookingsPageInner() {
   };
 
   const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString("en-US", {
+    return new Date(dateStr).toLocaleString("en-IN", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -432,7 +443,7 @@ function AmenityBookingsPageInner() {
                           </select>
                         </td>
                         <td className="table-td font-medium">
-                          {booking.totalPrice ? `₹${booking.totalPrice}` : "-"}
+                          {booking.totalPrice ? `₹${Number(booking.totalPrice).toLocaleString("en-IN")}` : "-"}
                         </td>
                         <td className="table-td">
                           <div className="flex gap-1">

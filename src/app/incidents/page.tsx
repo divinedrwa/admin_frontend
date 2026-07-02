@@ -140,7 +140,7 @@ export default function IncidentsPage() {
   };
 
   const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString("en-US", {
+    return new Date(dateStr).toLocaleString("en-IN", {
       month: "short",
       day: "numeric",
       hour: "2-digit",

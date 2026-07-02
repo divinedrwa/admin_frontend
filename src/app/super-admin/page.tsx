@@ -14,6 +14,7 @@ import {
 import { setTenantAuthCookie, setTenantSocietyIdFromLogin } from "@/lib/api";
 import { cssVar } from "@/theme/tokens";
 import { parseApiError } from "@/utils/errorHandler";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type SocietyAdminSummary = {
   id: string;
@@ -95,6 +96,7 @@ const emptyForm: AppVersionForm = { latestVersion: "", minVersion: "", storeUrl:
 
 export default function SuperAdminConsolePage() {
   const router = useRouter();
+  const { confirm, ConfirmUI } = useConfirm();
   const [booting, setBooting] = useState(true);
   const [societies, setSocieties] = useState<SocietyRow[]>([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -443,6 +445,12 @@ export default function SuperAdminConsolePage() {
    * server so existing tenant logins are blocked immediately.
    */
   async function onArchive(s: SocietyRow) {
+    const ok = await confirm({
+      title: "Archive society",
+      message: `Archive "${s.name}"? All tenant logins (including admins) are blocked immediately until the society is restored.`,
+      confirmLabel: "Archive",
+    });
+    if (!ok) return;
     setArchivingId(s.id);
     try {
       await apiSuper.delete(`/super/societies/${encodeURIComponent(s.id)}`);
@@ -1255,6 +1263,7 @@ export default function SuperAdminConsolePage() {
             </div>
           </div>
       </Modal>
+      {ConfirmUI}
     </div>
   );
 }

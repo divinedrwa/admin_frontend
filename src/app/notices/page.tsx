@@ -10,6 +10,7 @@ import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { captureError } from "@/lib/captureError";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useNotices } from "@/hooks/useNotices";
 import { NoticeForm } from "@/types/notice";
@@ -81,7 +82,11 @@ function NoticesPageInner() {
         params: { role: "RESIDENT", isActive: "true" }
       })
       .then((res) => setResidentOptions(res.data.users ?? []))
-      .catch(() => setResidentOptions([]));
+      .catch((error: unknown) => {
+        captureError(error, { source: "notices.loadResidents" });
+        showToast("Failed to load residents for targeting", "error");
+        setResidentOptions([]);
+      });
   }, [showForm]);
 
   const handleOpenForm = () => {

@@ -9,6 +9,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { Pagination } from "@/components/Pagination";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
+import { captureError } from "@/lib/captureError";
 import { Complaint } from "@/types/complaint";
 import { useComplaints } from "@/hooks/useComplaints";
 
@@ -54,7 +55,8 @@ function ComplaintsPageInner() {
       await api.patch(`/complaints/${id}/status`, { status: newStatus });
       showToast("Status updated", "success");
       queryClient.invalidateQueries({ queryKey: ["complaints"] });
-    } catch {
+    } catch (err: unknown) {
+      captureError(err, { source: "complaints.updateStatus" });
       showToast("Failed to update status", "error");
     } finally {
       setUpdatingId(null);

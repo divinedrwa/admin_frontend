@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { parseApiError } from "@/utils/errorHandler";
+import { captureError } from "@/lib/captureError";
 
 type Banner = {
   id: string;
@@ -55,7 +56,8 @@ export default function BannersPage() {
       .then((response) => setBanners(response.data.banners ?? []))
       .catch((error: unknown) => {
         if ((error as { name?: string }).name === "CanceledError") return;
-        showToast("Failed to load banners", "error");
+        captureError(error, { source: "banners.loadBanners" });
+        showToast(parseApiError(error, "Failed to load banners").message, "error");
       })
       .finally(() => setLoading(false));
   };
