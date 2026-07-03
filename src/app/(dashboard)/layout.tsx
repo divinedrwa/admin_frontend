@@ -1,26 +1,26 @@
 "use client";
 
-import { LayoutDashboard } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppShell } from "@/components/AppShell";
 
+// Standard admin chrome (same default header as every other page) with a
+// per-section title for the routes that live in this group.
+const SECTION_TITLES: [prefix: string, title: string][] = [
+  ["/expenses-summary", "Expense Summary"],
+  ["/expense-categories", "Expense Categories"],
+  ["/expenses", "Expenses"],
+  ["/notifications", "Notifications"],
+  ["/special-projects", "Special Projects"],
+];
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const header = (
-    <div className="flex items-center gap-3">
-      <div className="hidden rounded-xl bg-brand-primary-light p-2 text-brand-primary sm:flex">
-        <LayoutDashboard className="h-4 w-4" />
-      </div>
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">
-          Dashboard workspace
-        </p>
-        <p className="text-sm text-fg-secondary">Shared admin chrome for finance, analytics, and operations pages.</p>
-      </div>
-    </div>
-  );
+  const pathname = usePathname();
+  const title =
+    SECTION_TITLES.find(([prefix]) => pathname?.startsWith(prefix))?.[1] ?? "Dashboard";
 
   return (
-    <AppShell title="Dashboard" headerContent={header} rawChildren>
+    <AppShell title={title}>
       <ErrorBoundary>{children}</ErrorBoundary>
     </AppShell>
   );

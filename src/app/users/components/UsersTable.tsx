@@ -1,5 +1,7 @@
 "use client";
 
+import { Users } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { User } from "@/types/user";
 
@@ -88,11 +90,11 @@ export function UsersTable({
           {users.length === 0 ? (
             <tr>
               <td colSpan={11}>
-                <div className="empty-state">
-                  <span className="empty-state-icon">👥</span>
-                  <p className="empty-state-title">No users found</p>
-                  <p className="empty-state-text">Click &quot;Add User&quot; to create your first user.</p>
-                </div>
+                <EmptyState
+                  icon={<Users className="h-12 w-12" />}
+                  title="No users found"
+                  description="Click &quot;Add User&quot; to create your first user."
+                />
               </td>
             </tr>
           ) : (

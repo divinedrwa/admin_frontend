@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { captureError } from "@/lib/captureError";
+import { parseApiError } from "@/utils/errorHandler";
 import { Complaint } from "@/types/complaint";
 import { useComplaints } from "@/hooks/useComplaints";
 
@@ -57,7 +59,7 @@ function ComplaintsPageInner() {
       queryClient.invalidateQueries({ queryKey: ["complaints"] });
     } catch (err: unknown) {
       captureError(err, { source: "complaints.updateStatus" });
-      showToast("Failed to update status", "error");
+      showToast(parseApiError(err, "Failed to update status").message, "error");
     } finally {
       setUpdatingId(null);
     }
@@ -112,11 +114,11 @@ function ComplaintsPageInner() {
               <p className="loading-state-text">Loading complaints...</p>
             </div>
           ) : complaints.length === 0 && pgMeta.total === 0 ? (
-            <div className="empty-state">
-              <span className="empty-state-icon">📋</span>
-              <p className="empty-state-title">No complaints yet</p>
-              <p className="empty-state-text">When residents submit complaints, they will appear here for review and resolution.</p>
-            </div>
+            <EmptyState
+              icon={<ClipboardList className="h-12 w-12" />}
+              title="No complaints yet"
+              description="When residents submit complaints, they will appear here for review and resolution."
+            />
           ) : (<>
             <table className="table">
               <thead className="table-head">

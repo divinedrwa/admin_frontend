@@ -4,6 +4,7 @@ import { BarChart3 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
@@ -229,11 +230,11 @@ export default function ComplaintAnalyticsPage() {
         <h2 className="text-lg font-semibold mb-3">Complaints by Category</h2>
         <div className="table-wrapper">
           {categoryStats.length === 0 ? (
-            <div className="empty-state">
-              <span className="empty-state-icon">📊</span>
-              <p className="empty-state-title">No data available</p>
-              <p className="empty-state-text">No complaints data available for this period.</p>
-            </div>
+            <EmptyState
+              icon={<BarChart3 className="h-12 w-12" />}
+              title="No data available"
+              description="No complaints data available for this period."
+            />
           ) : (
             <table className="table">
               <thead className="table-head">

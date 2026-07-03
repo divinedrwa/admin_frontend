@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -444,11 +445,11 @@ function GuardShiftsPageInner() {
                   {shifts.length === 0 ? (
                     <tr>
                       <td colSpan={6}>
-                        <div className="empty-state">
-                          <span className="empty-state-icon">📅</span>
-                          <p className="empty-state-title">No Shifts Scheduled</p>
-                          <p className="empty-state-text">Click &quot;Schedule Shift&quot; to create your first shift.</p>
-                        </div>
+                        <EmptyState
+                          icon={<Clock3 className="h-12 w-12" />}
+                          title="No Shifts Scheduled"
+                          description="Click &quot;Schedule Shift&quot; to create your first shift."
+                        />
                       </td>
                     </tr>
                   ) : (

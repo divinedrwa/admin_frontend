@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, FolderOpen, Tags } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { AdminPageHeader } from '@/components/AdminPageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { Modal } from '@/components/Modal';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { showToast } from '@/components/Toast';
@@ -127,27 +129,38 @@ export default function ExpenseCategoriesPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="page-action-bar mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-fg-primary">Expense Categories</h1>
-          <p className="text-fg-secondary mt-1">Manage expense categories for your society</p>
-        </div>
-        <button
-          onClick={() => openModal()}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Add Category
-        </button>
-      </div>
+    <div className="space-y-6">
+      <AdminPageHeader
+        eyebrow="Finance operations"
+        title="Expense categories"
+        description="Manage the expense categories used to organize and report on your society's spending."
+        icon={<Tags className="h-6 w-6" />}
+        actions={
+          <button
+            onClick={() => openModal()}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Add Category
+          </button>
+        }
+      />
 
       {categories.length === 0 ? (
-        <div className="empty-state">
-          <span className="empty-state-icon">📂</span>
-          <p className="empty-state-title">No categories found</p>
-          <p className="empty-state-text">Create your first expense category to organize your expenses.</p>
-        </div>
+        <EmptyState
+          icon={<FolderOpen className="h-12 w-12" />}
+          title="No categories found"
+          description="Create your first expense category to organize your expenses."
+          action={
+            <button
+              onClick={() => openModal()}
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Add Category
+            </button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {categories.map((category) => (

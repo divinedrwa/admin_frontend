@@ -172,7 +172,7 @@ export default function SOSAlertsPage() {
           <div className="bg-denied-bg border-l-4 border-brand-danger p-5 rounded-2xl shadow-sm">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-brand-danger/20 flex items-center justify-center">
-                <span className="text-2xl animate-pulse">🚨</span>
+                <TriangleAlert className="h-6 w-6 text-brand-danger animate-pulse" />
               </div>
               <div>
                 <p className="font-bold text-denied-fg text-lg">

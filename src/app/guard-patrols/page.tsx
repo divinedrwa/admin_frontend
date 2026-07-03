@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -304,11 +305,11 @@ export default function GuardPatrolsPage() {
               <p className="loading-state-text">Loading patrols...</p>
             </div>
           ) : patrols.length === 0 ? (
-            <div className="empty-state">
-              <span className="empty-state-icon">🛡️</span>
-              <p className="empty-state-title">No Patrols Recorded</p>
-              <p className="empty-state-text">Click &quot;Schedule Patrol&quot; to add one.</p>
-            </div>
+            <EmptyState
+              icon={<Route className="h-12 w-12" />}
+              title="No Patrols Recorded"
+              description="Click &quot;Schedule Patrol&quot; to add one."
+            />
           ) : (
               <table className="table">
                 <thead className="table-head">

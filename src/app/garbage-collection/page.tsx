@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trash2, Clock, Calendar, MapPin } from "lucide-react";
+import { Trash2, Clock, Calendar, MapPin, Recycle } from "lucide-react";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { parseApiError } from "@/utils/errorHandler";
 
 interface GarbageEvent {
@@ -157,10 +158,11 @@ export default function GarbageCollectionPage() {
                 {events.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
-                      <div className="empty-state">
-                        <p className="empty-state-title">No collection events found</p>
-                        <p className="text-fg-secondary text-sm">Events are logged by guards at the gates.</p>
-                      </div>
+                      <EmptyState
+                        icon={<Recycle className="h-12 w-12" />}
+                        title="No collection events found"
+                        description="Events are logged by guards at the gates."
+                      />
                     </td>
                   </tr>
                 ) : (

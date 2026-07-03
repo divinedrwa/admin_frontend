@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
@@ -403,17 +404,17 @@ function VehiclesPageInner() {
           {loading ? (
             <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading vehicles...</p></div>
           ) : filteredVehicles.length === 0 && pgMeta.total === 0 && !searchQuery ? (
-            <div className="empty-state">
-              <span className="empty-state-icon">&#x1f697;</span>
-              <p className="empty-state-title">No vehicles registered</p>
-              <p className="empty-state-text">Click &quot;Register Vehicle&quot; to add one.</p>
-            </div>
+            <EmptyState
+              icon={<CarFront className="h-12 w-12" />}
+              title="No vehicles registered"
+              description="Click &quot;Register Vehicle&quot; to add one."
+            />
           ) : filteredVehicles.length === 0 && searchQuery ? (
-            <div className="empty-state">
-              <span className="empty-state-icon">&#x1f50d;</span>
-              <p className="empty-state-title">No vehicles match &quot;{searchQuery}&quot;</p>
-              <p className="empty-state-text">Try a different search term.</p>
-            </div>
+            <EmptyState
+              icon={<Search className="h-12 w-12" />}
+              title={`No vehicles match "${searchQuery}"`}
+              description="Try a different search term."
+            />
           ) : (
             <>
               <table className="table">

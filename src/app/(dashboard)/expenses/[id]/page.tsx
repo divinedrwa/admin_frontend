@@ -84,7 +84,7 @@ export default function ExpenseDetailPage() {
 
   if (error || !expense) {
     return (
-      <div className="p-6 max-w-lg mx-auto">
+      <div className="max-w-lg mx-auto">
         <Link href="/expenses" className="inline-flex items-center gap-2 text-brand-primary hover:text-info-fg mb-4">
           <ArrowLeft size={18} /> Back to expenses
         </Link>
@@ -103,7 +103,7 @@ export default function ExpenseDetailPage() {
   const tags = (expense.tags as string[]) || [];
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <div className="page-action-bar mb-6">
         <div>
           <Link href="/expenses" className="inline-flex items-center gap-2 text-fg-secondary hover:text-fg-primary mb-3">

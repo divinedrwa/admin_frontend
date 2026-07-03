@@ -1,9 +1,10 @@
 "use client";
 
-import { BellRing, Send } from "lucide-react";
+import { BellRing, CheckCircle2, Send } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -302,11 +303,11 @@ export default function MaintenanceRemindersPage() {
             <p className="loading-state-text">Loading pending villas…</p>
           </div>
         ) : residents.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-state-icon">✓</span>
-            <p className="empty-state-title">No pending dues for {periodLabel}</p>
-            <p className="empty-state-text">All villas are paid, waived, or excluded for this cycle.</p>
-          </div>
+          <EmptyState
+            icon={<CheckCircle2 className="h-12 w-12" />}
+            title={`No pending dues for ${periodLabel}`}
+            description="All villas are paid, waived, or excluded for this cycle."
+          />
         ) : (
           <div className="table-wrapper">
             <table className="table">

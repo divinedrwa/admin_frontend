@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Bell, Radio, Send, TestTube } from "lucide-react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
 import { captureError } from "@/lib/captureError";
@@ -62,7 +63,7 @@ export default function NotificationsAdminPage() {
       });
       const data = res.data ?? {};
       setLastResult(
-        `Sent to inbox for targeted roles. Rows created: ${data.rowsCreated ?? 0}. Firebase push: ${data.firebaseConfigured ? "attempted" : "skipped (configure Firebase)"}.`
+        `Message delivered to the in-app inbox of ${data.rowsCreated ?? 0} recipient(s). Push delivery: ${data.firebaseConfigured ? "attempted" : "not configured, inbox only"}.`
       );
       setTitle("");
       setBody("");
@@ -81,7 +82,7 @@ export default function NotificationsAdminPage() {
       const res = await api.post("/notifications/send-test");
       const data = res.data ?? {};
       setLastResult(
-        `Test queued for your user only. Rows: ${data.rowsCreated ?? 0}. Push attempted: ${data.pushAttempted ?? false}. Configure FIREBASE_SERVICE_ACCOUNT_JSON on the API server for real device delivery.`
+        `Test notification created for your account. Push delivery ${data.pushAttempted ? "was attempted to your registered device" : "was skipped — check your inbox in the app"}.`
       );
       loadDiagnostics();
     } catch (err: unknown) {
@@ -98,82 +99,70 @@ export default function NotificationsAdminPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-fg-primary flex items-center gap-2">
-          <Bell className="text-brand-primary" />
-          Push & notifications
-        </h1>
-        <p className="text-fg-secondary mt-1">
-          Society-wide messages create rows for each recipient&apos;s in-app inbox and optionally deliver via Firebase Cloud Messaging.
-        </p>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <AdminPageHeader
+        eyebrow="Communications"
+        title="Push & notifications"
+        description="Send society-wide messages to residents, guards, and admins. Every message lands in the recipient's in-app inbox, and is also delivered as a push notification when available."
+        icon={<Bell className="h-6 w-6" />}
+      />
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="card">
-          <div className="card-body">
-            <h2 className="font-semibold text-fg-primary mb-3 flex items-center gap-2">
-              <Radio size={18} /> Registration snapshot
-            </h2>
-            {loadingDiag ? (
-              <div className="loading-state">
-                <div className="loading-spinner w-6 h-6"></div>
-                <p className="loading-state-text text-sm">Loading...</p>
-              </div>
-            ) : diagnostics ? (
+      <div className="card">
+        <div className="card-body">
+          <h2 className="font-semibold text-fg-primary mb-3 flex items-center gap-2">
+            <Radio size={18} /> Delivery status
+          </h2>
+          {loadingDiag ? (
+            <div className="loading-state">
+              <div className="loading-spinner w-6 h-6"></div>
+              <p className="loading-state-text text-sm">Loading...</p>
+            </div>
+          ) : diagnostics ? (
+            <>
               <ul className="text-sm space-y-2 text-fg-primary">
                 <li>
-                  <strong>Firebase env on API:</strong>{" "}
+                  <strong>Push delivery:</strong>{" "}
                   {diagnostics.firebaseConfigured ? (
-                    <span className="text-approved-fg">configured</span>
+                    <span className="text-approved-fg">Active</span>
                   ) : (
-                    <span className="text-pending-fg">not set — inbox rows still created</span>
+                    <span className="text-pending-fg">Not configured</span>
                   )}
                 </li>
                 <li>
-                  <strong>Registered device tokens:</strong> {diagnostics.registeredDevices}
+                  <strong>Registered devices:</strong> {diagnostics.registeredDevices}
                 </li>
                 <li>
-                  <strong>Users with ≥1 device:</strong> {diagnostics.usersWithAtLeastOneDevice}
+                  <strong>Users reachable:</strong> {diagnostics.usersWithAtLeastOneDevice}
                 </li>
                 <li>
-                  <strong>Notifications (24h):</strong> {diagnostics.notificationsCreatedLast24h}
+                  <strong>Notifications sent (last 24h):</strong>{" "}
+                  {diagnostics.notificationsCreatedLast24h}
                 </li>
               </ul>
-            ) : (
-              <p className="text-brand-danger text-sm">Could not load diagnostics.</p>
-            )}
-            <button
-              type="button"
-              onClick={() => loadDiagnostics()}
-              className="mt-3 text-sm text-brand-primary hover:underline"
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
-
-        <div className="card bg-brand-primary-light">
-          <div className="card-body text-sm text-info-fg">
-            <p className="font-medium mb-2">Backend setup</p>
-            <p className="mb-2">
-              Add <code className="bg-info-bg px-1 rounded">FIREBASE_SERVICE_ACCOUNT_JSON</code> to{" "}
-              <code className="bg-info-bg px-1 rounded">backend/.env</code> with your Firebase service account JSON (single line).
-            </p>
-            <p>
-              Automatic pushes fire on: <strong>SOS</strong> (guards + admins),{" "}
-              <strong>new notices</strong> (residents), <strong>garbage entry</strong> &{" "}
-              <strong>water toggle</strong> (residents). Mobile apps must register tokens via{" "}
-              <code className="bg-info-bg px-1 rounded">POST /api/notifications/devices</code>.
-            </p>
-          </div>
+              {!diagnostics.firebaseConfigured && (
+                <p className="mt-3 text-sm text-fg-secondary">
+                  Push notifications are not yet configured for this platform — contact support.
+                  Messages are still delivered to each recipient&apos;s in-app inbox.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-brand-danger text-sm">Could not load delivery status.</p>
+          )}
+          <button
+            type="button"
+            onClick={() => loadDiagnostics()}
+            className="mt-3 text-sm text-brand-primary hover:underline"
+          >
+            Refresh
+          </button>
         </div>
       </div>
 
       <form onSubmit={sendBroadcast} className="card">
         <div className="card-header">
           <h2 className="font-semibold text-fg-primary flex items-center gap-2">
-            <Send size={18} /> Broadcast (common notification)
+            <Send size={18} /> Broadcast a message
           </h2>
         </div>
         <div className="card-body space-y-4">
@@ -235,7 +224,7 @@ export default function NotificationsAdminPage() {
               <TestTube size={18} /> Send test to yourself
             </h2>
             <p className="text-sm text-fg-secondary">
-              Creates one notification for the logged-in admin and attempts FCM if your device token is registered.
+              Sends a sample notification to your own account so you can check how it looks before broadcasting.
             </p>
           </div>
           <button

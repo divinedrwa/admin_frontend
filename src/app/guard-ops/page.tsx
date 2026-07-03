@@ -1,6 +1,6 @@
 "use client";
 
-import { Shield } from "lucide-react";
+import { CircleCheck, Shield, Truck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -9,6 +9,7 @@ import { Modal } from "@/components/Modal";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
+import { captureError } from "@/lib/captureError";
 
 type WaterStatus = {
   gateId: string;
@@ -42,13 +43,21 @@ export default function GuardOperationsPage() {
   const [waterStatus, setWaterStatus] = useState<WaterStatus[]>([]);
   const [pendingWaterRequests, setPendingWaterRequests] = useState<WaterRequest[]>([]);
   const [garbageEvent, setGarbageEvent] = useState<GarbageEvent | null>(null);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [waterToggleOpen, setWaterToggleOpen] = useState(false);
   const [waterToggleReason, setWaterToggleReason] = useState("");
-  const [selectedGateIndex, setSelectedGateIndex] = useState(0);
+  const [selectedGateId, setSelectedGateId] = useState("");
+  // Snapshot of the intended toggle taken when the modal opens, so the 30s
+  // background refresh can't flip the gate/direction mid-confirmation.
+  const [waterToggleTarget, setWaterToggleTarget] = useState<{
+    gateId: string;
+    gateName: string;
+    turnOn: boolean;
+  } | null>(null);
 
-  const loadData = useCallback((signal?: AbortSignal) => {
+  const loadData = useCallback((options?: { signal?: AbortSignal; silent?: boolean }) => {
+    const { signal, silent } = options ?? {};
     Promise.all([
       api.get("/water-supply/status", { signal }),
       api.get("/water-supply/requests/pending", { signal }),
@@ -61,6 +70,10 @@ export default function GuardOperationsPage() {
       })
       .catch((error: unknown) => {
         if ((error as { name?: string }).name === "CanceledError") return;
+        if (silent) {
+          captureError(error, { source: "guard-ops.loadData.background" });
+          return;
+        }
         showToast(parseApiError(error, "Failed to load data").message, "error");
       })
       .finally(() => setLoading(false));
@@ -68,13 +81,16 @@ export default function GuardOperationsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadData(controller.signal);
-    const interval = setInterval(loadData, 30000);
+    loadData({ signal: controller.signal });
+    const interval = setInterval(() => loadData({ silent: true }), 30000);
     return () => {
       controller.abort();
       clearInterval(interval);
     };
   }, [loadData]);
+
+  const selectedGate =
+    waterStatus.find((ws) => ws.gateId === selectedGateId) ?? waterStatus[0];
 
   const resolveWaterRequest = async (id: string, status: "FULFILLED" | "REJECTED") => {
     try {
@@ -89,18 +105,33 @@ export default function GuardOperationsPage() {
     }
   };
 
+  const openWaterToggle = () => {
+    if (!selectedGate) return;
+    setWaterToggleTarget({
+      gateId: selectedGate.gateId,
+      gateName: selectedGate.gate,
+      turnOn: selectedGate.status !== "ON",
+    });
+    setWaterToggleReason("");
+    setWaterToggleOpen(true);
+  };
+
   const confirmWaterToggle = async () => {
-    if (waterStatus.length === 0) return;
-    const gate = waterStatus[selectedGateIndex] ?? waterStatus[0];
-    const turnOn = gate.status !== "ON";
+    if (!waterToggleTarget) return;
+    const { gateId, turnOn } = waterToggleTarget;
     try {
       setActionLoading(true);
       await api.post("/water-supply/toggle", {
-        gateId: gate.gateId,
+        gateId,
         turnedOn: turnOn,
         reason: waterToggleReason || undefined,
       });
-      showToast(`Water supply turned ${turnOn ? "ON" : "OFF"}`, "success");
+      showToast(
+        turnOn
+          ? "Water supply ON — residents notified"
+          : "Water supply OFF — admins notified",
+        "success",
+      );
       setWaterToggleOpen(false);
       setWaterToggleReason("");
       loadData();
@@ -120,12 +151,12 @@ export default function GuardOperationsPage() {
         });
         showToast("Garbage collector exit logged", "success");
       } else {
-        if (waterStatus.length === 0) {
+        if (!selectedGate) {
           showToast("No gate available to log entry", "error");
           return;
         }
         await api.post("/garbage-collection/entry", {
-          gateId: (waterStatus[selectedGateIndex] ?? waterStatus[0]).gateId,
+          gateId: selectedGate.gateId,
           notes: "Marked entry from Guard Ops dashboard",
         });
         showToast("Garbage collector entry logged", "success");
@@ -151,6 +182,12 @@ export default function GuardOperationsPage() {
         {/* Water Supply Control */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Water Supply Control</h2>
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading water supply status...</p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {waterStatus.map((status) => (
               <div
@@ -187,10 +224,11 @@ export default function GuardOperationsPage() {
               </div>
             ))}
           </div>
+          )}
           <div className="mt-4 bg-brand-primary-light border border-surface-border rounded p-4">
             <p className="text-sm text-info-fg">
               <strong>Note:</strong> Guards can turn water supply ON/OFF from their respective gates.
-              All residents are automatically notified of status changes.
+              Turning ON notifies residents; turning OFF notifies society admins only.
             </p>
           </div>
         </div>
@@ -198,7 +236,12 @@ export default function GuardOperationsPage() {
         {/* Resident water requests */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Pending water requests</h2>
-          {pendingWaterRequests.length === 0 ? (
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner w-10 h-10"></div>
+              <p className="loading-state-text">Loading pending requests...</p>
+            </div>
+          ) : pendingWaterRequests.length === 0 ? (
             <div className="bg-surface border border-surface-border rounded p-4 text-sm text-fg-secondary">
               No pending resident requests.
             </div>
@@ -248,7 +291,7 @@ export default function GuardOperationsPage() {
           {garbageEvent ? (
             <div className="bg-pending-bg border-2 border-pending-solid rounded p-6">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-3xl">🚛</span>
+                <Truck className="h-8 w-8 text-pending-fg" />
                 <div>
                   <h3 className="text-lg font-bold text-pending-fg">
                     Garbage Collector is Inside the Society
@@ -278,7 +321,7 @@ export default function GuardOperationsPage() {
           ) : (
             <div className="bg-surface border border-surface-border rounded p-6">
               <div className="flex items-center gap-3">
-                <span className="text-3xl">✅</span>
+                <CircleCheck className="h-8 w-8 text-approved-fg" />
                 <div>
                   <h3 className="text-lg font-medium text-fg-primary">
                     No Garbage Collector Currently Inside
@@ -307,12 +350,12 @@ export default function GuardOperationsPage() {
             <div className="mb-3">
               <label className="block text-sm font-medium text-fg-primary mb-1">Select Gate</label>
               <select
-                value={selectedGateIndex}
-                onChange={(e) => setSelectedGateIndex(Number(e.target.value))}
+                value={selectedGate?.gateId ?? ""}
+                onChange={(e) => setSelectedGateId(e.target.value)}
                 className="input w-auto"
               >
-                {waterStatus.map((ws, idx) => (
-                  <option key={ws.gateId} value={idx}>{ws.gate}{ws.location ? ` (${ws.location})` : ""}</option>
+                {waterStatus.map((ws) => (
+                  <option key={ws.gateId} value={ws.gateId}>{ws.gate}{ws.location ? ` (${ws.location})` : ""}</option>
                 ))}
               </select>
             </div>
@@ -320,8 +363,8 @@ export default function GuardOperationsPage() {
           <div className="flex gap-3">
             <button
               className="btn btn-primary"
-              onClick={() => { setWaterToggleReason(""); setWaterToggleOpen(true); }}
-              disabled={actionLoading}
+              onClick={openWaterToggle}
+              disabled={actionLoading || !selectedGate}
             >
               Toggle Water Supply
             </button>
@@ -359,7 +402,14 @@ export default function GuardOperationsPage() {
           </div>
           <div className="card-body space-y-3">
             <p className="text-sm text-fg-secondary">
-              Water will be turned <strong>{(waterStatus[selectedGateIndex] ?? waterStatus[0])?.status === "ON" ? "OFF" : "ON"}</strong> for {(waterStatus[selectedGateIndex] ?? waterStatus[0])?.gate ?? "the gate"}.
+              Water will be turned <strong>{waterToggleTarget?.turnOn ? "ON" : "OFF"}</strong> for {waterToggleTarget?.gateName ?? "the gate"}.
+            </p>
+            <p className="text-sm text-fg-secondary">
+              {waterToggleTarget?.turnOn ? (
+                <>Residents will receive: &quot;Water supply will begin shortly.&quot;</>
+              ) : (
+                <>Only society admins will be notified (residents will not).</>
+              )}
             </p>
             <div>
               <label className="block text-sm font-medium text-fg-primary mb-1">Reason (optional)</label>

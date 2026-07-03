@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  BarChart3,
+  Building2,
+  CheckCircle2,
+  HardHat,
+  Phone,
+  Users,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
 import { api } from "@/lib/api";
@@ -275,25 +285,25 @@ export default function StaffAssignmentOverviewPage() {
               onClick={() => setActiveTab("staff")}
               className={activeTab === "staff" ? "tab tab-active" : "tab tab-inactive"}
             >
-              👤 Staff Overview
+              Staff Overview
             </button>
             <button
               onClick={() => setActiveTab("villas")}
               className={activeTab === "villas" ? "tab tab-active" : "tab tab-inactive"}
             >
-              🏘️ Villa Coverage
+              Villa Coverage
             </button>
             <button
               onClick={() => setActiveTab("workload")}
               className={activeTab === "workload" ? "tab tab-active" : "tab tab-inactive"}
             >
-              📊 Workload
+              Workload
             </button>
             <button
               onClick={() => setActiveTab("unassigned")}
               className={activeTab === "unassigned" ? "tab tab-active" : "tab tab-inactive"}
             >
-              ⚠️ Unassigned
+              Unassigned
             </button>
         </div>
 
@@ -347,11 +357,11 @@ export default function StaffAssignmentOverviewPage() {
 
             {/* Staff Grid */}
             {staffOverview.length === 0 ? (
-              <div className="empty-state">
-                <span className="empty-state-icon">👷</span>
-                <p className="empty-state-title">No staff found</p>
-                <p className="empty-state-text">Staff members will appear here once added.</p>
-              </div>
+              <EmptyState
+                icon={<HardHat className="h-12 w-12" />}
+                title="No staff found"
+                description="Staff members will appear here once added."
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {staffOverview.map((staff) => (
@@ -365,7 +375,9 @@ export default function StaffAssignmentOverviewPage() {
                           {staff.name}
                         </h3>
                         <p className="text-sm text-fg-secondary">{staff.type}</p>
-                        <p className="text-xs text-fg-secondary">📞 {staff.phone}</p>
+                        <p className="text-xs text-fg-secondary flex items-center gap-1">
+                          <Phone className="h-3 w-3" /> {staff.phone}
+                        </p>
                       </div>
                       <span
                         className={`badge ${
@@ -374,7 +386,7 @@ export default function StaffAssignmentOverviewPage() {
                             : "badge-gray"
                         }`}
                       >
-                        {staff.isActive ? "✅ Active" : "⛔ Inactive"}
+                        {staff.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
 
@@ -466,11 +478,11 @@ export default function StaffAssignmentOverviewPage() {
 
             {/* Villa Grid */}
             {villaCoverage.length === 0 ? (
-              <div className="empty-state">
-                <span className="empty-state-icon">🏘️</span>
-                <p className="empty-state-title">No villas found</p>
-                <p className="empty-state-text">Villas will appear here once configured.</p>
-              </div>
+              <EmptyState
+                icon={<Building2 className="h-12 w-12" />}
+                title="No villas found"
+                description="Villas will appear here once configured."
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {villaCoverage.map((villa) => (
@@ -534,8 +546,8 @@ export default function StaffAssignmentOverviewPage() {
                                 {staff.name}
                               </p>
                               <p className="text-xs text-fg-secondary">{staff.type}</p>
-                              <p className="text-xs text-fg-secondary">
-                                📞 {staff.phone}
+                              <p className="text-xs text-fg-secondary flex items-center gap-1">
+                                <Phone className="h-3 w-3" /> {staff.phone}
                               </p>
                             </div>
                           ))}
@@ -543,8 +555,8 @@ export default function StaffAssignmentOverviewPage() {
                       </div>
                     ) : (
                       <div>
-                        <p className="text-brand-danger font-medium text-sm mb-2">
-                          ⚠️ No staff assigned
+                        <p className="text-brand-danger font-medium text-sm mb-2 flex items-center gap-1">
+                          <AlertTriangle className="h-4 w-4" /> No staff assigned
                         </p>
                         {villa.hasActiveResident && (
                           <p className="text-xs text-brand-danger">
@@ -606,11 +618,11 @@ export default function StaffAssignmentOverviewPage() {
 
             {/* Workload List */}
             {workload.length === 0 ? (
-              <div className="empty-state">
-                <span className="empty-state-icon">📊</span>
-                <p className="empty-state-title">No workload data</p>
-                <p className="empty-state-text">Workload distribution will appear once staff are assigned.</p>
-              </div>
+              <EmptyState
+                icon={<BarChart3 className="h-12 w-12" />}
+                title="No workload data"
+                description="Workload distribution will appear once staff are assigned."
+              />
             ) : (
               <div className="table-wrapper">
                 <table className="table">
@@ -733,8 +745,9 @@ export default function StaffAssignmentOverviewPage() {
               {/* Unassigned Staff */}
               <div className="card">
                 <div className="card-header">
-                  <h2 className="text-lg font-semibold">
-                    👤 Unassigned Staff ({unassignedResources.unassignedStaff.length})
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Users className="h-5 w-5" /> Unassigned Staff (
+                    {unassignedResources.unassignedStaff.length})
                   </h2>
                 </div>
                 <div className="card-body">
@@ -753,8 +766,8 @@ export default function StaffAssignmentOverviewPage() {
                               {staff.name}
                             </p>
                             <p className="text-sm text-fg-secondary">{staff.type}</p>
-                            <p className="text-xs text-fg-secondary">
-                              📞 {staff.phone}
+                            <p className="text-xs text-fg-secondary flex items-center gap-1">
+                              <Phone className="h-3 w-3" /> {staff.phone}
                             </p>
                             <p className="text-xs text-fg-secondary mt-1">
                               Added {staff.daysSinceCreation} days ago
@@ -780,8 +793,8 @@ export default function StaffAssignmentOverviewPage() {
 
               {/* Villas Without Staff (Occupied - Priority) */}
               <div className="card p-6">
-                <h2 className="text-lg font-semibold mb-4">
-                  🏘️ Occupied Villas Without Staff (
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Building2 className="h-5 w-5" /> Occupied Villas Without Staff (
                   {unassignedResources.villasWithoutStaff.occupied.length})
                 </h2>
                 {unassignedResources.villasWithoutStaff.occupied.length === 0 ? (
@@ -805,8 +818,8 @@ export default function StaffAssignmentOverviewPage() {
                               <p className="text-sm text-fg-secondary">
                                 {villa.ownerName}
                               </p>
-                              <p className="text-xs text-approved-solid mt-1">
-                                ✅ {villa.residentCount} resident(s)
+                              <p className="text-xs text-approved-solid mt-1 flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" /> {villa.residentCount} resident(s)
                               </p>
                               {villa.residents.length > 0 && (
                                 <p className="text-xs text-fg-secondary">

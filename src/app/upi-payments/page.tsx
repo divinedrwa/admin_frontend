@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { parseApiError } from "@/utils/errorHandler";
 import { useUpiPayments, useUpiPaymentStats } from "@/hooks/useUpiPayments";
 import { useQueryClient } from "@tanstack/react-query";
@@ -189,9 +190,11 @@ export default function UpiPaymentsPage() {
                 {submissions.length === 0 ? (
                   <tr>
                     <td colSpan={statusFilter === "PENDING" ? 9 : 8} className="px-6 py-12 text-center">
-                      <div className="empty-state">
-                        <p className="empty-state-title">No submissions found</p>
-                      </div>
+                      <EmptyState
+                        icon={<IndianRupee className="h-12 w-12" />}
+                        title="No submissions found"
+                        description="Resident UPI payment submissions will appear here."
+                      />
                     </td>
                   </tr>
                 ) : (

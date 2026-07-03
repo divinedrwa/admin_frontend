@@ -163,58 +163,60 @@ export default function BankAccountsPage() {
             No bank accounts yet. Add one to track offline / NEFT collections.
           </div>
         ) : (
-          <div className="card overflow-hidden">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Bank</th>
-                  <th>Account</th>
-                  <th>IFSC</th>
-                  <th>Holder</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Payments</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {accounts.map((a) => (
-                  <tr key={a.id}>
-                    <td className="font-medium">{a.bankName}</td>
-                    <td>{a.accountNumber}</td>
-                    <td>{a.ifscCode}</td>
-                    <td>{a.accountHolderName}</td>
-                    <td>{a.accountType}</td>
-                    <td>
-                      <span className={`badge ${a.isActive ? "badge-success" : "badge-gray"}`}>
-                        {a.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td>{a._count?.maintenancePayments ?? 0}</td>
-                    <td>
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => openEdit(a)}
-                          aria-label="Edit"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm text-brand-danger"
-                          onClick={() => void handleDelete(a)}
-                          aria-label="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+          <div className="table-wrapper">
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead className="table-head">
+                  <tr>
+                    <th scope="col" className="table-th">Bank</th>
+                    <th scope="col" className="table-th">Account</th>
+                    <th scope="col" className="table-th">IFSC</th>
+                    <th scope="col" className="table-th">Holder</th>
+                    <th scope="col" className="table-th">Type</th>
+                    <th scope="col" className="table-th">Status</th>
+                    <th scope="col" className="table-th">Payments</th>
+                    <th scope="col" className="table-th" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {accounts.map((a) => (
+                    <tr key={a.id} className="table-row">
+                      <td className="table-td font-medium">{a.bankName}</td>
+                      <td className="table-td">{a.accountNumber}</td>
+                      <td className="table-td">{a.ifscCode}</td>
+                      <td className="table-td">{a.accountHolderName}</td>
+                      <td className="table-td">{a.accountType}</td>
+                      <td className="table-td">
+                        <span className={`badge ${a.isActive ? "badge-success" : "badge-gray"}`}>
+                          {a.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="table-td">{a._count?.maintenancePayments ?? 0}</td>
+                      <td className="table-td">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => openEdit(a)}
+                            aria-label="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm text-brand-danger"
+                            onClick={() => void handleDelete(a)}
+                            aria-label="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

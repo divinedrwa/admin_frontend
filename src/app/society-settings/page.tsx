@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { api } from "@/lib/api";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
-import { Save, Upload, Trash2, Smartphone, Monitor, Eye, RotateCcw } from "lucide-react";
+import { Save, Upload, Trash2, Smartphone, Monitor, Eye, RotateCcw, Settings } from "lucide-react";
 import { applyThemeColors, mergeThemeColors } from "@/theme/ThemeProvider";
 import {
   DEFAULT_THEME_COLORS,
@@ -33,6 +34,14 @@ type SocietySettings = {
   maintenanceGracePeriodDays: number;
   themeColors: Record<string, string> | null;
 };
+
+const SETTINGS_TABS = [
+  { id: "general", label: "General" },
+  { id: "visitors", label: "Visitors & Gate" },
+  { id: "billing", label: "Billing & UPI" },
+  { id: "branding", label: "Branding & Theme" },
+] as const;
+type SettingsTab = (typeof SETTINGS_TABS)[number]["id"];
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 const RGB_COLOR = /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*[\d.]+)?\s*\)$/i;
@@ -261,6 +270,7 @@ function AdminDashboardThemePreview({ theme }: ThemePreviewProps) {
 
 export default function SocietySettingsPage() {
   const [settings, setSettings] = useState<SocietySettings | null>(null);
+  const [tab, setTab] = useState<SettingsTab>("general");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [savingVisitor, setSavingVisitor] = useState(false);
@@ -511,7 +521,28 @@ export default function SocietySettingsPage() {
   return (
     <AppShell title="Society Settings">
       <div className="space-y-6 max-w-4xl">
+        <AdminPageHeader
+          eyebrow="Society administration"
+          title="Society settings"
+          description="Configure how your society operates — visitor approvals, billing rules, payment details, and branding."
+          icon={<Settings className="h-6 w-6" />}
+        />
+
+        <div className="tabs pb-4">
+          {SETTINGS_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={tab === t.id ? "tab tab-active" : "tab tab-inactive"}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         {/* Society info */}
+        {tab === "general" && (
         <div className="card card-body">
           <h3 className="font-semibold text-fg-primary mb-2">Society Info</h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -527,8 +558,10 @@ export default function SocietySettingsPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Visitor settings */}
+        {tab === "visitors" && (
         <div className="card card-body">
           <h3 className="font-semibold text-fg-primary mb-3">Visitor & Gate Settings</h3>
           <div className="space-y-3">
@@ -556,8 +589,10 @@ export default function SocietySettingsPage() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Late fee settings */}
+        {tab === "billing" && (
         <div className="card card-body">
           <h3 className="font-semibold text-fg-primary mb-3">Late Fee Automation</h3>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -587,8 +622,10 @@ export default function SocietySettingsPage() {
             <Save size={14} /> {savingLateFee ? "Saving…" : "Save Late Fee Settings"}
           </button>
         </div>
+        )}
 
         {/* UPI settings */}
+        {tab === "billing" && (
         <div className="card card-body">
           <h3 className="font-semibold text-fg-primary mb-3">UPI Payment Settings</h3>
           <div>
@@ -650,8 +687,10 @@ export default function SocietySettingsPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Branding / letterhead */}
+        {tab === "branding" && (
         <div className="card card-body">
           <h3 className="font-semibold text-fg-primary mb-1">Branding &amp; Letterhead</h3>
           <p className="text-xs text-fg-tertiary mb-3">
@@ -697,8 +736,10 @@ export default function SocietySettingsPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Signature & stamp */}
+        {tab === "branding" && (
         <div className="card card-body">
           <h3 className="font-semibold text-fg-primary mb-1">Authorised Signature &amp; Stamp</h3>
           <p className="text-xs text-fg-tertiary mb-4">
@@ -845,7 +886,10 @@ export default function SocietySettingsPage() {
             </div>
           </div>
         </div>
+        )}
+
         {/* Theme & Branding Colors */}
+        {tab === "branding" && (
         <div className="card overflow-hidden">
           <div className="card-header border-b border-surface-border bg-gradient-to-r from-brand-primary-light/40 to-transparent">
             <h3 className="font-semibold text-fg-primary">Theme &amp; Branding Colors</h3>
@@ -1205,6 +1249,7 @@ export default function SocietySettingsPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </AppShell>
   );

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -262,10 +263,12 @@ export default function AmenitiesPage() {
               <p className="loading-state-text">Loading amenities...</p>
             </div>
           ) : amenities.length === 0 ? (
-            <div className="empty-state col-span-full">
-              <span className="empty-state-icon">🏊</span>
-              <p className="empty-state-title">No amenities found</p>
-              <p className="empty-state-text">Click &quot;Add Amenity&quot; to create your first amenity.</p>
+            <div className="col-span-full">
+              <EmptyState
+                icon={<Building className="h-12 w-12" />}
+                title="No amenities found"
+                description="Click &quot;Add Amenity&quot; to create your first amenity."
+              />
             </div>
           ) : (
             amenities.map((amenity) => (

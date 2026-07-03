@@ -340,7 +340,7 @@ export default function EditExpensePage() {
 
   if (!id) {
     return (
-      <div className="p-6">
+      <div>
         <p className="text-fg-secondary">Invalid expense link.</p>
         <Link href="/expenses" className="text-brand-primary mt-2 inline-block">
           Back to expenses
@@ -360,7 +360,7 @@ export default function EditExpensePage() {
 
   if (loadError) {
     return (
-      <div className="p-6 max-w-lg">
+      <div className="max-w-lg">
         <Link href="/expenses" className="inline-flex items-center gap-2 text-brand-primary mb-4">
           <ArrowLeft size={18} /> Back to expenses
         </Link>
@@ -374,7 +374,7 @@ export default function EditExpensePage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <div className="mb-6">
         <Link href={`/expenses/${id}`} className="flex items-center gap-2 text-fg-secondary hover:text-fg-primary mb-4">
           <ArrowLeft size={20} />

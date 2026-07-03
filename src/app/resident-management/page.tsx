@@ -18,6 +18,7 @@ import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { parseApiError } from "@/utils/errorHandler";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useResidents } from "@/hooks/useResidentManagement";
@@ -341,11 +342,11 @@ export default function ResidentManagementPage() {
         </table>
 
         {residents.length === 0 && (
-          <div className="empty-state">
-            <span className="empty-state-icon">🏠</span>
-            <p className="empty-state-title">No residents found</p>
-            <p className="empty-state-text">No residents match your current filters.</p>
-          </div>
+          <EmptyState
+            icon={<Home className="h-12 w-12" />}
+            title="No residents found"
+            description="No residents match your current filters."
+          />
         )}
       </div>
 

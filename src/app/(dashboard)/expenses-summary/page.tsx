@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, Download, Calendar } from 'lucide-react';
+import { TrendingUp, Download, Calendar, BarChart3, ListOrdered, PieChart } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { AdminPageHeader } from '@/components/AdminPageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
 import { lightTheme } from "@/theme/tokens";
@@ -171,21 +173,23 @@ export default function MonthlySummaryPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="page-action-bar mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-fg-primary">Monthly Expense Summary</h1>
-          <p className="text-fg-secondary mt-1">Detailed breakdown of society expenses</p>
-        </div>
-        <button
-          onClick={exportReport}
-          className="btn btn-success flex items-center gap-2"
-        >
-          <Download size={20} />
-          Export Report
-        </button>
-      </div>
+      <AdminPageHeader
+        eyebrow="Finance operations"
+        title="Monthly expense summary"
+        description="Detailed month-wise breakdown of society expenses with category rankings and trends."
+        icon={<PieChart className="h-6 w-6" />}
+        actions={
+          <button
+            onClick={exportReport}
+            className="btn btn-success flex items-center gap-2"
+          >
+            <Download size={20} />
+            Export Report
+          </button>
+        }
+      />
 
       {/* Period Selector — FY + Month */}
       <div className="filter-bar mb-6">
@@ -281,11 +285,11 @@ export default function MonthlySummaryPage() {
               </div>
               <div className="card-body">
                 {categoryBreakdown.length === 0 ? (
-                  <div className="empty-state">
-                    <span className="empty-state-icon">📊</span>
-                    <p className="empty-state-title">No expenses found</p>
-                    <p className="empty-state-text">No expenses found for this period.</p>
-                  </div>
+                  <EmptyState
+                    icon={<BarChart3 className="h-12 w-12" />}
+                    title="No expenses found"
+                    description="No expenses were recorded for this period."
+                  />
                 ) : (
                   <div className="space-y-3">
                     {categoryBreakdown.map((cat, index) => {
@@ -328,11 +332,11 @@ export default function MonthlySummaryPage() {
               </div>
               <div className="card-body">
                 {categoryBreakdown.length === 0 ? (
-                  <div className="empty-state">
-                    <span className="empty-state-icon">📋</span>
-                    <p className="empty-state-title">No data available</p>
-                    <p className="empty-state-text">Add expenses to see category rankings.</p>
-                  </div>
+                  <EmptyState
+                    icon={<ListOrdered className="h-12 w-12" />}
+                    title="No data available"
+                    description="Add expenses to see category rankings."
+                  />
                 ) : (
                   <div className="space-y-2">
                     {categoryBreakdown
@@ -391,11 +395,11 @@ export default function MonthlySummaryPage() {
             </div>
             <div className="card-body">
               {trends.length === 0 ? (
-                <div className="empty-state">
-                  <span className="empty-state-icon">📈</span>
-                  <p className="empty-state-title">No trend data available</p>
-                  <p className="empty-state-text">Add expenses over multiple months to see trends.</p>
-                </div>
+                <EmptyState
+                  icon={<TrendingUp className="h-12 w-12" />}
+                  title="No trend data available"
+                  description="Add expenses over multiple months to see trends."
+                />
               ) : (
                 <div className="space-y-2">
                   {trends.map((trend, index) => {

@@ -231,7 +231,7 @@ export default function AddExpensePage() {
   const netAmount = formData.amount + formData.gstAmount - formData.tdsAmount;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <div className="mb-6">
         <Link
           href="/expenses"

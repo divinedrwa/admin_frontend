@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -423,11 +424,11 @@ export default function PaymentMethodsPage() {
             <p className="loading-state-text">Loading payment methods...</p>
           </div>
         ) : methods.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-state-icon"><CreditCard className="h-12 w-12 text-fg-tertiary" /></span>
-            <p className="empty-state-title">No payment methods configured</p>
-            <p className="empty-state-text">Add your first payment method to get started.</p>
-          </div>
+          <EmptyState
+            icon={<CreditCard className="h-12 w-12" />}
+            title="No payment methods configured"
+            description="Add your first payment method to get started."
+          />
         ) : (
           <div className="space-y-4">
             {methods.map((m) => {
@@ -453,12 +454,12 @@ export default function PaymentMethodsPage() {
                     </div>
                     <p className="text-sm text-fg-secondary mt-0.5 truncate">{configSummary(m)}</p>
                     {m.type === "UPI_VPA" && m.config.vpaValidatedAt ? (
-                      <span className="inline-block mt-2 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">
+                      <span className="inline-block mt-2 text-xs font-medium text-approved-fg bg-approved-bg px-2 py-1 rounded-md">
                         Verified UPI VPA
                       </span>
                     ) : null}
                     {m.type === "UPI_VPA" && m.config.vpa && !m.config.vpaValidatedAt ? (
-                      <span className="inline-block mt-2 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
+                      <span className="inline-block mt-2 text-xs font-medium text-pending-fg bg-pending-bg px-2 py-1 rounded-md">
                         Save or verify VPA
                       </span>
                     ) : null}
@@ -473,11 +474,11 @@ export default function PaymentMethodsPage() {
                           unoptimized
                         />
                         {m.config.qrValidatedAt ? (
-                          <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">
+                          <span className="text-xs font-medium text-approved-fg bg-approved-bg px-2 py-1 rounded-md">
                             Verified UPI QR
                           </span>
                         ) : (
-                          <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
+                          <span className="text-xs font-medium text-pending-fg bg-pending-bg px-2 py-1 rounded-md">
                             Re-upload to verify
                           </span>
                         )}

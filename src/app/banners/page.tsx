@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -392,11 +393,11 @@ export default function BannersPage() {
           </div>
         ) : banners.length === 0 ? (
           <div className="card">
-            <div className="empty-state">
-              <span className="empty-state-icon">🎯</span>
-              <p className="empty-state-title">No Banners Created</p>
-              <p className="empty-state-text">Click &quot;Create Banner&quot; to add one.</p>
-            </div>
+            <EmptyState
+              icon={<ImagePlus className="h-12 w-12" />}
+              title="No Banners Created"
+              description="Click &quot;Create Banner&quot; to add one."
+            />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -229,7 +229,16 @@ function VisitorsPageInner() {
     }
   };
 
-  const activeCount = visitors.filter((v) => !v.checkOutAt).length;
+  // Only the "active" filter's server-side `total` is a true count of visitors
+  // currently inside; the "all" view is paginated, so use `todayCount` instead.
+  const headerCountSuffix =
+    filter === "active"
+      ? pgMeta.total > 0
+        ? ` ${pgMeta.total} visitor(s) are currently inside the society.`
+        : ""
+      : typeof visitorsData?.todayCount === "number"
+        ? ` ${visitorsData.todayCount} visitor(s) checked in today.`
+        : "";
 
   return (
     <AppShell title="Visitor Management">
@@ -237,7 +246,7 @@ function VisitorsPageInner() {
         <AdminPageHeader
           eyebrow="Entry operations"
           title="Visitor management"
-          description={`Track visitor entry and exit, filter active records, and process manual check-ins with stronger operational visibility.${activeCount ? ` ${activeCount} visitor(s) are currently inside the society.` : ""}`}
+          description={`Track visitor entry and exit, filter active records, and process manual check-ins with stronger operational visibility.${headerCountSuffix}`}
           icon={<Users className="h-6 w-6" />}
           actions={
             <button onClick={handleOpenForm} className="btn btn-primary flex items-center gap-2">
@@ -281,6 +290,7 @@ function VisitorsPageInner() {
                 <option value="GUEST">Guest</option>
                 <option value="DELIVERY">Delivery</option>
                 <option value="SERVICE_PROVIDER">Service Provider</option>
+                <option value="VENDOR">Vendor</option>
                 <option value="CONTRACTOR">Contractor</option>
               </select>
             </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { Link2 } from "lucide-react";
+import { Link2, Mail } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -182,11 +183,11 @@ export default function InvitationsAdminPage() {
           {loading ? (
             <div className="loading-state"><div className="loading-spinner w-10 h-10"></div><p className="loading-state-text">Loading invitations...</p></div>
           ) : rows.length === 0 ? (
-            <div className="empty-state">
-              <span className="empty-state-icon">✉️</span>
-              <p className="empty-state-title">No invitations yet</p>
-              <p className="empty-state-text">Create an invitation above to get started.</p>
-            </div>
+            <EmptyState
+              icon={<Mail className="h-12 w-12" />}
+              title="No invitations yet"
+              description="Create an invitation above to get started."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="table">

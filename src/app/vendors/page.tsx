@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -278,11 +279,11 @@ function VendorsPageInner() {
               <p className="loading-state-text">Loading vendors...</p>
             </div>
           ) : vendors.length === 0 && pgMeta.total === 0 ? (
-            <div className="empty-state">
-              <span className="empty-state-icon">🔧</span>
-              <p className="empty-state-title">No vendors found</p>
-              <p className="empty-state-text">Click &quot;Add Vendor&quot; to add your first vendor.</p>
-            </div>
+            <EmptyState
+              icon={<Wrench className="h-12 w-12" />}
+              title="No vendors found"
+              description="Click &quot;Add Vendor&quot; to add your first vendor."
+            />
           ) : (
             <>
               <table className="table">

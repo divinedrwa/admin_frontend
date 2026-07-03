@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { parseApiError } from "@/utils/errorHandler";
 
 interface AuditLog {
@@ -173,12 +174,11 @@ export default function AuditLogPage() {
                 {logs.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
-                      <div className="empty-state">
-                        <p className="empty-state-title">No audit logs found</p>
-                        <p className="text-fg-secondary text-sm">
-                          Admin actions will appear here once they occur.
-                        </p>
-                      </div>
+                      <EmptyState
+                        icon={<ClipboardCheck className="h-12 w-12" />}
+                        title="No audit logs found"
+                        description="Admin actions will appear here once they occur."
+                      />
                     </td>
                   </tr>
                 ) : (

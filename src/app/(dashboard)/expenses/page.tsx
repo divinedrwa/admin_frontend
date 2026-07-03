@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { parseApiError } from "@/utils/errorHandler";
 import { useExpenses, useExpenseStats, useExpenseCategories, useFinancialYears } from '@/hooks/useExpenses';
@@ -167,7 +168,7 @@ function ExpensesPageInner() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <AdminPageHeader
         eyebrow="Finance operations"
         title="Monthly expenses"
@@ -355,11 +356,11 @@ function ExpensesPageInner() {
               {expenses.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-12 text-center">
-                    <div className="empty-state">
-                      <span className="empty-state-icon">💰</span>
-                      <p className="empty-state-title">No expenses found</p>
-                      <p className="empty-state-text">Add your first expense to get started.</p>
-                    </div>
+                    <EmptyState
+                      icon={<ReceiptText className="h-12 w-12" />}
+                      title="No expenses found"
+                      description="Click &quot;Add Expense&quot; to record your first expense."
+                    />
                   </td>
                 </tr>
               ) : (

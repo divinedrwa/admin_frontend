@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -100,13 +101,11 @@ function PreApprovedVisitorsPageInner() {
             <p className="loading-state-text">Loading visitors...</p>
           </div>
         ) : visitors.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-state-icon">👥</span>
-            <p className="empty-state-title">No pre-approved visitors found</p>
-            <p className="empty-state-text">
-              Pre-approved visitors will appear here once residents add them.
-            </p>
-          </div>
+          <EmptyState
+            icon={<ShieldCheck className="h-12 w-12" />}
+            title="No pre-approved visitors found"
+            description="Pre-approved visitors will appear here once residents add them."
+          />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

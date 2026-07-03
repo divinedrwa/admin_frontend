@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { VillaTypeahead } from "@/components/VillaTypeahead";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -223,11 +224,11 @@ export default function StaffPage() {
                 {staff.length === 0 ? (
                   <tr>
                     <td colSpan={6}>
-                      <div className="empty-state">
-                        <span className="empty-state-icon">🧹</span>
-                        <p className="empty-state-title">No staff registered</p>
-                        <p className="empty-state-text">Click &quot;Register Staff&quot; to add one.</p>
-                      </div>
+                      <EmptyState
+                        icon={<BriefcaseBusiness className="h-12 w-12" />}
+                        title="No staff registered"
+                        description="Click &quot;Register Staff&quot; to add one."
+                      />
                     </td>
                   </tr>
                 ) : (

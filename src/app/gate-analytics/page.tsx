@@ -1,9 +1,10 @@
 "use client";
 
-import { BarChart3 } from "lucide-react";
+import { BarChart3, DoorOpen } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
 
@@ -237,11 +238,11 @@ export default function GateAnalyticsPage() {
 
             {gateOverview.length === 0 ? (
               <div className="card">
-                <div className="empty-state">
-                  <span className="empty-state-icon">🚪</span>
-                  <p className="empty-state-title">No gates found</p>
-                  <p className="empty-state-text">Configure gates in the Gates section first.</p>
-                </div>
+                <EmptyState
+                  icon={<DoorOpen className="h-12 w-12" />}
+                  title="No gates found"
+                  description="Configure gates in the Gates section first."
+                />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

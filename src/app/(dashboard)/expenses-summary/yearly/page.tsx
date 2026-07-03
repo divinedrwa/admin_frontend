@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Download, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { Download, Calendar, TrendingUp, TrendingDown, CalendarRange, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { AdminPageHeader } from '@/components/AdminPageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { showToast } from '@/components/Toast';
 import { parseApiError } from "@/utils/errorHandler";
 import { lightTheme } from "@/theme/tokens";
@@ -155,21 +157,23 @@ export default function YearlySummaryPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="page-action-bar mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-fg-primary">Yearly Expense Report</h1>
-          <p className="text-fg-secondary mt-1">Comprehensive annual expense analysis</p>
-        </div>
-        <button
-          onClick={exportYearlyReport}
-          className="btn btn-success flex items-center gap-2"
-        >
-          <Download size={20} />
-          Export Report
-        </button>
-      </div>
+      <AdminPageHeader
+        eyebrow="Finance operations"
+        title="Yearly expense report"
+        description="Comprehensive annual expense analysis with month-by-month and category breakdowns."
+        icon={<CalendarRange className="h-6 w-6" />}
+        actions={
+          <button
+            onClick={exportYearlyReport}
+            className="btn btn-success flex items-center gap-2"
+          >
+            <Download size={20} />
+            Export Report
+          </button>
+        }
+      />
 
       {/* FY Selector */}
       <div className="filter-bar mb-6">
@@ -256,11 +260,11 @@ export default function YearlySummaryPage() {
             </div>
             <div className="card-body">
               {fyMonths.length === 0 ? (
-                <div className="empty-state">
-                  <span className="empty-state-icon">📅</span>
-                  <p className="empty-state-title">No financial year selected</p>
-                  <p className="empty-state-text">Select a financial year to view the breakdown.</p>
-                </div>
+                <EmptyState
+                  icon={<Calendar className="h-12 w-12" />}
+                  title="No financial year selected"
+                  description="Select a financial year to view the breakdown."
+                />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="table">
@@ -360,11 +364,11 @@ export default function YearlySummaryPage() {
             </div>
             <div className="card-body">
               {topCategories.length === 0 ? (
-                <div className="empty-state">
-                  <span className="empty-state-icon">📊</span>
-                  <p className="empty-state-title">No category data available</p>
-                  <p className="empty-state-text">Add expenses to see category rankings.</p>
-                </div>
+                <EmptyState
+                  icon={<BarChart3 className="h-12 w-12" />}
+                  title="No category data available"
+                  description="Add expenses to see category rankings."
+                />
               ) : (
                 <div className="space-y-3">
                   {topCategories.map((cat, index) => {

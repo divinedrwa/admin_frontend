@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
@@ -373,11 +374,11 @@ function NoticesPageInner() {
             </div>
           ) : notices.length === 0 && pgMeta.total === 0 ? (
             <div className="card">
-              <div className="empty-state">
-                <span className="empty-state-icon">📌</span>
-                <p className="empty-state-title">No notices posted yet</p>
-                <p className="empty-state-text">Click &quot;Post Notice&quot; to publish your first announcement to residents.</p>
-              </div>
+              <EmptyState
+                icon={<Megaphone className="h-12 w-12" />}
+                title="No notices posted yet"
+                description="Click &quot;Post Notice&quot; to publish your first announcement to residents."
+              />
             </div>
           ) : (
             <>

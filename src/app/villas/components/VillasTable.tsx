@@ -1,5 +1,7 @@
 "use client";
 
+import { Building2 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { Villa } from "@/types/villa";
 
@@ -61,11 +63,11 @@ export function VillasTable({
           {villas.length === 0 ? (
             <tr>
               <td colSpan={10} className="table-td">
-                <div className="empty-state">
-                  <span className="empty-state-icon">🏘️</span>
-                  <p className="empty-state-title">No villas yet</p>
-                  <p className="empty-state-text">Click &quot;Add Villa&quot; above to register your first property.</p>
-                </div>
+                <EmptyState
+                  icon={<Building2 className="h-12 w-12" />}
+                  title="No villas yet"
+                  description="Click &quot;Add Villa&quot; above to register your first property."
+                />
               </td>
             </tr>
           ) : (

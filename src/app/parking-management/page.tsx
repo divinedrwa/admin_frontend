@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AlertTriangle, SquareParking } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { sortByVillaNumber } from "@/utils/villaSort";
@@ -142,9 +143,9 @@ export default function ParkingManagementPage() {
 
         <div className="tabs mb-6">
             {[
-              { id: "overview", label: "📊 Overview" },
-              { id: "slots", label: "🅿️ Slot Analysis" },
-              { id: "villas", label: "🏘️ By Villa" },
+              { id: "overview", label: "Overview" },
+              { id: "slots", label: "Slot Analysis" },
+              { id: "villas", label: "By Villa" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -269,7 +270,9 @@ export default function ParkingManagementPage() {
 
             {slotAnalysis.unassignedVehicles.length > 0 && (
               <div className="bg-pending-bg border border-pending-bg rounded-lg p-6 mb-6">
-                <h2 className="text-lg font-semibold text-pending-fg mb-4">⚠️ Vehicles Without Parking Slots</h2>
+                <h2 className="text-lg font-semibold text-pending-fg mb-4 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" /> Vehicles Without Parking Slots
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {slotAnalysis.unassignedVehicles.map((vehicle) => (
                     <div key={vehicle.id} className="bg-surface rounded p-4">
@@ -375,8 +378,8 @@ export default function ParkingManagementPage() {
                             {vehicle.type} - {vehicle.model && vehicle.model !== "Unknown" ? vehicle.model : "-"}
                           </p>
                           {vehicle.parkingSlot && (
-                            <p className="text-xs text-brand-primary mt-1">
-                              🅿️ Slot: {vehicle.parkingSlot}
+                            <p className="text-xs text-brand-primary mt-1 flex items-center gap-1">
+                              <SquareParking className="h-3.5 w-3.5" /> Slot: {vehicle.parkingSlot}
                             </p>
                           )}
                         </div>

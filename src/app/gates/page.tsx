@@ -5,6 +5,8 @@ import { useState, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { EmptyState } from "@/components/EmptyState";
+import { Modal } from "@/components/Modal";
 import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
@@ -30,13 +32,20 @@ export default function GatesPage() {
   const [waterReason, setWaterReason] = useState("");
   const [waterToggling, setWaterToggling] = useState(false);
   const [waterStatus, setWaterStatus] = useState<Record<string, string>>({});
+  // Snapshot of the intended toggle taken when the confirmation modal opens,
+  // so a background status refresh can't flip the gate/direction mid-confirm.
+  const [waterConfirmTarget, setWaterConfirmTarget] = useState<{
+    gateId: string;
+    gateName: string;
+    turnOn: boolean;
+  } | null>(null);
 
   const fetchWaterStatus = useCallback(async () => {
     try {
       const res = await api.get("/water-supply/status");
       const map: Record<string, string> = {};
       for (const s of res.data?.status ?? []) {
-        map[s.gateId] = s.currentStatus;
+        map[s.gateId] = s.status;
       }
       setWaterStatus(map);
     } catch (err: unknown) {
@@ -46,14 +55,30 @@ export default function GatesPage() {
 
   useEffect(() => { void fetchWaterStatus(); }, [fetchWaterStatus]);
 
-  const handleWaterToggle = async (turnedOn: boolean) => {
-    const gateId = waterGateId || gates[0]?.id;
-    if (!gateId) return;
+  const openWaterConfirm = (turnOn: boolean) => {
+    const gate = gates.find((g) => g.id === (waterGateId || gates[0]?.id));
+    if (!gate) return;
+    setWaterConfirmTarget({ gateId: gate.id, gateName: gate.name, turnOn });
+  };
+
+  const confirmWaterToggle = async () => {
+    if (!waterConfirmTarget) return;
+    const { gateId, turnOn } = waterConfirmTarget;
     try {
       setWaterToggling(true);
-      await api.post("/water-supply/toggle", { gateId, turnedOn, reason: waterReason || undefined });
-      showToast(`Water supply turned ${turnedOn ? "ON" : "OFF"}`, "success");
+      await api.post("/water-supply/toggle", {
+        gateId,
+        turnedOn: turnOn,
+        reason: waterReason || undefined,
+      });
+      showToast(
+        turnOn
+          ? "Water supply ON — residents notified"
+          : "Water supply OFF — admins notified",
+        "success",
+      );
       setWaterReason("");
+      setWaterConfirmTarget(null);
       void fetchWaterStatus();
     } catch (err: unknown) {
       showToast(parseApiError(err, "Failed to toggle water supply").message, "error");
@@ -167,6 +192,9 @@ export default function GatesPage() {
     }
   };
 
+  const selectedWaterGateId = waterGateId || gates[0]?.id || "";
+  const selectedWaterStatus = selectedWaterGateId ? waterStatus[selectedWaterGateId] : undefined;
+
   return (
     <AppShell title="Gates Management">
       <div className="space-y-6">
@@ -275,11 +303,11 @@ export default function GatesPage() {
                 {gates.length === 0 ? (
                   <tr>
                     <td colSpan={4}>
-                      <div className="empty-state">
-                        <span className="empty-state-icon">🚧</span>
-                        <p className="empty-state-title">No gates found</p>
-                        <p className="empty-state-text">Click &quot;Add Gate&quot; to create your first gate.</p>
-                      </div>
+                      <EmptyState
+                        icon={<MapPinned className="h-12 w-12" />}
+                        title="No gates found"
+                        description="Click &quot;Add Gate&quot; to create your first gate."
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -343,22 +371,27 @@ export default function GatesPage() {
                   />
                 </div>
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => handleWaterToggle(true)}
-                    disabled={waterToggling}
-                    className="btn bg-approved-solid hover:bg-approved-solid/90 text-white flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    <Power className="h-4 w-4" />
-                    Turn ON
-                  </button>
-                  <button
-                    onClick={() => handleWaterToggle(false)}
-                    disabled={waterToggling}
-                    className="btn bg-brand-danger hover:bg-brand-danger/90 text-white flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    <PowerOff className="h-4 w-4" />
-                    Turn OFF
-                  </button>
+                  {/* Only offer the action that changes state; show both when status is unknown */}
+                  {selectedWaterStatus !== "ON" && (
+                    <button
+                      onClick={() => openWaterConfirm(true)}
+                      disabled={waterToggling}
+                      className="btn bg-approved-solid hover:bg-approved-solid/90 text-white flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Power className="h-4 w-4" />
+                      Turn ON
+                    </button>
+                  )}
+                  {selectedWaterStatus !== "OFF" && (
+                    <button
+                      onClick={() => openWaterConfirm(false)}
+                      disabled={waterToggling}
+                      className="btn bg-brand-danger hover:bg-brand-danger/90 text-white flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <PowerOff className="h-4 w-4" />
+                      Turn OFF
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -433,6 +466,44 @@ export default function GatesPage() {
           </div>
         )}
       </div>
+
+      <Modal open={!!waterConfirmTarget} onClose={() => setWaterConfirmTarget(null)}>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-fg-primary">Toggle water supply</h3>
+          </div>
+          <div className="card-body space-y-3">
+            <p className="text-sm text-fg-secondary">
+              Water will be turned <strong>{waterConfirmTarget?.turnOn ? "ON" : "OFF"}</strong> for{" "}
+              {waterConfirmTarget?.gateName ?? "the gate"}.
+            </p>
+            <p className="text-sm text-fg-secondary">
+              {waterConfirmTarget?.turnOn ? (
+                <>Residents will receive: &quot;Water supply will begin shortly.&quot;</>
+              ) : (
+                <>Only society admins will be notified (residents will not).</>
+              )}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                className="btn btn-ghost text-sm"
+                onClick={() => setWaterConfirmTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary text-sm"
+                disabled={waterToggling}
+                onClick={() => void confirmWaterToggle()}
+              >
+                {waterToggling ? "Saving…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </AppShell>
   );
 }
