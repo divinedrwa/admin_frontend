@@ -7,6 +7,15 @@
  * consistent and readable. Button label color is auto-chosen (white or near-black)
  * from the fill's luminance, so no combination is ever unreadable.
  *
+ * Contrast guarantees enforced by `build()` (seeds are treated as *hue intents*
+ * and auto-deepened until they pass):
+ * - primary & secondary: ≥ 4.5:1 vs white — safe as button fills under white
+ *   labels AND as link/text color on white cards (WCAG AA normal text).
+ * - accent: ≥ 3.0:1 vs white — safe for solid success buttons/badges and large
+ *   stat text (WCAG AA large text / UI components).
+ * - sidebarActiveColor: derived from accent, ≥ 4.5:1 vs white — the sidebar's
+ *   active pill renders fixed white 14px text (`--gp-sidebar-active-text`).
+ *
  * Applying a template just sets the society's `themeColors`, which the web admin and
  * the mobile app both read — so it re-skins everywhere over-the-air, no rebuild.
  */
@@ -39,15 +48,35 @@ function mix(a: string, b: string, t: number): string {
   return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
 }
 
-/** WCAG-readable label color for a given fill — white on dark fills, ink on light. */
-function readableText(bg: string): string {
-  const [r, g, b] = channels(bg).map((c) => {
+/** WCAG relative luminance of a #rrggbb color. */
+function luminance(hex: string): number {
+  const [r, g, b] = channels(hex).map((c) => {
     const s = c / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   });
-  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  const contrastWithWhite = 1.05 / (lum + 0.05);
-  return contrastWithWhite >= 3.2 ? "#FFFFFF" : "#0B1220";
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Contrast ratio of white text on the given fill. */
+function contrastWithWhite(bg: string): number {
+  return 1.05 / (luminance(bg) + 0.05);
+}
+
+/** WCAG-readable label color for a given fill — white on dark fills, ink on light. */
+function readableText(bg: string): string {
+  return contrastWithWhite(bg) >= 3.2 ? "#FFFFFF" : "#0B1220";
+}
+
+/**
+ * Darken a hue toward black until white text on it reaches `ratio`.
+ * Keeps the hue's character; only deepens tone as much as needed.
+ */
+function deepen(hex: string, ratio: number): string {
+  let c = hex.toUpperCase();
+  for (let i = 0; i < 40 && contrastWithWhite(c) < ratio; i++) {
+    c = mix(c, "#000000", 0.06);
+  }
+  return c;
 }
 
 // Fixed, professional light surface/text system — aligned with GP brand defaults.
@@ -67,22 +96,31 @@ const S = {
 };
 
 function build(s: Seed): ThemeColors {
-  const tint = mix(s.primary, "#FFFFFF", 0.9);
+  const primary = deepen(s.primary, 4.5);
+  const secondary = deepen(s.secondary, 4.5);
+  const accent = deepen(s.accent, 3.0);
+  const sidebarActive = deepen(s.accent, 4.5);
+  // Hover must stay darker than the (possibly deepened) primary.
+  const hover =
+    luminance(s.primaryDark) < luminance(primary)
+      ? s.primaryDark
+      : mix(primary, "#000000", 0.2);
+  const tint = mix(primary, "#FFFFFF", 0.9);
   return {
-    primaryColor: s.primary,
-    primaryHover: s.primaryDark,
+    primaryColor: primary,
+    primaryHover: hover,
     primaryLight: tint,
     primaryContainer: tint,
-    secondaryColor: s.secondary,
-    accentColor: s.accent,
+    secondaryColor: secondary,
+    accentColor: accent,
     gradientStart: s.primaryDark,
-    gradientMiddle: s.primary,
-    gradientEnd: s.secondary,
-    buttonBg: s.primary,
-    buttonText: readableText(s.primary),
-    secondaryButtonBg: s.secondary,
-    secondaryButtonText: readableText(s.secondary),
-    headingColor: mix(s.primary, "#0B1220", 0.12),
+    gradientMiddle: primary,
+    gradientEnd: secondary,
+    buttonBg: primary,
+    buttonText: readableText(primary),
+    secondaryButtonBg: secondary,
+    secondaryButtonText: readableText(secondary),
+    headingColor: mix(primary, "#0B1220", 0.12),
     bodyTextColor: S.body,
     mutedTextColor: S.muted,
     backgroundColor: S.background,
@@ -90,7 +128,7 @@ function build(s: Seed): ThemeColors {
     fieldBg: S.fieldBg,
     fieldText: S.fieldText,
     sidebarBg: s.sidebar,
-    sidebarActiveColor: s.accent,
+    sidebarActiveColor: sidebarActive,
     borderColor: S.border,
     iconColor: S.icon,
     iconBg: S.iconBg,
@@ -129,8 +167,8 @@ const SEEDS: Seed[] = [
   { id: "temple-maroon", name: "Temple Maroon", primary: "#7F1D1D", primaryDark: "#641515", secondary: "#9F1239", accent: "#EA580C", sidebar: "#450A0A" },
   { id: "marigold-gold", name: "Marigold Gold", primary: "#A16207", primaryDark: "#854D0E", secondary: "#CA8A04", accent: "#EAB308", sidebar: "#713F12" },
   // Monochrome / neutral
-  { id: "monochrome", name: "Black & White", primary: "#18181B", primaryDark: "#000000", secondary: "#3F3F46", accent: "#52525B", sidebar: "#000000" },
-  { id: "soft-grey", name: "White & Grey", primary: "#64748B", primaryDark: "#475569", secondary: "#78909C", accent: "#94A3B8", sidebar: "#475569" },
+  { id: "monochrome", name: "Black & White", primary: "#18181B", primaryDark: "#000000", secondary: "#3F3F46", accent: "#71717A", sidebar: "#000000" },
+  { id: "soft-grey", name: "White & Grey", primary: "#64748B", primaryDark: "#475569", secondary: "#78909C", accent: "#94A3B8", sidebar: "#2C3A4D" },
 ];
 
 /**
