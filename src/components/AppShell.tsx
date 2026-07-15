@@ -2,6 +2,7 @@
 
 import { Activity, CalendarDays, Menu } from "lucide-react";
 import { Sidebar } from "./Sidebar";
+import { LegalConsentGate } from "./LegalConsentGate";
 import { useAuth } from "@/hooks/useAuth";
 import { useApiHealth } from "@/hooks/useApiHealth";
 import { useEffect, useState } from "react";
@@ -70,6 +71,8 @@ export function AppShell({
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface-background">
+      {/* L2 — mandatory Terms/Privacy re-acceptance overlay (renders only when required). */}
+      <LegalConsentGate />
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {platformView ? (

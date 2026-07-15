@@ -32,6 +32,9 @@ type SocietySettings = {
   lateFeePercentage: number;
   lateFeeFixedAmount: number;
   maintenanceGracePeriodDays: number;
+  maintenanceBillingMode?: "FIXED" | "SQFT";
+  maintenanceFixedAmount?: number | null;
+  maintenanceSqftRate?: number | null;
   themeColors: Record<string, string> | null;
 };
 
@@ -301,6 +304,13 @@ export default function SocietySettingsPage() {
     maintenanceGracePeriodDays: 15,
   });
 
+  const [maintenanceBillingForm, setMaintenanceBillingForm] = useState({
+    maintenanceBillingMode: "FIXED" as "FIXED" | "SQFT",
+    maintenanceFixedAmount: 1100,
+    maintenanceSqftRate: 1.1,
+  });
+  const [savingMaintenanceBilling, setSavingMaintenanceBilling] = useState(false);
+
   // UPI form
   const [upiForm, setUpiForm] = useState({ upiVpa: "" });
 
@@ -354,6 +364,11 @@ export default function SocietySettingsPage() {
         lateFeeFixedAmount: s.lateFeeFixedAmount,
         maintenanceGracePeriodDays: s.maintenanceGracePeriodDays,
       });
+      setMaintenanceBillingForm({
+        maintenanceBillingMode: s.maintenanceBillingMode ?? "FIXED",
+        maintenanceFixedAmount: Number(s.maintenanceFixedAmount ?? 1100) || 1100,
+        maintenanceSqftRate: Number(s.maintenanceSqftRate ?? 1.1) || 1.1,
+      });
       setUpiForm({ upiVpa: s.upiVpa || "" });
       if (s.themeColors) {
         setThemeForm(mergeThemeColors(s.themeColors));
@@ -394,6 +409,19 @@ export default function SocietySettingsPage() {
       showToast(parseApiError(error, "Failed to save").message, "error");
     } finally {
       setSavingLateFee(false);
+    }
+  };
+
+  const saveMaintenanceBilling = async () => {
+    setSavingMaintenanceBilling(true);
+    try {
+      await api.patch("/society-settings/maintenance-billing", maintenanceBillingForm);
+      showToast("Maintenance billing mode saved", "success");
+      await load();
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to save billing mode").message, "error");
+    } finally {
+      setSavingMaintenanceBilling(false);
     }
   };
 
@@ -588,6 +616,89 @@ export default function SocietySettingsPage() {
               <Save size={14} /> {savingVisitor ? "Saving…" : "Save Visitor Settings"}
             </button>
           </div>
+        </div>
+        )}
+
+        {/* Maintenance billing mode (A8/A9) */}
+        {tab === "billing" && (
+        <div className="card card-body">
+          <h3 className="font-semibold text-fg-primary mb-1">Maintenance billing mode</h3>
+          <p className="text-sm text-fg-secondary mb-4">
+            Choose one method for the society. Fixed applies the same amount to every villa each cycle.
+            Sq ft calculates per villa as area × rate (villas without area fall back to their saved monthly amount).
+          </p>
+          <div className="flex flex-wrap gap-4 mb-4">
+            <label className="flex items-center gap-2 text-sm text-fg-primary">
+              <input
+                type="radio"
+                name="billingMode"
+                checked={maintenanceBillingForm.maintenanceBillingMode === "FIXED"}
+                onChange={() =>
+                  setMaintenanceBillingForm((s) => ({ ...s, maintenanceBillingMode: "FIXED" }))
+                }
+              />
+              Fixed amount per villa
+            </label>
+            <label className="flex items-center gap-2 text-sm text-fg-primary">
+              <input
+                type="radio"
+                name="billingMode"
+                checked={maintenanceBillingForm.maintenanceBillingMode === "SQFT"}
+                onChange={() =>
+                  setMaintenanceBillingForm((s) => ({ ...s, maintenanceBillingMode: "SQFT" }))
+                }
+              />
+              Per sq ft (area × rate)
+            </label>
+          </div>
+          {maintenanceBillingForm.maintenanceBillingMode === "FIXED" ? (
+            <div className="max-w-xs">
+              <label className="block text-sm font-medium text-fg-primary">Default fixed amount (₹)</label>
+              <input
+                type="number"
+                min={1}
+                step="0.01"
+                className="input mt-1"
+                value={maintenanceBillingForm.maintenanceFixedAmount}
+                onChange={(e) =>
+                  setMaintenanceBillingForm((s) => ({
+                    ...s,
+                    maintenanceFixedAmount: parseFloat(e.target.value) || 0,
+                  }))
+                }
+              />
+              <p className="mt-1 text-xs text-fg-tertiary">
+                Pre-fills new billing cycles; you can still adjust per month when expenses change.
+              </p>
+            </div>
+          ) : (
+            <div className="max-w-xs">
+              <label className="block text-sm font-medium text-fg-primary">Rate per sq ft (₹)</label>
+              <input
+                type="number"
+                min={0.01}
+                step="0.01"
+                className="input mt-1"
+                value={maintenanceBillingForm.maintenanceSqftRate}
+                onChange={(e) =>
+                  setMaintenanceBillingForm((s) => ({
+                    ...s,
+                    maintenanceSqftRate: parseFloat(e.target.value) || 0,
+                  }))
+                }
+              />
+              <p className="mt-1 text-xs text-fg-tertiary">
+                Each villa due = villa area × rate. Ensure villa areas are set under Villas.
+              </p>
+            </div>
+          )}
+          <button
+            onClick={saveMaintenanceBilling}
+            disabled={savingMaintenanceBilling}
+            className="btn btn-primary mt-4 flex items-center gap-1"
+          >
+            <Save size={14} /> {savingMaintenanceBilling ? "Saving…" : "Save billing mode"}
+          </button>
         </div>
         )}
 

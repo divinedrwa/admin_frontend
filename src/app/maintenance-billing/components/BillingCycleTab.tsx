@@ -38,6 +38,9 @@ export interface BillingCycleTabProps {
   onUnpublish?: (cycleId: string) => void;
   unpublishingId?: string | null;
 
+  maintenanceBillingMode?: "FIXED" | "SQFT";
+  maintenanceSqftRate?: number;
+
   /* Action cards */
   cycleOptions: Array<{ id: string; label: string }>;
   primaryMaintenanceUsers: Array<{
@@ -95,6 +98,8 @@ export function BillingCycleTab({
   publishingId,
   onUnpublish,
   unpublishingId,
+  maintenanceBillingMode = "FIXED",
+  maintenanceSqftRate = 1.1,
   cycleOptions,
   primaryMaintenanceUsers,
   reopenId,
@@ -151,6 +156,8 @@ export function BillingCycleTab({
         publishingId={publishingId}
         onUnpublish={onUnpublish}
         unpublishingId={unpublishingId}
+        maintenanceBillingMode={maintenanceBillingMode}
+        maintenanceSqftRate={maintenanceSqftRate}
       />
 
       <CashPaymentModal

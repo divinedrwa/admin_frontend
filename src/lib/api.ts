@@ -7,6 +7,7 @@ import { clearPlatformViewSession } from "./platformViewSession";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
 import { attemptTokenRefresh } from "./tokenRefresh";
 import { readSocietyIdFromToken } from "./jwt";
+import { isHttpOnlyAuthEnabled } from "./httpOnlyAuth";
 
 const TENANT_SOCIETY_STORAGE_KEY = "tenant_society_id";
 const TENANT_AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -42,30 +43,30 @@ export function clearTenantSocietyId(): void {
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
   // Re-resolve each request so dev `.env.local` changes apply without a full rebuild.
   config.baseURL = getResolvedApiBaseUrl();
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof window !== "undefined" && !isHttpOnlyAuthEnabled()
+      ? localStorage.getItem("token")
+      : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   if (typeof window !== "undefined") {
-    const tokenSocietyId = readSocietyIdFromToken(token);
+    const tokenSocietyId = token ? readSocietyIdFromToken(token) : null;
     const storedSocietyId = localStorage.getItem(TENANT_SOCIETY_STORAGE_KEY)?.trim() ?? "";
-
-    // Source of truth is JWT tenant claim; storage is only a convenience cache.
-    if (tokenSocietyId) {
-      if (storedSocietyId !== tokenSocietyId) {
+    const societyHeader = tokenSocietyId ?? storedSocietyId;
+    if (societyHeader) {
+      if (tokenSocietyId && storedSocietyId !== tokenSocietyId) {
         localStorage.setItem(TENANT_SOCIETY_STORAGE_KEY, tokenSocietyId);
       }
-      config.headers["X-Society-Id"] = tokenSocietyId;
+      config.headers["X-Society-Id"] = societyHeader;
     } else {
-      // Super-admin / public session should never send tenant context.
-      if (storedSocietyId) {
-        clearTenantSocietyId();
-      }
+      if (storedSocietyId) clearTenantSocietyId();
       delete config.headers["X-Society-Id"];
     }
   }

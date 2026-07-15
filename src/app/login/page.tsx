@@ -21,6 +21,7 @@ import { LOGIN_SUCCESS_TOAST } from "@/lib/branding";
 import { getResolvedApiBaseUrl } from "@/lib/apiBaseUrl";
 import { SocietyCombobox } from "@/components/SocietyCombobox";
 import { usePublicSocieties } from "@/hooks/usePublicSocieties";
+import { isHttpOnlyAuthEnabled } from "@/lib/httpOnlyAuth";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
@@ -107,9 +108,14 @@ function LoginPageInner() {
         showToast("This account cannot access the admin dashboard.", "error");
         return;
       }
-      localStorage.setItem("token", token);
-      if (response.data.refreshToken) {
-        localStorage.setItem("refresh_token", response.data.refreshToken);
+      if (!isHttpOnlyAuthEnabled()) {
+        localStorage.setItem("token", token);
+        if (response.data.refreshToken) {
+          localStorage.setItem("refresh_token", response.data.refreshToken);
+        }
+      } else {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refresh_token");
       }
       // Tenant session must not coexist with a super-admin token on shared browsers.
       localStorage.removeItem(SUPER_ADMIN_TOKEN_KEY);

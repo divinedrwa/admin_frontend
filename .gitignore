@@ -8,6 +8,8 @@ out/
 
 # Build/cache artifacts
 coverage/
+test-results/
+playwright-report/
 *.tsbuildinfo
 *.log
 npm-debug.log*

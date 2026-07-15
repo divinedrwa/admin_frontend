@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
@@ -15,6 +16,10 @@ import { setTenantAuthCookie, setTenantSocietyIdFromLogin } from "@/lib/api";
 import { cssVar } from "@/theme/tokens";
 import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
+
+function isRequestCancelled(error: unknown, signal?: AbortSignal): boolean {
+  return Boolean(signal?.aborted || axios.isCancel(error));
+}
 
 type SocietyAdminSummary = {
   id: string;
@@ -172,8 +177,8 @@ export default function SuperAdminConsolePage() {
       setAdminSocietyId((prev) =>
         prev && list.some((s) => s.id === prev) ? prev : (list[0]?.id ?? ""),
       );
-    } catch {
-      if (signal?.aborted) return;
+    } catch (error) {
+      if (isRequestCancelled(error, signal)) return;
       showToast("Could not load societies", "error");
     } finally {
       if (!signal?.aborted) setLoadingList(false);
@@ -186,8 +191,8 @@ export default function SuperAdminConsolePage() {
       const { data } = await apiSuper.get<PlatformRevenue>("/super/platform-revenue", { signal });
       if (signal?.aborted) return;
       setRevenue(data);
-    } catch {
-      if (signal?.aborted) return;
+    } catch (error) {
+      if (isRequestCancelled(error, signal)) return;
       showToast("Could not load platform revenue", "error");
     } finally {
       if (!signal?.aborted) setLoadingRevenue(false);
@@ -205,8 +210,8 @@ export default function SuperAdminConsolePage() {
       const ios = configs.find((c) => c.platform === "IOS");
       setAndroidForm(android ? { latestVersion: android.latestVersion, minVersion: android.minVersion, storeUrl: android.storeUrl ?? "", releaseNotes: android.releaseNotes ?? "" } : { ...emptyForm });
       setIosForm(ios ? { latestVersion: ios.latestVersion, minVersion: ios.minVersion, storeUrl: ios.storeUrl ?? "", releaseNotes: ios.releaseNotes ?? "" } : { ...emptyForm });
-    } catch {
-      if (signal?.aborted) return;
+    } catch (error) {
+      if (isRequestCancelled(error, signal)) return;
       showToast("Could not load app version configs", "error");
     } finally {
       if (!signal?.aborted) setLoadingAppVersions(false);

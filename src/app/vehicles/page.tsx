@@ -15,7 +15,7 @@ import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { sortByVillaNumber } from "@/utils/villaSort";
 import { useVehicles } from "@/hooks/useVehicles";
-import { Vehicle, VehicleForm } from "@/types/vehicle";
+import { Vehicle, VehicleForm, VehicleRegistrationCategory } from "@/types/vehicle";
 
 function formatVehicleType(vehicleType: Vehicle["vehicleType"]): string {
   const raw = typeof vehicleType === "string" ? vehicleType.trim() : "";
@@ -41,12 +41,15 @@ function VehiclesPageInner() {
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [formData, setFormData] = useState<VehicleForm>({
+    registrationCategory: "RESIDENT",
     vehicleNumber: "",
     vehicleType: "FOUR_WHEELER",
     model: "",
     color: "",
     parkingSlot: "",
-    villaId: ""
+    villaId: "",
+    ownerLabel: "",
+    notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -111,22 +114,29 @@ function VehiclesPageInner() {
     if (vehicle) {
       setEditingVehicle(vehicle);
       setFormData({
+        registrationCategory:
+          (vehicle.registrationCategory as VehicleRegistrationCategory) || "RESIDENT",
         vehicleNumber: vehicle.vehicleNumber,
         vehicleType: (vehicle.vehicleType as VehicleForm["vehicleType"]) || "FOUR_WHEELER",
         model: vehicle.model && vehicle.model !== "Unknown" ? vehicle.model : "",
         color: vehicle.color && vehicle.color !== "Unknown" ? vehicle.color : "",
         parkingSlot: vehicle.parkingSlot || "",
         villaId: "",
+        ownerLabel: vehicle.ownerLabel || "",
+        notes: vehicle.notes || "",
       });
     } else {
       setEditingVehicle(null);
       setFormData({
+        registrationCategory: "RESIDENT",
         vehicleNumber: "",
         vehicleType: "FOUR_WHEELER",
         model: "",
         color: "",
         parkingSlot: "",
-        villaId: ""
+        villaId: "",
+        ownerLabel: "",
+        notes: "",
       });
     }
     setShowForm(true);
@@ -150,18 +160,28 @@ function VehiclesPageInner() {
           model: formData.model,
           color: formData.color,
           parkingSlot: formData.parkingSlot,
+          ownerLabel: formData.ownerLabel,
+          notes: formData.notes,
+          registrationCategory: formData.registrationCategory,
         };
         await api.patch(`/vehicles/${editingVehicle.id}`, payload);
         showToast("Vehicle updated successfully", "success");
       } else {
         // POST - create new vehicle
         const payload = {
+          registrationCategory: formData.registrationCategory,
           vehicleNumber: formData.vehicleNumber.toUpperCase(),
           vehicleType: formData.vehicleType,
           model: formData.model,
           color: formData.color,
           parkingSlot: formData.parkingSlot,
-          villaId: formData.villaId
+          ownerLabel: formData.ownerLabel,
+          notes: formData.notes,
+          ...(formData.registrationCategory === "RESIDENT"
+            ? { villaId: formData.villaId }
+            : formData.villaId
+              ? { villaId: formData.villaId }
+              : {}),
         };
         await api.post("/vehicles", payload);
         showToast("Vehicle registered successfully", "success");
@@ -257,6 +277,29 @@ function VehiclesPageInner() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {!editingVehicle && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-fg-primary mb-1">
+                      Registration type *
+                    </label>
+                    <select
+                      required
+                      value={formData.registrationCategory}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          registrationCategory: e.target.value as VehicleRegistrationCategory,
+                        })
+                      }
+                      className="input"
+                    >
+                      <option value="RESIDENT">Resident vehicle (linked to villa)</option>
+                      <option value="VISITOR">Visitor / recurring guest vehicle</option>
+                      <option value="OTHER">Other (manual society approval)</option>
+                    </select>
+                  </div>
+                )}
+
+                {!editingVehicle && formData.registrationCategory === "RESIDENT" && (
                   <div>
                     <label className="block text-sm font-medium text-fg-primary mb-1">
                       Villa *
@@ -269,6 +312,33 @@ function VehiclesPageInner() {
                   </div>
                 )}
 
+                {!editingVehicle && formData.registrationCategory !== "RESIDENT" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
+                        Villa (optional)
+                      </label>
+                      <VillaTypeahead
+                        value={formData.villaId}
+                        onChange={(villaId) => setFormData({ ...formData, villaId })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
+                        Owner / description *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.ownerLabel}
+                        onChange={(e) => setFormData({ ...formData, ownerLabel: e.target.value })}
+                        className="input"
+                        placeholder="e.g. Milk vendor, Chairman guest"
+                      />
+                    </div>
+                  </>
+                )}
+
                 {editingVehicle && (
                   <div>
                     <label className="block text-sm font-medium text-fg-primary mb-1">
@@ -277,7 +347,11 @@ function VehiclesPageInner() {
                     <input
                       type="text"
                       disabled
-                      value={`${editingVehicle.villa.villaNumber}${editingVehicle.villa.block ? ` (Block ${editingVehicle.villa.block})` : ""}`}
+                      value={
+                        editingVehicle.villa
+                          ? `${editingVehicle.villa.villaNumber}${editingVehicle.villa.block ? ` (Block ${editingVehicle.villa.block})` : ""}`
+                          : "—"
+                      }
                       className="input opacity-60"
                     />
                     <p className="text-xs text-fg-secondary mt-1">Villa cannot be changed after registration.</p>
@@ -355,6 +429,19 @@ function VehiclesPageInner() {
                     placeholder="P-12"
                   />
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-fg-primary mb-1">
+                    Notes
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="input"
+                    placeholder="Optional internal note for guards"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3">
@@ -420,6 +507,7 @@ function VehiclesPageInner() {
               <table className="table">
                 <thead className="table-head">
                   <tr>
+                    <th scope="col" className="table-th">Category</th>
                     <th scope="col" className="table-th">Vehicle No.</th>
                     <th scope="col" className="table-th">Type</th>
                     <th scope="col" className="table-th">Model</th>
@@ -432,6 +520,9 @@ function VehiclesPageInner() {
                 <tbody>
                   {filteredVehicles.map((vehicle) => (
                     <tr key={vehicle.id} className="table-row">
+                      <td className="table-td capitalize">
+                        {(vehicle.registrationCategory || "RESIDENT").toLowerCase().replace(/_/g, " ")}
+                      </td>
                       <td className="table-td font-medium">{vehicle.vehicleNumber}</td>
                       <td className="table-td">
                         {formatVehicleType(vehicle.vehicleType)}
@@ -439,8 +530,9 @@ function VehiclesPageInner() {
                       <td className="table-td">{vehicle.model && vehicle.model !== "Unknown" ? vehicle.model : "-"}</td>
                       <td className="table-td">{vehicle.color && vehicle.color !== "Unknown" ? vehicle.color : "-"}</td>
                       <td className="table-td">
-                        {vehicle.villa.villaNumber}
-                        {vehicle.villa.block ? ` (${vehicle.villa.block})` : ""}
+                        {vehicle.villa
+                          ? `${vehicle.villa.villaNumber}${vehicle.villa.block ? ` (${vehicle.villa.block})` : ""}`
+                          : vehicle.ownerLabel || "—"}
                       </td>
                       <td className="table-td">{vehicle.parkingSlot || "-"}</td>
                       <td className="table-td">

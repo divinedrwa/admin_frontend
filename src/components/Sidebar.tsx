@@ -17,6 +17,8 @@ import {
   Droplets,
   FileText,
   Gauge,
+  Activity,
+  BookOpen,
   HandCoins,
   ImageUp,
   LayoutDashboard,
@@ -44,6 +46,8 @@ import {
   CalendarClock,
   UserCheck,
   Settings,
+  History,
+  UserX,
 } from "lucide-react";
 import { showToast } from "./Toast";
 import { useEffect, useRef, useState } from "react";
@@ -89,6 +93,10 @@ const linkSections: SidebarSection[] = [
       { href: "/upi-payments", label: "UPI verification", icon: CreditCard },
       { href: "/admin-shortfall", label: "Income vs Expenses", icon: Wallet },
       { href: "/reconciliation", label: "Reconciliation", icon: Scale },
+      { href: "/defaulter-report", label: "Defaulter report", icon: UserX },
+      { href: "/payment-timeline", label: "Payment timeline", icon: History },
+      { href: "/system-health", label: "System health", icon: Activity },
+      { href: "/runbooks", label: "Ops runbooks", icon: BookOpen },
       { href: "/audit-log", label: "Audit log", icon: ClipboardCheck },
     ],
   },

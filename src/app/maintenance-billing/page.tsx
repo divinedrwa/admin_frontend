@@ -90,6 +90,9 @@ export default function MaintenanceBillingPage() {
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [unpublishingId, setUnpublishingId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [maintenanceBillingMode, setMaintenanceBillingMode] = useState<"FIXED" | "SQFT">("FIXED");
+  const [maintenanceFixedAmount, setMaintenanceFixedAmount] = useState(1100);
+  const [maintenanceSqftRate, setMaintenanceSqftRate] = useState(1.1);
 
   const loadCycles = useCallback(async (signal?: AbortSignal) => {
     const res = await api.get("/v1/admin/cycles", { signal });
@@ -113,15 +116,32 @@ export default function MaintenanceBillingPage() {
     setFinancialYears(res.data.financialYears ?? []);
   }, []);
 
+  const loadSocietyBilling = useCallback(async (signal?: AbortSignal) => {
+    const res = await api.get("/society-settings", { signal });
+    const s = res.data.society as {
+      maintenanceBillingMode?: "FIXED" | "SQFT";
+      maintenanceFixedAmount?: number | string | null;
+      maintenanceSqftRate?: number | string | null;
+    };
+    setMaintenanceBillingMode(s.maintenanceBillingMode ?? "FIXED");
+    setMaintenanceFixedAmount(Number(s.maintenanceFixedAmount ?? 1100) || 1100);
+    setMaintenanceSqftRate(Number(s.maintenanceSqftRate ?? 1.1) || 1.1);
+  }, []);
+
   const loadAudit = useCallback(async (signal?: AbortSignal) => {
     const res = await api.get("/v1/admin/audit-logs", { params: { limit: 100 }, signal });
     setAuditRows(res.data.logs ?? []);
   }, []);
 
   const refreshCoreData = useCallback(async (signal?: AbortSignal) => {
-    await Promise.all([loadCycles(signal), loadUsers(signal), loadFinancialYears(signal)]);
+    await Promise.all([
+      loadCycles(signal),
+      loadUsers(signal),
+      loadFinancialYears(signal),
+      loadSocietyBilling(signal),
+    ]);
     setLastSyncedAt(new Date());
-  }, [loadCycles, loadUsers, loadFinancialYears]);
+  }, [loadCycles, loadUsers, loadFinancialYears, loadSocietyBilling]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
@@ -248,11 +268,15 @@ export default function MaintenanceBillingPage() {
         showToast("Payment start and end dates are required", "error");
         return;
       }
+      let amount = Number(form.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        amount = maintenanceFixedAmount;
+      }
       await api.post("/v1/admin/cycles", {
         financialYearId: form.financialYearId,
         cycleMonth: form.cycleMonth,
         title: form.title || `Maintenance ${form.cycleMonth}`,
-        amount: Number(form.amount),
+        amount,
         paymentStartDate,
         paymentEndDate,
         lateFee: Number(form.lateFee || 0),
@@ -529,7 +553,10 @@ export default function MaintenanceBillingPage() {
       financialYearId: financialYears[0]?.id ?? "",
       cycleMonth: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
       title: "",
-      amount: "",
+      amount:
+        maintenanceBillingMode === "FIXED"
+          ? String(maintenanceFixedAmount)
+          : "",
       paymentStart: utcInputValue(now),
       paymentEnd: utcInputValue(now),
       lateFee: "0",
@@ -617,6 +644,8 @@ export default function MaintenanceBillingPage() {
             publishingId={publishingId}
             onUnpublish={handleUnpublish}
             unpublishingId={unpublishingId}
+            maintenanceBillingMode={maintenanceBillingMode}
+            maintenanceSqftRate={maintenanceSqftRate}
             cycleOptions={cycleOptions}
             primaryMaintenanceUsers={primaryMaintenanceUsers}
             reopenId={reopenId}

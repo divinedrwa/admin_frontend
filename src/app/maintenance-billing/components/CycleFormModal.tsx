@@ -23,6 +23,8 @@ export interface CycleFormModalProps {
   publishingId?: string | null;
   onUnpublish?: (cycleId: string) => void;
   unpublishingId?: string | null;
+  maintenanceBillingMode?: "FIXED" | "SQFT";
+  maintenanceSqftRate?: number;
 }
 
 export function CycleFormModal({
@@ -46,6 +48,8 @@ export function CycleFormModal({
   publishingId,
   onUnpublish,
   unpublishingId,
+  maintenanceBillingMode = "FIXED",
+  maintenanceSqftRate = 1.1,
 }: CycleFormModalProps) {
   return (
     <>
@@ -117,16 +121,30 @@ export function CycleFormModal({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm md:col-span-2">
-            <span className="text-fg-secondary">Amount (₹)</span>
+            <span className="text-fg-secondary">
+              {maintenanceBillingMode === "SQFT"
+                ? "Reference amount (₹) — optional"
+                : "Amount (₹)"}
+            </span>
             <input
               className="input border rounded-lg px-3 py-2"
-              required
+              required={maintenanceBillingMode === "FIXED"}
               type="number"
               min={1}
               step="0.01"
               value={form.amount}
               onChange={(e) => setForm((s) => ({ ...s, amount: e.target.value }))}
             />
+            {maintenanceBillingMode === "SQFT" ? (
+              <p className="text-xs text-fg-tertiary">
+                Per-villa dues are calculated as area × ₹{maintenanceSqftRate}/sq ft on publish.
+                Leave blank to use the society default reference amount.
+              </p>
+            ) : (
+              <p className="text-xs text-fg-tertiary">
+                Same flat amount for every villa this cycle (adjust when monthly expenses change).
+              </p>
+            )}
           </label>
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-fg-secondary">Payment start (UTC)</span>
