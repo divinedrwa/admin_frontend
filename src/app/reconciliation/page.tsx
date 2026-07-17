@@ -152,10 +152,21 @@ export default function ReconciliationPage() {
 
   const alertKind = (alert: ReconciliationAlert) => {
     const credit = Number(alert.creditApplied ?? 0);
+    const advance = Math.max(0, Number(alert.societyCash) - Number(alert.villaSum));
     const unexplained = alert.unexplainedDifference ?? alert.difference;
     if (credit > 0.01 && Math.abs(unexplained) <= 0.01) return "credit-settled";
+    if (advance > 0.01 && (alert.resolvedAt || Math.abs(unexplained) <= 0.01)) return "advance-settled";
     if (alert.severity === "CRITICAL") return "critical";
     return "warning";
+  };
+
+  const advanceAmount = (alert: ReconciliationAlert) =>
+    Math.max(0, Number(alert.societyCash) - Number(alert.villaSum));
+
+  const displayVariance = (alert: ReconciliationAlert) => {
+    const kind = alertKind(alert);
+    if (kind === "credit-settled" || kind === "advance-settled") return 0;
+    return alert.unexplainedDifference ?? alert.difference;
   };
 
   const formatMoney = (n: number) => {
@@ -179,7 +190,9 @@ export default function ReconciliationPage() {
   const listTotalDifference =
     statusFilter === "unresolved" && summary
       ? summary.totalDifference
-      : alerts.reduce((s, a) => s + Math.abs(a.difference), 0);
+      : statusFilter === "unresolved"
+        ? alerts.reduce((s, a) => s + Math.abs(displayVariance(a)), 0)
+        : 0;
 
   if (loading) {
     return (
@@ -223,10 +236,13 @@ export default function ReconciliationPage() {
                 <strong>Cash</strong> — actual money received (MaintenancePayment rows).
               </li>
               <li>
-                <strong>Credit</strong> — settled amount covered by advance credit (Settled − Cash). Auto-resolved when expected.
+                <strong>Credit</strong> — settled covered by advance credit (Settled − Cash). Shown when Cash &lt; Settled.
               </li>
               <li>
-                <strong>Variance</strong> — unexplained difference. CRITICAL means cash exceeds settled; investigate duplicate entries.
+                <strong>Advance</strong> — bank received more than settled (Cash − Settled). Expected overpayment / villa advance pool.
+              </li>
+              <li>
+                <strong>Variance</strong> — unexplained difference only. Resolved credit/advance rows show ₹0.
               </li>
             </ul>
           </div>
@@ -252,9 +268,11 @@ export default function ReconciliationPage() {
                 <IndianRupee className="h-5 w-5 text-brand-warning" />
                 <div>
                   <div className="stat-card-label">
-                    {statusFilter === "unresolved" ? "Open difference" : "Listed difference"}
+                    {statusFilter === "unresolved" ? "Open difference" : "Historical (resolved)"}
                   </div>
-                  <div className="stat-card-value">₹{formatMoney(listTotalDifference)}</div>
+                  <div className="stat-card-value">
+                    {statusFilter === "unresolved" ? `₹${formatMoney(listTotalDifference)}` : "—"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -295,6 +313,7 @@ export default function ReconciliationPage() {
                   <th scope="col" className="table-th">Settled</th>
                   <th scope="col" className="table-th">Cash</th>
                   <th scope="col" className="table-th">Credit</th>
+                  <th scope="col" className="table-th">Advance</th>
                   <th scope="col" className="table-th">Variance</th>
                   <th scope="col" className="table-th">Detected</th>
                   <th scope="col" className="table-th min-w-[14rem]">Resolution notes</th>
@@ -309,7 +328,7 @@ export default function ReconciliationPage() {
               <tbody className="bg-surface divide-y">
                 {alerts.length === 0 ? (
                   <tr>
-                    <td colSpan={statusFilter === "resolved" ? 9 : 9} className="px-6 py-12 text-center">
+                    <td colSpan={statusFilter === "resolved" ? 10 : 10} className="px-6 py-12 text-center">
                       <div className="empty-state">
                         <CheckCircle2 className="h-10 w-10 text-approved-fg mx-auto mb-2" />
                         <p className="empty-state-title">
@@ -330,10 +349,16 @@ export default function ReconciliationPage() {
                               ? "badge-danger"
                               : alertKind(alert) === "credit-settled"
                                 ? "badge-success"
-                                : "badge-warning"
+                                : alertKind(alert) === "advance-settled"
+                                  ? "badge-success"
+                                  : "badge-warning"
                           }`}
                         >
-                          {alertKind(alert) === "credit-settled" ? "CREDIT OK" : alert.severity}
+                          {alertKind(alert) === "credit-settled"
+                            ? "CREDIT OK"
+                            : alertKind(alert) === "advance-settled"
+                              ? "ADVANCE OK"
+                              : alert.severity}
                         </span>
                       </td>
                       <td className="table-td font-medium">{cycleLabel(alert)}</td>
@@ -347,7 +372,18 @@ export default function ReconciliationPage() {
                         )}
                       </td>
                       <td className="table-td font-mono">
-                        ₹{formatMoney(alert.unexplainedDifference ?? alert.difference)}
+                        {advanceAmount(alert) > 0.01 ? (
+                          <span className="text-approved-fg">₹{formatMoney(advanceAmount(alert))}</span>
+                        ) : (
+                          <span className="text-fg-secondary">—</span>
+                        )}
+                      </td>
+                      <td className="table-td font-mono">
+                        {Math.abs(displayVariance(alert)) <= 0.01 ? (
+                          <span className="text-fg-secondary">—</span>
+                        ) : (
+                          <>₹{formatMoney(displayVariance(alert))}</>
+                        )}
                       </td>
                       <td className="table-td text-sm text-fg-secondary whitespace-nowrap">
                         {new Date(alert.detectedAt).toLocaleDateString("en-IN", {
