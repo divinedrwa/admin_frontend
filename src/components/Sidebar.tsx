@@ -91,6 +91,7 @@ const linkSections: SidebarSection[] = [
       { href: "/payment-methods", label: "Payment methods", icon: CreditCard },
       { href: "/bank-accounts", label: "Bank accounts", icon: Building2 },
       { href: "/upi-payments", label: "UPI verification", icon: CreditCard },
+      { href: "/payment-disputes", label: "Payment disputes", icon: TriangleAlert },
       { href: "/admin-shortfall", label: "Income vs Expenses", icon: Wallet },
       { href: "/reconciliation", label: "Reconciliation", icon: Scale },
       { href: "/defaulter-report", label: "Defaulter report", icon: UserX },
