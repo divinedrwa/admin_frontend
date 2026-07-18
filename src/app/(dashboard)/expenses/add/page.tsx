@@ -490,7 +490,7 @@ export default function AddExpensePage() {
               </div>
             </div>
             <p className="text-xs text-fg-secondary -mt-2">
-              Only billing cycles created under Maintenance Billing are listed. Auto-selected from payment date when a matching cycle exists.
+              Only billing cycles from Maintenance Billing are listed, including drafts. Auto-selected from payment date when a matching cycle exists.
             </p>
           </div>
         </div>

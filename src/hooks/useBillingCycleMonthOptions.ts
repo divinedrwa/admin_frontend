@@ -8,14 +8,10 @@ export type BillingCycleMonthOption = {
   cycleKey: string;
 };
 
-type BillingCycleRow = {
-  cycleKey: string;
-  title?: string;
-};
-
 export function cycleKeyToMonthOption(
   cycleKey: string,
   title?: string,
+  options?: { isDraft?: boolean },
 ): BillingCycleMonthOption | null {
   const parts = cycleKey.split("-");
   if (parts.length < 2) return null;
@@ -24,15 +20,25 @@ export function cycleKeyToMonthOption(
   if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) return null;
   const date = new Date(y, m - 1, 1);
   const monthLabel = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const draftSuffix = options?.isDraft ? " (Draft)" : "";
   return {
     month: m,
     year: y,
-    label: title ? `${monthLabel} · ${title}` : monthLabel,
+    label: title
+      ? `${monthLabel} · ${title}${draftSuffix}`
+      : `${monthLabel}${draftSuffix}`,
     cycleKey,
   };
 }
 
-/** Billing months for a financial year — only cycles that exist in admin billing. */
+type AdminBillingCycleRow = {
+  cycleKey: string;
+  title?: string;
+  financialYearId?: string | null;
+  publishedAt?: string | null;
+};
+
+/** Billing months for admin expense forms — includes draft (unpublished) cycles. */
 export function useBillingCycleMonthOptions(financialYearId: string) {
   const [monthOptions, setMonthOptions] = useState<BillingCycleMonthOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,14 +52,14 @@ export function useBillingCycleMonthOptions(financialYearId: string) {
     const controller = new AbortController();
     setLoading(true);
     void api
-      .get("/v1/billing-cycles", {
-        params: { financialYearId },
-        signal: controller.signal,
-      })
+      .get("/v1/admin/cycles", { signal: controller.signal })
       .then((res) => {
-        const cycles = (res.data?.cycles ?? []) as BillingCycleRow[];
+        const cycles = (res.data?.cycles ?? []) as AdminBillingCycleRow[];
         const rows = cycles
-          .map((c) => cycleKeyToMonthOption(c.cycleKey, c.title))
+          .filter((c) => c.financialYearId === financialYearId)
+          .map((c) =>
+            cycleKeyToMonthOption(c.cycleKey, c.title, { isDraft: !c.publishedAt }),
+          )
           .filter((x): x is BillingCycleMonthOption => x != null)
           .sort((a, b) => a.cycleKey.localeCompare(b.cycleKey));
         setMonthOptions(rows);
