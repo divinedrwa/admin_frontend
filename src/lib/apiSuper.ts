@@ -12,6 +12,7 @@ export const SUPER_ADMIN_REFRESH_TOKEN_KEY = "super_admin_refresh_token";
 
 export const apiSuper = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
 apiSuper.interceptors.request.use((config) => {

@@ -12,6 +12,8 @@ import {
   getPlatformViewSession,
   type PlatformViewPayload,
 } from "@/lib/platformViewSession";
+import { api, clearTenantAuthCookie } from "@/lib/api";
+import { isHttpOnlyAuthEnabled } from "@/lib/httpOnlyAuth";
 import { getResolvedApiBaseUrl } from "@/lib/apiBaseUrl";
 
 const IS_DEV = process.env.NODE_ENV === "development";
@@ -40,8 +42,17 @@ export function AppShell({
     setPlatformView(getPlatformViewSession());
   }, []);
 
-  function exitToSuperAdmin() {
-    // Restores any tenant-admin session that pre-dated this platform view.
+  async function exitToSuperAdmin() {
+    try {
+      await api.post("/auth/logout", {});
+    } catch {
+      // Best-effort — still leave platform view locally.
+    }
+    if (isHttpOnlyAuthEnabled()) {
+      clearTenantAuthCookie();
+      localStorage.removeItem("token");
+      localStorage.removeItem("refresh_token");
+    }
     exitPlatformView();
     setPlatformView(null);
     router.push("/super-admin");

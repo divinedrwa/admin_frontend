@@ -3,7 +3,7 @@
 import axios from "axios";
 import { parseApiError } from "@/utils/errorHandler";
 import { isSocietyPublicAuthPath } from "./authRedirect";
-import { clearPlatformViewSession } from "./platformViewSession";
+import { clearPlatformViewSession, getPlatformViewSession } from "./platformViewSession";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
 import { attemptTokenRefresh } from "./tokenRefresh";
 import { readSocietyIdFromToken } from "./jwt";
@@ -49,8 +49,13 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   // Re-resolve each request so dev `.env.local` changes apply without a full rebuild.
   config.baseURL = getResolvedApiBaseUrl();
+  const platformView =
+    typeof window !== "undefined" ? getPlatformViewSession() : null;
+  const httpOnly = isHttpOnlyAuthEnabled();
+  // Production HttpOnly mode normally uses cookies only. Super-admin platform view
+  // is cross-origin (Vercel → Render) so cookies may not stick — keep Bearer fallback.
   const token =
-    typeof window !== "undefined" && !isHttpOnlyAuthEnabled()
+    typeof window !== "undefined" && (!httpOnly || platformView)
       ? localStorage.getItem("token")
       : null;
   if (token) {
@@ -125,7 +130,7 @@ api.interceptors.response.use(
           });
           if (newToken) {
             error.config._retryAfterRefresh = true;
-            if (isHttpOnlyAuthEnabled()) {
+            if (isHttpOnlyAuthEnabled() && !getPlatformViewSession()) {
               delete error.config.headers.Authorization;
             } else {
               error.config.headers.Authorization = `Bearer ${newToken}`;

@@ -3,6 +3,7 @@
 import axios from "axios";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
 import { isHttpOnlyAuthEnabled } from "./httpOnlyAuth";
+import { getPlatformViewSession } from "./platformViewSession";
 
 const API_BASE_URL = getResolvedApiBaseUrl();
 
@@ -37,7 +38,9 @@ export async function attemptTokenRefresh(config: RefreshConfig): Promise<string
 }
 
 async function doRefresh(config: RefreshConfig): Promise<string | null> {
-  const httpOnly = isHttpOnlyAuthEnabled() && config.tokenKey === "token";
+  const platformView = getPlatformViewSession();
+  const httpOnly =
+    isHttpOnlyAuthEnabled() && config.tokenKey === "token" && !platformView;
   const refreshToken = httpOnly ? null : localStorage.getItem(config.refreshTokenKey);
   if (!httpOnly && !refreshToken) return null;
 
@@ -55,7 +58,7 @@ async function doRefresh(config: RefreshConfig): Promise<string | null> {
     const newRefresh = data?.refreshToken;
     if (!newAccess || !newRefresh) return null;
 
-    if (!httpOnly) {
+    if (!httpOnly || platformView) {
       localStorage.setItem(config.tokenKey, newAccess);
       localStorage.setItem(config.refreshTokenKey, newRefresh);
     }

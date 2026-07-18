@@ -3,6 +3,13 @@ import { useRouter, usePathname } from "next/navigation";
 import { isJwtUnexpired, isTenantAdminToken } from "@/lib/jwt";
 import { attemptTokenRefresh } from "@/lib/tokenRefresh";
 import { setTenantAuthCookie } from "@/lib/api";
+import { isHttpOnlyAuthEnabled } from "@/lib/httpOnlyAuth";
+import { getPlatformViewSession } from "@/lib/platformViewSession";
+
+function hasTenantAuthCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split(";").some((c) => c.trim().startsWith("tenant_auth=1"));
+}
 
 function isTenantPublicPath(pathname: string): boolean {
   const p = pathname.split("?")[0] ?? "";
@@ -22,6 +29,7 @@ export function useAuth(requireAuth: boolean = true) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      const httpOnly = isHttpOnlyAuthEnabled();
       const token = localStorage.getItem("token");
       let valid = isJwtUnexpired(token);
 
@@ -40,6 +48,15 @@ export function useAuth(requireAuth: boolean = true) {
         }
       }
 
+      // HttpOnly cookie session (no JWT in localStorage) — refresh via tenant_refresh cookie.
+      if (!valid && httpOnly && (hasTenantAuthCookie() || getPlatformViewSession())) {
+        const newToken = await attemptTokenRefresh({
+          tokenKey: "token",
+          refreshTokenKey: "refresh_token",
+        });
+        valid = !!newToken || hasTenantAuthCookie();
+      }
+
       const activeToken = localStorage.getItem("token");
       if (valid && requireAuth && activeToken && !isTenantAdminToken(activeToken)) {
         localStorage.removeItem("token");
@@ -55,7 +72,7 @@ export function useAuth(requireAuth: boolean = true) {
       }
 
       setIsAuthenticated(valid);
-      if (valid && activeToken && isTenantAdminToken(activeToken)) {
+      if (valid && (activeToken ? isTenantAdminToken(activeToken) : httpOnly && hasTenantAuthCookie())) {
         setTenantAuthCookie();
       }
       setIsLoading(false);

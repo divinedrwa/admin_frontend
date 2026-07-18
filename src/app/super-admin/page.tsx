@@ -370,15 +370,22 @@ export default function SuperAdminConsolePage() {
   async function openSocietyAdminDashboard(s: SocietyRow | SocietyDetail) {
     setOpeningTenantSession(true);
     try {
-      const { data } = await apiSuper.post<{ token: string }>(
-        `/super/societies/${encodeURIComponent(s.id)}/tenant-session`,
-      );
+      const { data } = await apiSuper.post<{
+        token: string;
+        refreshToken?: string;
+        user?: { societyId?: string | null };
+      }>(`/super/societies/${encodeURIComponent(s.id)}/tenant-session`);
       if (!data?.token) {
         showToast("No tenant token returned", "error");
         return;
       }
+
       enterPlatformView(data.token, s.id, s.name);
-      setTenantSocietyIdFromLogin({ societyId: s.id });
+      if (data.refreshToken) {
+        localStorage.setItem("refresh_token", data.refreshToken);
+      }
+
+      setTenantSocietyIdFromLogin(data.user ?? { societyId: s.id });
       setTenantAuthCookie();
       setDetailSociety(null);
       setDetailLoading(false);
