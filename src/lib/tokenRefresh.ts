@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import { getResolvedApiBaseUrl } from "./apiBaseUrl";
+import { isHttpOnlyAuthEnabled } from "./httpOnlyAuth";
 
 const API_BASE_URL = getResolvedApiBaseUrl();
 
@@ -36,25 +37,33 @@ export async function attemptTokenRefresh(config: RefreshConfig): Promise<string
 }
 
 async function doRefresh(config: RefreshConfig): Promise<string | null> {
-  const refreshToken = localStorage.getItem(config.refreshTokenKey);
-  if (!refreshToken) return null;
+  const httpOnly = isHttpOnlyAuthEnabled() && config.tokenKey === "token";
+  const refreshToken = httpOnly ? null : localStorage.getItem(config.refreshTokenKey);
+  if (!httpOnly && !refreshToken) return null;
 
   try {
     const { data } = await axios.post<{
       token?: string;
       refreshToken?: string;
-    }>(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+    }>(
+      `${API_BASE_URL}/auth/refresh`,
+      httpOnly ? {} : { refreshToken },
+      { withCredentials: true },
+    );
 
     const newAccess = data?.token;
     const newRefresh = data?.refreshToken;
     if (!newAccess || !newRefresh) return null;
 
-    localStorage.setItem(config.tokenKey, newAccess);
-    localStorage.setItem(config.refreshTokenKey, newRefresh);
+    if (!httpOnly) {
+      localStorage.setItem(config.tokenKey, newAccess);
+      localStorage.setItem(config.refreshTokenKey, newRefresh);
+    }
     return newAccess;
   } catch {
-    // Refresh failed — clear both tokens so caller falls through to redirect.
-    localStorage.removeItem(config.refreshTokenKey);
+    if (!httpOnly) {
+      localStorage.removeItem(config.refreshTokenKey);
+    }
     return null;
   }
 }

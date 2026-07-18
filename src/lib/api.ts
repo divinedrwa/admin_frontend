@@ -124,9 +124,12 @@ api.interceptors.response.use(
             refreshTokenKey: TENANT_REFRESH_TOKEN_KEY,
           });
           if (newToken) {
-            // Retry the original request with the new token.
             error.config._retryAfterRefresh = true;
-            error.config.headers.Authorization = `Bearer ${newToken}`;
+            if (isHttpOnlyAuthEnabled()) {
+              delete error.config.headers.Authorization;
+            } else {
+              error.config.headers.Authorization = `Bearer ${newToken}`;
+            }
             return api.request(error.config);
           }
         }
