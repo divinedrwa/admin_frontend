@@ -1,0 +1,777 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GatePass+ API",
+    "version": "1.0.0",
+    "description": "Multi-tenant housing society platform API"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000",
+      "description": "Local dev"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "societyId": {
+            "type": "string",
+            "minLength": 1,
+            "example": "clx..."
+          },
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "example": "admin"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "example": "ChangeMe123!"
+          }
+        },
+        "required": [
+          "societyId",
+          "username",
+          "password"
+        ]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              },
+              "societyId": {
+                "type": "string",
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "role",
+              "societyId"
+            ]
+          }
+        },
+        "required": [
+          "token",
+          "refreshToken",
+          "user"
+        ]
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "RefreshResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "refreshToken"
+        ]
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "properties": {
+          "cycleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payAllPending": {
+            "type": "boolean"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 120
+          }
+        }
+      },
+      "PhonePeInitiateRequest": {
+        "type": "object",
+        "properties": {
+          "cycleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payAllPending": {
+            "type": "boolean"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 120
+          }
+        }
+      },
+      "MarkCashRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cycleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amountPaid": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "userId",
+          "cycleId",
+          "amountPaid"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "GuardVisitorCheckInRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 10
+          },
+          "visitTargets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "villaId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "unitId": {
+                  "type": "string"
+                },
+                "residentUserId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "villaId"
+              ]
+            }
+          },
+          "villaIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "visitorType": {
+            "type": "string",
+            "enum": [
+              "GUEST",
+              "DELIVERY",
+              "SERVICE_PROVIDER",
+              "VENDOR"
+            ]
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "vehicleNumber": {
+            "type": "string"
+          },
+          "photo": {
+            "type": "string"
+          },
+          "awaitResidentApproval": {
+            "type": "boolean"
+          },
+          "clientMutationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "visitorType"
+        ]
+      },
+      "GuardVisitorCheckOutRequest": {
+        "type": "object",
+        "properties": {
+          "visitorId": {
+            "type": "string"
+          },
+          "clientMutationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "visitorId"
+        ]
+      },
+      "GuardVisitorMutationResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "visitor": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "awaitResidentApproval": {
+            "type": "boolean"
+          },
+          "residentApprovalRecipientCount": {
+            "type": "number"
+          },
+          "idempotentReplay": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "summary": "Tenant user login",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        }
+      }
+    },
+    "/api/auth/admin/login": {
+      "post": {
+        "summary": "Society admin login",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "summary": "Refresh access token",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/create-order": {
+      "post": {
+        "summary": "Create Razorpay order for maintenance payment",
+        "tags": [
+          "Billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order created"
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/phonepe/initiate": {
+      "post": {
+        "summary": "Initiate PhonePe payment",
+        "tags": [
+          "Billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhonePeInitiateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment initiated with redirect URL"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/phonepe/status/{txnId}": {
+      "get": {
+        "summary": "Check PhonePe payment status",
+        "tags": [
+          "Billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "txnId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment status"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/payments/mark-cash": {
+      "post": {
+        "summary": "Record cash payment (admin)",
+        "tags": [
+          "Billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkCashRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment recorded"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/residents/maintenance-pending": {
+      "get": {
+        "summary": "Get pending maintenance dues for current resident",
+        "tags": [
+          "Maintenance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending dues list"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/residents/maintenance-dashboard": {
+      "get": {
+        "summary": "Resident maintenance financial dashboard",
+        "tags": [
+          "Maintenance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "3"
+            },
+            "required": true,
+            "name": "month",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "2026"
+            },
+            "required": true,
+            "name": "year",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cycleId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "billingCycleId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/guards/visitor-checkin": {
+      "post": {
+        "summary": "Guard walk-in visitor check-in",
+        "tags": [
+          "Guard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardVisitorCheckInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Visitor checked in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardVisitorMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Duplicate active check-in"
+          }
+        }
+      }
+    },
+    "/api/guards/visitor-checkout": {
+      "post": {
+        "summary": "Guard visitor check-out",
+        "tags": [
+          "Guard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardVisitorCheckOutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Visitor checked out (idempotent on replay)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardVisitorMutationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Visitor not found"
+          },
+          "409": {
+            "description": "Concurrent state change"
+          }
+        }
+      }
+    },
+    "/api/guards/my-visitors": {
+      "get": {
+        "summary": "Today's visitors for guard",
+        "tags": [
+          "Guard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visitor list"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/guards/my-dashboard": {
+      "get": {
+        "summary": "Guard dashboard summary",
+        "tags": [
+          "Guard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  }
+}
