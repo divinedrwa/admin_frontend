@@ -6,7 +6,7 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { AppShell } from "@/components/AppShell";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
-import { Save, Upload, Trash2, Smartphone, Monitor, Eye, RotateCcw, Settings } from "lucide-react";
+import { Save, Upload, Trash2, Smartphone, Monitor, Eye, RotateCcw, Settings, Plus } from "lucide-react";
 import { applyThemeColors, mergeThemeColors } from "@/theme/ThemeProvider";
 import {
   DEFAULT_THEME_COLORS,
@@ -35,7 +35,19 @@ type SocietySettings = {
   maintenanceBillingMode?: "FIXED" | "SQFT";
   maintenanceFixedAmount?: number | null;
   maintenanceSqftRate?: number | null;
+  useChargeHeads?: boolean;
   themeColors: Record<string, string> | null;
+};
+
+type ChargeHead = {
+  id: string;
+  code: string;
+  label: string;
+  amountType: "FIXED" | "PER_SQFT";
+  fixedAmount: number | string | null;
+  perSqftRate: number | string | null;
+  sortOrder: number;
+  isActive: boolean;
 };
 
 const SETTINGS_TABS = [
@@ -308,8 +320,19 @@ export default function SocietySettingsPage() {
     maintenanceBillingMode: "FIXED" as "FIXED" | "SQFT",
     maintenanceFixedAmount: 1100,
     maintenanceSqftRate: 1.1,
+    useChargeHeads: false,
   });
   const [savingMaintenanceBilling, setSavingMaintenanceBilling] = useState(false);
+  const [chargeHeads, setChargeHeads] = useState<ChargeHead[]>([]);
+  const [loadingChargeHeads, setLoadingChargeHeads] = useState(false);
+  const [savingChargeHead, setSavingChargeHead] = useState(false);
+  const [newChargeHead, setNewChargeHead] = useState({
+    code: "maintenance",
+    label: "Maintenance",
+    amountType: "FIXED" as "FIXED" | "PER_SQFT",
+    fixedAmount: 1000,
+    perSqftRate: 1.1,
+  });
 
   // UPI form
   const [upiForm, setUpiForm] = useState({ upiVpa: "" });
@@ -347,6 +370,18 @@ export default function SocietySettingsPage() {
     setThemeForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const loadChargeHeads = useCallback(async () => {
+    setLoadingChargeHeads(true);
+    try {
+      const { data } = await api.get("/society-settings/charge-heads");
+      setChargeHeads((data.chargeHeads as ChargeHead[]) ?? []);
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to load charge heads").message, "error");
+    } finally {
+      setLoadingChargeHeads(false);
+    }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -368,6 +403,7 @@ export default function SocietySettingsPage() {
         maintenanceBillingMode: s.maintenanceBillingMode ?? "FIXED",
         maintenanceFixedAmount: Number(s.maintenanceFixedAmount ?? 1100) || 1100,
         maintenanceSqftRate: Number(s.maintenanceSqftRate ?? 1.1) || 1.1,
+        useChargeHeads: s.useChargeHeads ?? false,
       });
       setUpiForm({ upiVpa: s.upiVpa || "" });
       if (s.themeColors) {
@@ -385,6 +421,9 @@ export default function SocietySettingsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (tab === "billing") void loadChargeHeads();
+  }, [tab, loadChargeHeads]);
 
   const saveVisitor = async () => {
     setSavingVisitor(true);
@@ -418,10 +457,48 @@ export default function SocietySettingsPage() {
       await api.patch("/society-settings/maintenance-billing", maintenanceBillingForm);
       showToast("Maintenance billing mode saved", "success");
       await load();
+      await loadChargeHeads();
     } catch (error) {
       showToast(parseApiError(error, "Failed to save billing mode").message, "error");
     } finally {
       setSavingMaintenanceBilling(false);
+    }
+  };
+
+  const addChargeHead = async () => {
+    setSavingChargeHead(true);
+    try {
+      const payload =
+        newChargeHead.amountType === "FIXED"
+          ? {
+              code: newChargeHead.code.trim().toLowerCase(),
+              label: newChargeHead.label.trim(),
+              amountType: newChargeHead.amountType,
+              fixedAmount: newChargeHead.fixedAmount,
+            }
+          : {
+              code: newChargeHead.code.trim().toLowerCase(),
+              label: newChargeHead.label.trim(),
+              amountType: newChargeHead.amountType,
+              perSqftRate: newChargeHead.perSqftRate,
+            };
+      await api.post("/society-settings/charge-heads", payload);
+      showToast("Charge head added", "success");
+      await loadChargeHeads();
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to add charge head").message, "error");
+    } finally {
+      setSavingChargeHead(false);
+    }
+  };
+
+  const deactivateChargeHead = async (id: string) => {
+    try {
+      await api.delete(`/society-settings/charge-heads/${id}`);
+      showToast("Charge head removed", "success");
+      await loadChargeHeads();
+    } catch (error) {
+      showToast(parseApiError(error, "Failed to remove charge head").message, "error");
     }
   };
 
@@ -699,6 +776,142 @@ export default function SocietySettingsPage() {
           >
             <Save size={14} /> {savingMaintenanceBilling ? "Saving…" : "Save billing mode"}
           </button>
+        </div>
+        )}
+
+        {tab === "billing" && (
+        <div className="card card-body">
+          <h3 className="font-semibold text-fg-primary mb-1">Charge heads (multi-line bills)</h3>
+          <p className="text-sm text-fg-secondary mb-4">
+            Optional. When enabled, each published cycle sums these line items per villa instead of a single flat amount.
+            Societies with charge heads off keep the current single-line billing.
+          </p>
+          <label className="flex items-center gap-3 text-sm text-fg-primary mb-4">
+            <input
+              type="checkbox"
+              checked={maintenanceBillingForm.useChargeHeads}
+              onChange={(e) =>
+                setMaintenanceBillingForm((s) => ({ ...s, useChargeHeads: e.target.checked }))
+              }
+            />
+            <span>Use charge heads on published bills</span>
+          </label>
+          {loadingChargeHeads ? (
+            <p className="text-sm text-fg-secondary">Loading charge heads…</p>
+          ) : (
+            <div className="space-y-2 mb-4">
+              {chargeHeads.filter((h) => h.isActive).length === 0 ? (
+                <p className="text-sm text-fg-tertiary">No active charge heads yet.</p>
+              ) : (
+                chargeHeads
+                  .filter((h) => h.isActive)
+                  .map((head) => (
+                    <div
+                      key={head.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+                    >
+                      <div>
+                        <span className="font-medium text-fg-primary">{head.label}</span>
+                        <span className="ml-2 text-fg-tertiary">({head.code})</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-fg-secondary">
+                          {head.amountType === "FIXED"
+                            ? `₹${Number(head.fixedAmount ?? 0)} flat`
+                            : `₹${Number(head.perSqftRate ?? 0)}/sq ft`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void deactivateChargeHead(head.id)}
+                          className="btn btn-ghost btn-sm text-denied-fg"
+                          aria-label={`Remove ${head.label}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 border-t border-border pt-4">
+            <div>
+              <label className="block text-sm font-medium text-fg-primary">Code</label>
+              <input
+                className="input mt-1"
+                value={newChargeHead.code}
+                onChange={(e) => setNewChargeHead((s) => ({ ...s, code: e.target.value }))}
+                placeholder="maintenance"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-fg-primary">Label</label>
+              <input
+                className="input mt-1"
+                value={newChargeHead.label}
+                onChange={(e) => setNewChargeHead((s) => ({ ...s, label: e.target.value }))}
+                placeholder="Maintenance"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-fg-primary">Amount type</label>
+              <select
+                className="input mt-1"
+                value={newChargeHead.amountType}
+                onChange={(e) =>
+                  setNewChargeHead((s) => ({
+                    ...s,
+                    amountType: e.target.value as "FIXED" | "PER_SQFT",
+                  }))
+                }
+              >
+                <option value="FIXED">Fixed (₹)</option>
+                <option value="PER_SQFT">Per sq ft</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-fg-primary">
+                {newChargeHead.amountType === "FIXED" ? "Amount (₹)" : "Rate (₹/sq ft)"}
+              </label>
+              <input
+                type="number"
+                min={0.01}
+                step="0.01"
+                className="input mt-1"
+                value={
+                  newChargeHead.amountType === "FIXED"
+                    ? newChargeHead.fixedAmount
+                    : newChargeHead.perSqftRate
+                }
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value) || 0;
+                  setNewChargeHead((s) =>
+                    s.amountType === "FIXED"
+                      ? { ...s, fixedAmount: n }
+                      : { ...s, perSqftRate: n },
+                  );
+                }}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void addChargeHead()}
+              disabled={savingChargeHead}
+              className="btn btn-secondary flex items-center gap-1"
+            >
+              <Plus size={14} /> {savingChargeHead ? "Adding…" : "Add charge head"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void saveMaintenanceBilling()}
+              disabled={savingMaintenanceBilling}
+              className="btn btn-primary flex items-center gap-1"
+            >
+              <Save size={14} /> {savingMaintenanceBilling ? "Saving…" : "Save charge head settings"}
+            </button>
+          </div>
         </div>
         )}
 
