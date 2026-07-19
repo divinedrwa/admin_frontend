@@ -113,6 +113,35 @@ type Insights = {
   sessionsByRole?: { role: string; count: number }[];
 };
 
+type GrowthKpi = {
+  id: string;
+  label: string;
+  value: number;
+  displayValue: string;
+  pillar: string;
+  status: "good" | "watch" | "critical";
+  hint: string;
+};
+
+type GrowthDashboard = {
+  healthScore?: number;
+  kpis?: GrowthKpi[];
+  funnel?: { stage: string; count: number; ratePct: number }[];
+  growthLevers?: {
+    action: string;
+    label: string;
+    pillar: string;
+    adoptionPct: number;
+    count: number;
+    recommendation: string;
+  }[];
+  dataSources?: {
+    primary?: { id: string; label: string; description: string };
+    mirror?: { id: string; label: string; description: string };
+  };
+  pillars?: Record<string, Record<string, number | null | undefined>>;
+};
+
 const PERIOD_OPTIONS = [
   { value: 7, label: "7 days" },
   { value: 14, label: "14 days" },
@@ -188,6 +217,7 @@ export default function AppAnalyticsPage() {
     inactiveUsers?: EngagementUser[];
     neverUsedUsers?: EngagementUser[];
   } | null>(null);
+  const [growth, setGrowth] = useState<GrowthDashboard | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -207,6 +237,7 @@ export default function AppAnalyticsPage() {
           insightsRes,
           usersRes,
           engagementRes,
+          growthRes,
         ] = await Promise.all([
           api.get("/app-analytics/summary", { params: { days }, signal }),
           api.get("/app-analytics/daily-trend", { params: { days: trendDays }, signal }),
@@ -217,6 +248,7 @@ export default function AppAnalyticsPage() {
           api.get("/app-analytics/insights", { params: { days }, signal }),
           api.get("/app-analytics/active-users", { params: { days: 7, limit: 30 }, signal }),
           api.get("/app-analytics/user-engagement", { params: { days, limit: 30 }, signal }),
+          api.get("/app-analytics/growth-dashboard", { params: { days }, signal }),
         ]);
         setSummary(summaryRes.data.summary ?? null);
         setTrend(trendRes.data.trendData ?? []);
@@ -228,6 +260,7 @@ export default function AppAnalyticsPage() {
         setInsights(insightsRes.data.insights ?? null);
         setUsers(usersRes.data.users ?? []);
         setEngagement(engagementRes.data.engagement ?? null);
+        setGrowth(growthRes.data.growth ?? null);
       } catch (err: unknown) {
         if ((err as { name?: string }).name === "CanceledError") return;
         setError(parseApiError(err, "Failed to load app analytics").message);
@@ -293,6 +326,89 @@ export default function AppAnalyticsPage() {
           />
         ) : (
           <>
+            {growth && (
+              <section className="rounded-xl border border-border bg-gradient-to-br from-slate-900 to-teal-900 p-5 text-white shadow-lg">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="flex items-center gap-2 text-lg font-semibold">
+                      <Target className="h-5 w-5" />
+                      Business growth
+                    </h2>
+                    <p className="mt-1 text-sm text-white/70">
+                      {growth.dataSources?.primary?.label ?? "Server analytics"} +{" "}
+                      {growth.dataSources?.mirror?.label ?? "Firebase mirror"} — unified view for
+                      adoption, operations, and revenue signals.
+                    </p>
+                  </div>
+                  <div className="rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-lg font-bold">
+                    {growth.healthScore ?? 0}/100
+                  </div>
+                </div>
+
+                <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {(growth.kpis ?? []).slice(0, 4).map((kpi) => (
+                    <div
+                      key={kpi.id}
+                      className="rounded-lg border border-white/20 bg-white/10 p-3"
+                    >
+                      <div className="text-xl font-bold">{kpi.displayValue}</div>
+                      <div className="text-xs font-medium text-white/80">{kpi.label}</div>
+                      <div className="mt-1 text-[11px] text-white/60">{kpi.hint}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {(growth.funnel?.length ?? 0) > 0 && (
+                  <div className="mb-5">
+                    <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/80">
+                      Growth funnel
+                    </h3>
+                    <div className="space-y-2">
+                      {growth.funnel!.map((stage) => (
+                        <div key={stage.stage}>
+                          <div className="mb-1 flex justify-between text-sm">
+                            <span>{stage.stage}</span>
+                            <span className="text-white/80">
+                              {stage.count} · {stage.ratePct}%
+                            </span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-white/15">
+                            <div
+                              className="h-full rounded-full bg-teal-300"
+                              style={{ width: `${stage.ratePct}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(growth.growthLevers?.length ?? 0) > 0 && (
+                  <div>
+                    <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-white/80">
+                      <Zap className="h-4 w-4" />
+                      Improve next
+                    </h3>
+                    <ul className="grid gap-2 sm:grid-cols-2">
+                      {growth.growthLevers!.slice(0, 4).map((lever) => (
+                        <li
+                          key={lever.action}
+                          className="rounded-lg border border-white/15 bg-white/5 p-3 text-sm"
+                        >
+                          <div className="font-medium">{lever.label}</div>
+                          <div className="mt-1 text-white/70">{lever.recommendation}</div>
+                          <div className="mt-1 text-xs text-teal-200">
+                            {lever.adoptionPct}% adoption · {lever.count} events
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </section>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <MetricCard label="Daily active (DAU)" value={t.dailyActiveUsers ?? 0} />
               <MetricCard label="Weekly active (WAU)" value={t.weeklyActiveUsers ?? 0} />
