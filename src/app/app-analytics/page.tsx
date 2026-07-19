@@ -357,7 +357,7 @@ export default function AppAnalyticsPage() {
                   <dd className="text-xl font-semibold">{eng.inactiveInPeriod ?? 0}</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Never opened app</dt>
+                  <dt className="text-muted-foreground">No app signals</dt>
                   <dd className="text-xl font-semibold">{eng.neverUsedApp ?? 0}</dd>
                 </div>
                 <div>
@@ -639,7 +639,11 @@ export default function AppAnalyticsPage() {
                 )}
                 {neverUsed.length > 0 && (
                   <section className="rounded-xl border border-border bg-card p-4">
-                    <h2 className="mb-3 text-lg font-semibold">Never used app (onboarding gap)</h2>
+                    <h2 className="mb-3 text-lg font-semibold">No app signals (onboarding gap)</h2>
+                    <p className="mb-3 text-sm text-muted-foreground">
+                      Only accounts with no analytics session, push device, or login token. Users who
+                      open the app but lack telemetry still appear under Active or Dormant.
+                    </p>
                     <ul className="space-y-2 text-sm">
                       {neverUsed.slice(0, 15).map((u) => (
                         <li key={u.userId} className="flex justify-between gap-4">
