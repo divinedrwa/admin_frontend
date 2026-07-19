@@ -120,6 +120,7 @@ const linkSections: SidebarSection[] = [
   {
     title: "Analytics",
     links: [
+      { href: "/app-analytics", label: "App usage", icon: Activity },
       { href: "/complaint-analytics", label: "Complaints", icon: TriangleAlert },
       { href: "/gate-analytics", label: "Gate stats", icon: DoorOpen },
       { href: "/water-supply-analytics", label: "Water supply", icon: Droplets },
