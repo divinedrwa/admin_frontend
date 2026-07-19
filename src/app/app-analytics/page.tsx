@@ -52,7 +52,15 @@ type Summary = {
     inactiveInPeriod?: number;
     neverUsedApp?: number;
     deactivatedAccounts?: number;
-    byRole?: { role: string; active: number; inactive: number; neverUsed: number }[];
+    byRole?: {
+      role: string;
+      label?: string;
+      totalInSociety?: number;
+      registered?: number;
+      active: number;
+      inactive: number;
+      neverUsed: number;
+    }[];
   };
   activeUsersByRole?: { role: string; count: number }[];
 };
@@ -61,10 +69,54 @@ type EngagementUser = {
   userId: string;
   name: string;
   username?: string;
+  email?: string;
+  phone?: string | null;
   role: string;
   villaNumber?: string | null;
   status?: string;
   lastSeenAt?: string | null;
+};
+
+type RoleAdoptionRow = {
+  role: string;
+  label: string;
+  totalInSociety: number;
+  registered: number;
+  active: number;
+  dormant: number;
+  neverUsed: number;
+  deactivated?: number;
+  everUsed: number;
+  notUsingApp: number;
+  usingApp: number;
+  activeRatePct: number;
+  activationRatePct: number;
+  listCounts?: {
+    usingApp: number;
+    neverUsed: number;
+    dormant: number;
+    deactivated: number;
+  };
+  notUsingAppUsers?: {
+    neverUsed?: EngagementUser[];
+    dormant?: EngagementUser[];
+  };
+  usingAppUsers?: EngagementUser[];
+  deactivatedUsers?: EngagementUser[];
+};
+
+type RoleAdoption = {
+  period?: { days: number };
+  meta?: { totalUsersInDatabase?: number; source?: string };
+  roles?: RoleAdoptionRow[];
+  totals?: {
+    registeredActiveAccounts?: number;
+    activeInPeriod?: number;
+    neverUsedApp?: number;
+    totalUsersInDatabase?: number;
+    accountsByRole?: { role: string; label: string; count: number }[];
+  };
+  dataSources?: { custom?: string; firebase?: string };
 };
 
 type TrendRow = {
@@ -139,6 +191,14 @@ type GrowthDashboard = {
     primary?: { id: string; label: string; description: string };
     mirror?: { id: string; label: string; description: string };
   };
+  firebaseFreeMetrics?: {
+    id: string;
+    label: string;
+    source: string;
+    firebaseEvent: string;
+    consolePath: string;
+    description: string;
+  }[];
   pillars?: Record<string, Record<string, number | null | undefined>>;
 };
 
@@ -218,6 +278,7 @@ export default function AppAnalyticsPage() {
     neverUsedUsers?: EngagementUser[];
   } | null>(null);
   const [growth, setGrowth] = useState<GrowthDashboard | null>(null);
+  const [roleAdoption, setRoleAdoption] = useState<RoleAdoption | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -238,6 +299,7 @@ export default function AppAnalyticsPage() {
           usersRes,
           engagementRes,
           growthRes,
+          roleAdoptionRes,
         ] = await Promise.all([
           api.get("/app-analytics/summary", { params: { days }, signal }),
           api.get("/app-analytics/daily-trend", { params: { days: trendDays }, signal }),
@@ -247,8 +309,9 @@ export default function AppAnalyticsPage() {
           api.get("/app-analytics/errors", { params: { days }, signal }),
           api.get("/app-analytics/insights", { params: { days }, signal }),
           api.get("/app-analytics/active-users", { params: { days: 7, limit: 30 }, signal }),
-          api.get("/app-analytics/user-engagement", { params: { days, limit: 30 }, signal }),
+          api.get("/app-analytics/user-engagement", { params: { days }, signal }),
           api.get("/app-analytics/growth-dashboard", { params: { days }, signal }),
+          api.get("/app-analytics/role-adoption", { params: { days }, signal }),
         ]);
         setSummary(summaryRes.data.summary ?? null);
         setTrend(trendRes.data.trendData ?? []);
@@ -261,6 +324,7 @@ export default function AppAnalyticsPage() {
         setUsers(usersRes.data.users ?? []);
         setEngagement(engagementRes.data.engagement ?? null);
         setGrowth(growthRes.data.growth ?? null);
+        setRoleAdoption(roleAdoptionRes.data.adoption ?? null);
       } catch (err: unknown) {
         if ((err as { name?: string }).name === "CanceledError") return;
         setError(parseApiError(err, "Failed to load app analytics").message);
@@ -326,6 +390,117 @@ export default function AppAnalyticsPage() {
           />
         ) : (
           <>
+            {(roleAdoption?.roles?.length ?? 0) > 0 && (
+              <section className="rounded-xl border border-border bg-card p-4">
+                <div className="mb-4">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold">
+                    <Users className="h-5 w-5 text-primary" />
+                    App usage by role
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Counts and names loaded from your society&apos;s User table —{" "}
+                    {roleAdoption?.meta?.totalUsersInDatabase ?? roleAdoption?.totals?.totalUsersInDatabase ?? 0}{" "}
+                    accounts in database. Firebase filters by{" "}
+                    <code className="text-xs">user_role</code> for app-wide trends.
+                  </p>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {roleAdoption!.roles!.map((role) => (
+                    <div
+                      key={role.role}
+                      className="rounded-lg border border-border/80 bg-muted/20 p-4"
+                    >
+                      <div className="mb-2 flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold">{role.label}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {role.totalInSociety} in database · {role.registered} active accounts ·{" "}
+                            {role.active} using app · {role.notUsingApp} not using
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-primary">{role.activeRatePct}%</div>
+                          <div className="text-xs text-muted-foreground">active</div>
+                        </div>
+                      </div>
+                      <div className="mb-3 h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{
+                            width: `${role.registered > 0 ? (role.active / role.registered) * 100 : 0}%`,
+                          }}
+                        />
+                      </div>
+                      <dl className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                        <div>
+                          <dt className="text-muted-foreground">Using app</dt>
+                          <dd className="font-semibold text-green-700 dark:text-green-400">
+                            {role.active}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Never used</dt>
+                          <dd className="font-semibold text-destructive">{role.neverUsed}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Dormant</dt>
+                          <dd className="font-semibold text-amber-700 dark:text-amber-400">
+                            {role.dormant}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Ever used</dt>
+                          <dd className="font-semibold">{role.activationRatePct}%</dd>
+                        </div>
+                      </dl>
+                      {(role.notUsingAppUsers?.neverUsed?.length ?? 0) > 0 && (
+                        <div className="mt-3">
+                          <p className="mb-1 text-xs font-semibold text-destructive">
+                            Never used app ({role.listCounts?.neverUsed ?? role.notUsingAppUsers!.neverUsed!.length})
+                          </p>
+                          <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
+                            {role.notUsingAppUsers!.neverUsed!.map((u) => (
+                              <li key={u.userId} className="flex justify-between gap-2 border-b border-border/40 py-1">
+                                <span>
+                                  {u.name}{" "}
+                                  <span className="text-muted-foreground">({u.username})</span>
+                                </span>
+                                <span className="shrink-0 text-right text-muted-foreground">
+                                  {u.villaNumber ?? "—"}
+                                  {u.phone ? ` · ${u.phone}` : u.email ? ` · ${u.email}` : ""}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(role.notUsingAppUsers?.dormant?.length ?? 0) > 0 && (
+                        <div className="mt-3">
+                          <p className="mb-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                            Dormant ({role.listCounts?.dormant ?? role.notUsingAppUsers!.dormant!.length})
+                          </p>
+                          <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
+                            {role.notUsingAppUsers!.dormant!.map((u) => (
+                              <li key={u.userId} className="flex justify-between gap-2 border-b border-border/40 py-1">
+                                <span>
+                                  {u.name}{" "}
+                                  <span className="text-muted-foreground">({u.username})</span>
+                                </span>
+                                <span className="shrink-0 text-right text-muted-foreground">
+                                  {u.lastSeenAt?.slice(0, 10) ?? "—"}
+                                  {u.villaNumber ? ` · ${u.villaNumber}` : ""}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {growth && (
               <section className="rounded-xl border border-border bg-gradient-to-br from-slate-900 to-teal-900 p-5 text-white shadow-lg">
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -409,6 +584,60 @@ export default function AppAnalyticsPage() {
               </section>
             )}
 
+            {(growth?.firebaseFreeMetrics?.length ?? 0) > 0 && (
+              <section className="rounded-xl border border-border bg-card p-4">
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="flex items-center gap-2 text-lg font-semibold">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                      Firebase Analytics (free / Spark plan)
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      These metrics appear in your Firebase console at no cost. Society-scoped
+                      breakdowns with user names live in this dashboard above; Firebase adds
+                      geography, device models, and GA4 funnels across all societies.
+                    </p>
+                  </div>
+                  <a
+                    href="https://console.firebase.google.com/project/_/analytics"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+                  >
+                    Open Firebase console
+                  </a>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {growth!.firebaseFreeMetrics!.map((metric) => (
+                    <div
+                      key={metric.id}
+                      className="rounded-lg border border-border/80 bg-muted/30 p-3 text-sm"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{metric.label}</span>
+                        <span
+                          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                            metric.source === "automatic"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200"
+                              : metric.source === "crashlytics"
+                                ? "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200"
+                                : "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200"
+                          }`}
+                        >
+                          {metric.source.replace("_", " ")}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{metric.description}</p>
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        Event: <code className="text-foreground">{metric.firebaseEvent}</code> ·{" "}
+                        {metric.consolePath}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <MetricCard label="Daily active (DAU)" value={t.dailyActiveUsers ?? 0} />
               <MetricCard label="Weekly active (WAU)" value={t.weeklyActiveUsers ?? 0} />
@@ -487,7 +716,9 @@ export default function AppAnalyticsPage() {
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
                         <th className="py-2 pr-4">Role</th>
-                        <th className="py-2 pr-4">Active</th>
+                        <th className="py-2 pr-4">In database</th>
+                        <th className="py-2 pr-4">Active accts</th>
+                        <th className="py-2 pr-4">Using app</th>
                         <th className="py-2 pr-4">Dormant</th>
                         <th className="py-2 pr-4">Never used</th>
                       </tr>
@@ -495,7 +726,9 @@ export default function AppAnalyticsPage() {
                     <tbody>
                       {eng.byRole!.map((r) => (
                         <tr key={r.role} className="border-b border-border/60">
-                          <td className="py-2 pr-4 font-medium">{r.role}</td>
+                          <td className="py-2 pr-4 font-medium">{r.label ?? r.role}</td>
+                          <td className="py-2 pr-4">{r.totalInSociety ?? "—"}</td>
+                          <td className="py-2 pr-4">{r.registered ?? "—"}</td>
                           <td className="py-2 pr-4">{r.active}</td>
                           <td className="py-2 pr-4">{r.inactive}</td>
                           <td className="py-2 pr-4">{r.neverUsed}</td>
@@ -739,7 +972,7 @@ export default function AppAnalyticsPage() {
                   <section className="rounded-xl border border-border bg-card p-4">
                     <h2 className="mb-3 text-lg font-semibold">Dormant users (outreach list)</h2>
                     <ul className="space-y-2 text-sm">
-                      {inactive.slice(0, 15).map((u) => (
+                      {inactive.map((u) => (
                         <li key={u.userId} className="flex justify-between gap-4">
                           <span>
                             {u.name}{" "}
@@ -761,7 +994,7 @@ export default function AppAnalyticsPage() {
                       open the app but lack telemetry still appear under Active or Dormant.
                     </p>
                     <ul className="space-y-2 text-sm">
-                      {neverUsed.slice(0, 15).map((u) => (
+                      {neverUsed.map((u) => (
                         <li key={u.userId} className="flex justify-between gap-4">
                           <span>
                             {u.name}{" "}
