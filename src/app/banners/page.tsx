@@ -1,7 +1,6 @@
 "use client";
 
 import { ImagePlus, LayoutTemplate, Plus } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -408,14 +407,15 @@ export default function BannersPage() {
               >
                 {banner.imageUrl && (
                   <div className="h-48 bg-surface-elevated">
-                    <Image
+                    {/* Native <img>: banner.imageUrl is a free-form URL field (any host). */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={banner.imageUrl}
                       alt={banner.title}
-                      width={800}
-                      height={320}
                       className="h-full w-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                        e.currentTarget.style.display = "none";
                       }}
                     />
                   </div>

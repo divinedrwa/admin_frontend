@@ -130,6 +130,7 @@ type TrendRow = {
 
 type FlowRow = {
   flowId: string;
+  label?: string;
   count: number;
   successRate: number;
   avgDurationMs: number;
@@ -158,7 +159,7 @@ type Insights = {
     stickinessPct?: number;
     wauMauPct?: number;
   };
-  retention?: { d7Pct?: number; d30Pct?: number };
+  retention?: { d1Pct?: number; d7Pct?: number; d30Pct?: number };
   peakHours?: { hour: number; label: string; count: number }[];
   hourlyData?: { hour: number; label: string; count: number }[];
   weekdayUsage?: { day: number; label: string; count: number }[];
@@ -663,6 +664,10 @@ export default function AppAnalyticsPage() {
               </h2>
               <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
                 <div>
+                  <dt className="text-muted-foreground">1-day retention</dt>
+                  <dd className="text-2xl font-semibold">{retention.d1Pct ?? 0}%</dd>
+                </div>
+                <div>
                   <dt className="text-muted-foreground">7-day retention</dt>
                   <dd className="text-2xl font-semibold">{retention.d7Pct ?? 0}%</dd>
                 </div>
@@ -838,7 +843,7 @@ export default function AppAnalyticsPage() {
                   <ul className="space-y-2 text-sm">
                     {flows.slice(0, 12).map((f) => (
                       <li key={f.flowId} className="flex justify-between gap-4">
-                        <span className="font-mono text-xs">{f.flowId.replace(/_/g, " ")}</span>
+                        <span>{f.label ?? f.flowId.replace(/_/g, " ")}</span>
                         <span className="text-muted-foreground shrink-0">
                           {f.count} · {f.successRate}% ok · {fmtDuration(f.avgDurationMs)}
                         </span>
