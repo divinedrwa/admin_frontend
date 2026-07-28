@@ -78,10 +78,10 @@ type BillingResidentsTotals = {
 };
 
 async function fetchDashboardData(signal?: AbortSignal): Promise<DashboardData> {
-  const safeGet = async <T,>(request: Promise<T>) => {
+  const safeGet = async <T,>(request: Promise<{ data: T }>) => {
     try {
-      const data = await request;
-      return { ok: true as const, data };
+      const response = await request;
+      return { ok: true as const, data: response.data };
     } catch {
       return { ok: false as const, error: true };
     }
@@ -160,20 +160,20 @@ async function fetchDashboardData(signal?: AbortSignal): Promise<DashboardData> 
   let residentCount = 0;
   let guardCount = 0;
 
-  if (villasRes.ok && Array.isArray(villasRes.data.data?.villas)) {
-    const vd = villasRes.data.data;
+  if (villasRes.ok && Array.isArray(villasRes.data?.villas)) {
+    const vd = villasRes.data;
     villaCount = typeof vd.total === "number" ? vd.total : vd.villas.length;
   } else {
     countErrors.push("villas");
   }
-  if (residentsRes.ok && Array.isArray(residentsRes.data.data?.users)) {
-    const rd = residentsRes.data.data;
+  if (residentsRes.ok && Array.isArray(residentsRes.data?.users)) {
+    const rd = residentsRes.data;
     residentCount = typeof rd.total === "number" ? rd.total : rd.users.length;
   } else {
     countErrors.push("residents");
   }
-  if (guardsRes.ok && Array.isArray(guardsRes.data.data?.users)) {
-    const gd = guardsRes.data.data;
+  if (guardsRes.ok && Array.isArray(guardsRes.data?.users)) {
+    const gd = guardsRes.data;
     guardCount = typeof gd.total === "number" ? gd.total : gd.users.length;
   } else {
     countErrors.push("guards");

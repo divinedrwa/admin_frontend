@@ -3,6 +3,10 @@
 import { BarChart3, DoorOpen } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import {
+  AnalyticsHubEyebrow,
+  AnalyticsTabSwitcher,
+} from "@/components/analytics/AnalyticsTabSwitcher";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
@@ -190,6 +194,11 @@ export default function GateAnalyticsPage() {
           description="Track gate activity, visitor traffic, and guard coverage with live overview, trend, and peak-hour reporting."
           icon={<BarChart3 className="h-6 w-6" />}
         />
+
+        <div className="space-y-2">
+          <AnalyticsHubEyebrow />
+          <AnalyticsTabSwitcher />
+        </div>
 
         {/* Tabs */}
         <div className="tabs">

@@ -4,6 +4,10 @@ import { BarChart3 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import {
+  AnalyticsHubEyebrow,
+  AnalyticsTabSwitcher,
+} from "@/components/analytics/AnalyticsTabSwitcher";
 import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
 import { showToast } from "@/components/Toast";
@@ -154,6 +158,11 @@ export default function ComplaintAnalyticsPage() {
           description="Track complaint volume, category breakdowns, urgency, and pending items that need quicker operational response."
           icon={<BarChart3 className="h-6 w-6" />}
         />
+
+        <div className="space-y-2">
+          <AnalyticsHubEyebrow />
+          <AnalyticsTabSwitcher />
+        </div>
 
         {/* Date Filter */}
         <div className="flex items-center space-x-4">

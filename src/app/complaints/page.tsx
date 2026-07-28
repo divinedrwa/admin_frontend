@@ -54,7 +54,9 @@ function ComplaintsPageInner() {
   async function updateStatus(id: string, newStatus: string) {
     setUpdatingId(id);
     try {
-      await api.patch(`/complaints/${id}/status`, { status: newStatus });
+      await api.patch(`/complaint-analytics/quick-update/${id}`, {
+        status: newStatus,
+      });
       showToast("Status updated", "success");
       queryClient.invalidateQueries({ queryKey: ["complaints"] });
     } catch (err: unknown) {

@@ -22,7 +22,9 @@ export function useUpdateComplaintStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await api.patch(`/complaints/${id}/status`, { status });
+      const res = await api.patch(`/complaint-analytics/quick-update/${id}`, {
+        status,
+      });
       return res.data;
     },
     onSuccess: () => {

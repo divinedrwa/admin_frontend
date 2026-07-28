@@ -13,6 +13,10 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import {
+  AnalyticsHubEyebrow,
+  AnalyticsTabSwitcher,
+} from "@/components/analytics/AnalyticsTabSwitcher";
 import { parseApiError } from "@/utils/errorHandler";
 import {
   useReconciliationAlerts,
@@ -224,6 +228,11 @@ export default function ReconciliationPage() {
             </button>
           }
         />
+
+        <div className="space-y-2">
+          <AnalyticsHubEyebrow />
+          <AnalyticsTabSwitcher />
+        </div>
 
         {summary && (
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-fg-secondary space-y-2">

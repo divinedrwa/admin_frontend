@@ -3,6 +3,10 @@
 import { Droplets } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import {
+  AnalyticsHubEyebrow,
+  AnalyticsTabSwitcher,
+} from "@/components/analytics/AnalyticsTabSwitcher";
 import { AppShell } from "@/components/AppShell";
 import { api } from "@/lib/api";
 import { parseApiError } from "@/utils/errorHandler";
@@ -157,6 +161,11 @@ export default function WaterSupplyAnalyticsPage() {
           description="Monitor water supply patterns, gate-wise status, daily usage trends, and recent operational events from one analytics surface."
           icon={<Droplets className="h-6 w-6" />}
         />
+
+        <div className="space-y-2">
+          <AnalyticsHubEyebrow />
+          <AnalyticsTabSwitcher />
+        </div>
 
         <div className="tabs">
           {[

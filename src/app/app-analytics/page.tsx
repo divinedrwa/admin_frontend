@@ -13,6 +13,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import {
+  AnalyticsHubEyebrow,
+  AnalyticsTabSwitcher,
+} from "@/components/analytics/AnalyticsTabSwitcher";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
@@ -359,6 +363,11 @@ export default function AppAnalyticsPage() {
           description="Dual telemetry: Firebase Analytics + first-party server data. Tracks residents, guards, and admins for adoption, retention, and business growth."
           icon={<Smartphone className="h-6 w-6" />}
         />
+
+        <div className="space-y-2">
+          <AnalyticsHubEyebrow />
+          <AnalyticsTabSwitcher />
+        </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <select
