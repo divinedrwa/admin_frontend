@@ -1,7 +1,7 @@
 "use client";
 
-import { ImagePlus, LayoutTemplate, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ImagePlus, LayoutTemplate, Plus, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -33,8 +33,10 @@ export default function BannersPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [deletingBannerId, setDeletingBannerId] = useState<string | null>(null);
+  const imageFileRef = useRef<HTMLInputElement>(null);
   const { confirm, ConfirmUI } = useConfirm();
 
   const [formData, setFormData] = useState({
@@ -103,6 +105,41 @@ export default function BannersPage() {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingBanner(null);
+    if (imageFileRef.current) imageFileRef.current.value = "";
+  };
+
+  const handleUploadImage = async (file: File) => {
+    if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type)) {
+      showToast("Please choose a PNG, JPG or WEBP image", "error");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image must be 5 MB or smaller", "error");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const response = await api.post<{ imageUrl?: string; url?: string }>(
+        "/banners/upload-image",
+        fd,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      const uploadedUrl = response.data.imageUrl ?? response.data.url;
+      if (!uploadedUrl) {
+        showToast("Upload succeeded but no image URL was returned", "error");
+        return;
+      }
+      setFormData((prev) => ({ ...prev, imageUrl: uploadedUrl }));
+      showToast("Image uploaded — URL filled in below", "success");
+      if (imageFileRef.current) imageFileRef.current.value = "";
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to upload image").message, "error");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleDelete = async (bannerId: string) => {
@@ -283,17 +320,77 @@ export default function BannersPage() {
                   />
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-fg-primary mb-1">
-                    Image URL
+                    Banner image
                   </label>
-                  <input
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="input"
-                    placeholder="https://example.com/banner.jpg"
-                  />
+                  <p className="text-xs text-fg-secondary mb-2">
+                    Upload to Cloudinary or paste an image URL. Works for all banner types
+                    (announcement, event, festival, etc.).
+                  </p>
+                  <div className="flex flex-col gap-3 rounded-lg border border-surface-border bg-surface-elevated p-3 sm:flex-row sm:items-start">
+                    {formData.imageUrl ? (
+                      <div className="h-28 w-full shrink-0 overflow-hidden rounded-md border border-surface-border bg-surface sm:h-24 sm:w-40">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={formData.imageUrl}
+                          alt="Banner preview"
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-28 w-full items-center justify-center rounded-md border border-dashed border-surface-border text-xs text-fg-tertiary sm:h-24 sm:w-40">
+                        No image yet
+                      </div>
+                    )}
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
+                      <input
+                        ref={imageFileRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) void handleUploadImage(file);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => imageFileRef.current?.click()}
+                        disabled={uploadingImage || submitting}
+                        className="btn btn-secondary flex w-fit items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {uploadingImage
+                          ? "Uploading…"
+                          : formData.imageUrl
+                            ? "Replace image"
+                            : "Upload image"}
+                      </button>
+                      <input
+                        type="url"
+                        value={formData.imageUrl}
+                        onChange={(e) =>
+                          setFormData({ ...formData, imageUrl: e.target.value })
+                        }
+                        className="input"
+                        placeholder="https://res.cloudinary.com/.../banner.jpg"
+                      />
+                      {formData.imageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, imageUrl: "" })}
+                          className="text-left text-xs font-medium text-brand-danger hover:underline"
+                        >
+                          Remove image
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -367,10 +464,16 @@ export default function BannersPage() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingImage}
                   className="btn btn-primary"
                 >
-                  {submitting ? "Saving..." : (editingBanner ? "Update Banner" : "Create Banner")}
+                  {uploadingImage
+                    ? "Uploading image…"
+                    : submitting
+                      ? "Saving..."
+                      : editingBanner
+                        ? "Update Banner"
+                        : "Create Banner"}
                 </button>
                 <button
                   type="button"
