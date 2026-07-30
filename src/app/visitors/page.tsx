@@ -218,6 +218,8 @@ function VisitorsPageInner() {
         return "bg-info-bg text-info-fg";
       case "DELIVERY":
         return "bg-info-bg text-info-fg";
+      case "CAB":
+        return "bg-pending-bg text-pending-fg";
       case "VENDOR":
         return "bg-pending-bg text-pending-fg";
       case "CONTRACTOR":
@@ -289,6 +291,7 @@ function VisitorsPageInner() {
                 <option value="all">All Types</option>
                 <option value="GUEST">Guest</option>
                 <option value="DELIVERY">Delivery</option>
+                <option value="CAB">Cab</option>
                 <option value="SERVICE_PROVIDER">Service Provider</option>
                 <option value="VENDOR">Vendor</option>
                 <option value="CONTRACTOR">Contractor</option>
@@ -364,6 +367,7 @@ function VisitorsPageInner() {
                     >
                       <option value="GUEST">Guest</option>
                       <option value="DELIVERY">Delivery</option>
+                      <option value="CAB">Cab</option>
                       <option value="SERVICE_PROVIDER">Service Provider</option>
                       <option value="VENDOR">Vendor</option>
                       <option value="CONTRACTOR">Contractor</option>

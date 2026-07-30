@@ -48,6 +48,19 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
+  async headers() {
+    return [
+      {
+        source: "/visit/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store, private" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: imageRemotePatterns(),
   },

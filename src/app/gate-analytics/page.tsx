@@ -181,6 +181,7 @@ export default function GateAnalyticsPage() {
   const visitorTypeColors: { [key: string]: string } = {
     GUEST: "bg-brand-primary",
     DELIVERY: "bg-approved-solid",
+    CAB: "bg-pending-solid",
     SERVICE: "bg-pending-solid",
     VENDOR: "bg-brand-primary",
   };
