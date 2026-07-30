@@ -1,6 +1,6 @@
 "use client";
 
-import { ImagePlus, LayoutTemplate, Plus, Upload } from "lucide-react";
+import { ImagePlus, LayoutTemplate, Link2, Plus, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -10,6 +10,11 @@ import { showToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { parseApiError } from "@/utils/errorHandler";
 import { captureError } from "@/lib/captureError";
+import {
+  BANNER_DEEP_LINK_NONE,
+  BANNER_DEEP_LINK_OPTIONS,
+  bannerDeepLinkSelectValue,
+} from "@/lib/bannerDeepLinks";
 
 type Banner = {
   id: string;
@@ -436,16 +441,61 @@ export default function BannersPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-fg-primary mb-1">
-                    Action URL (Deep Link)
+                    Mobile app link (optional)
                   </label>
-                  <input
-                    type="url"
-                    value={formData.actionUrl}
-                    onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
-                    className="input"
-                    placeholder="societyapp://events/holi-2026"
-                  />
-                  <p className="text-xs text-fg-secondary mt-1">Optional deep link for mobile app navigation</p>
+                  <div className="flex items-start gap-2">
+                    <Link2 className="h-4 w-4 text-fg-tertiary mt-2.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <select
+                        value={bannerDeepLinkSelectValue(formData.actionUrl)}
+                        onChange={(e) => {
+                          const selected = e.target.value;
+                          if (selected === "__custom__") return;
+                          setFormData({
+                            ...formData,
+                            actionUrl: selected === BANNER_DEEP_LINK_NONE ? "" : selected,
+                          });
+                        }}
+                        className="input"
+                      >
+                        {BANNER_DEEP_LINK_OPTIONS.map((opt) => (
+                          <option key={opt.value || "none"} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                        {bannerDeepLinkSelectValue(formData.actionUrl) === "__custom__" ? (
+                          <option value="__custom__">Other (existing link)</option>
+                        ) : null}
+                      </select>
+                      {formData.actionUrl ? (
+                        <p className="text-xs text-fg-secondary mt-1.5">
+                          {BANNER_DEEP_LINK_OPTIONS.find((o) => o.value === formData.actionUrl)
+                            ?.hint ?? "Residents tap the banner to open this screen in the app."}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-fg-secondary mt-1.5">
+                          Leave as &quot;None&quot; if the banner should not navigate anywhere.
+                        </p>
+                      )}
+                      {bannerDeepLinkSelectValue(formData.actionUrl) === "__custom__" ? (
+                        <div className="mt-2 rounded-md border border-surface-border bg-surface-elevated px-3 py-2">
+                          <p className="text-xs text-fg-secondary mb-1">
+                            This banner has a custom link from an earlier version:
+                          </p>
+                          <p className="text-xs font-mono text-fg-primary break-all">
+                            {formData.actionUrl}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, actionUrl: "" })}
+                            className="mt-2 text-xs font-medium text-brand-danger hover:underline"
+                          >
+                            Remove link
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="md:col-span-2">
