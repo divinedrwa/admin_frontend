@@ -16,6 +16,16 @@ import {
   bannerDeepLinkSelectValue,
 } from "@/lib/bannerDeepLinks";
 
+/** HTML date input → ISO start of local calendar day. */
+function dateInputToStartIso(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toISOString();
+}
+
+/** HTML date input → ISO end of local calendar day (inclusive last day). */
+function dateInputToEndIso(dateStr: string): string {
+  return new Date(`${dateStr}T23:59:59.999`).toISOString();
+}
+
 type Banner = {
   id: string;
   title: string;
@@ -201,10 +211,10 @@ export default function BannersPage() {
         payload.imageUrl = formData.imageUrl.trim();
       }
       if (formData.startDate) {
-        payload.startDate = new Date(formData.startDate).toISOString();
+        payload.startDate = dateInputToStartIso(formData.startDate);
       }
       if (formData.endDate && formData.endDate.trim()) {
-        payload.endDate = new Date(formData.endDate).toISOString();
+        payload.endDate = dateInputToEndIso(formData.endDate);
       }
       if (formData.actionUrl && formData.actionUrl.trim()) {
         payload.actionUrl = formData.actionUrl.trim();
