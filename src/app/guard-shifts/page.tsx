@@ -12,9 +12,9 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { useGuardShifts, useGuards } from "@/hooks/useGuardShifts";
+import { useGuardShifts, useGuards, useGenerateRoster } from "@/hooks/useGuardShifts";
 import { useGates } from "@/hooks/useGates";
-import { ShiftForm } from "@/types/guard";
+import { ShiftForm, RosterForm } from "@/types/guard";
 
 /** Parse `type="date"` + `type="time"` (HH:MM or HH:MM:SS) into a local Date (no broken `…T08:00:00:00.000Z`). */
 function formatMinutesAsClock(m: number): string {
@@ -46,6 +46,7 @@ function GuardShiftsPageInner() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [formMode, setFormMode] = useState<"single" | "roster">("roster");
   const [formData, setFormData] = useState<ShiftForm>({
     guardId: "",
     gateId: "",
@@ -54,6 +55,16 @@ function GuardShiftsPageInner() {
     startTime: "",
     endTime: "",
     repeatDaily: false,
+    contactPhone: "",
+  });
+  const [rosterData, setRosterData] = useState<RosterForm>({
+    guardId: "",
+    gateId: "",
+    shiftDurationHours: 8,
+    dayStartTime: "06:00",
+    contactPhones: ["", "", ""],
+    notes: "",
+    replaceExisting: true,
   });
   const [submitting, setSubmitting] = useState(false);
   const { confirm, ConfirmUI } = useConfirm();
@@ -79,8 +90,13 @@ function GuardShiftsPageInner() {
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
+  const generateRoster = useGenerateRoster();
+
+  const rosterSlotCount = 24 / rosterData.shiftDurationHours;
+
   const handleOpenForm = () => {
     const today = new Date().toISOString().split("T")[0];
+    setFormMode("roster");
     setFormData({
       guardId: "",
       gateId: "",
@@ -89,6 +105,16 @@ function GuardShiftsPageInner() {
       startTime: "08:00",
       endTime: "16:00",
       repeatDaily: false,
+      contactPhone: "",
+    });
+    setRosterData({
+      guardId: "",
+      gateId: "",
+      shiftDurationHours: 8,
+      dayStartTime: "06:00",
+      contactPhones: ["", "", ""],
+      notes: "",
+      replaceExisting: true,
     });
     setShowForm(true);
   };
@@ -103,26 +129,76 @@ function GuardShiftsPageInner() {
       startTime: "",
       endTime: "",
       repeatDaily: false,
+      contactPhone: "",
     });
   };
 
-  const handleShiftTypeChange = (type: "MORNING" | "AFTERNOON" | "NIGHT") => {
-    let startTime = "08:00";
-    let endTime = "16:00";
+  const handleShiftTypeChange = (type: "MORNING" | "EVENING" | "NIGHT") => {
+    let startTime = "06:00";
+    let endTime = "14:00";
 
-    if (type === "AFTERNOON") {
-      startTime = "16:00";
-      endTime = "00:00";
+    if (type === "EVENING") {
+      startTime = "14:00";
+      endTime = "22:00";
     } else if (type === "NIGHT") {
-      startTime = "00:00";
-      endTime = "08:00";
+      startTime = "22:00";
+      endTime = "06:00";
     }
 
     setFormData({ ...formData, shiftType: type, startTime, endTime });
   };
 
+  const handleRosterDurationChange = (hours: 8 | 12) => {
+    const count = 24 / hours;
+    const phones = [...rosterData.contactPhones];
+    while (phones.length < count) phones.push("");
+    setRosterData({
+      ...rosterData,
+      shiftDurationHours: hours,
+      contactPhones: phones.slice(0, count),
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formMode === "roster") {
+      if (!rosterData.guardId || !rosterData.gateId) {
+        showToast("Please select guard and gate", "error");
+        return;
+      }
+      const anchor = "2000-01-01";
+      const start = parseLocalDateTime(anchor, rosterData.dayStartTime);
+      if (Number.isNaN(start.getTime())) {
+        showToast("Invalid day start time", "error");
+        return;
+      }
+      const dayStartMinutes = start.getHours() * 60 + start.getMinutes();
+
+      setSubmitting(true);
+      try {
+        await generateRoster.mutateAsync({
+          guardId: rosterData.guardId,
+          gateId: rosterData.gateId,
+          shiftDurationHours: rosterData.shiftDurationHours,
+          dayStartMinutes,
+          contactPhones: rosterData.contactPhones.map((p) => p.trim() || null),
+          notes: rosterData.notes.trim() || undefined,
+          replaceExisting: rosterData.replaceExisting,
+        });
+        showToast(
+          `${rosterSlotCount} recurring shifts created for 24h coverage`,
+          "success",
+        );
+        handleCloseForm();
+      } catch (error: unknown) {
+        const data = (error as { response?: { data?: { message?: string } } })?.response?.data;
+        showToast(data?.message ?? "Failed to generate roster", "error");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (!formData.guardId) {
       showToast("Please select a guard", "error");
@@ -165,6 +241,9 @@ function GuardShiftsPageInner() {
           recurringDaily: true,
           recurringStartMinutes,
           recurringEndMinutes,
+          ...(formData.contactPhone.trim()
+            ? { contactPhone: formData.contactPhone.trim() }
+            : {}),
         });
       } else {
         const start = parseLocalDateTime(formData.date, formData.startTime);
@@ -187,6 +266,9 @@ function GuardShiftsPageInner() {
           recurringDaily: false,
           startTime: start.toISOString(),
           endTime: end.toISOString(),
+          ...(formData.contactPhone.trim()
+            ? { contactPhone: formData.contactPhone.trim() }
+            : {}),
         });
       }
       showToast("Guard shift scheduled successfully", "success");
@@ -224,7 +306,7 @@ function GuardShiftsPageInner() {
     switch (type) {
       case "MORNING":
         return "badge-warning";
-      case "AFTERNOON":
+      case "EVENING":
         return "badge-danger";
       case "NIGHT":
         return "badge-primary";
@@ -267,10 +349,155 @@ function GuardShiftsPageInner() {
         {showForm && (
           <div className="card">
             <div className="card-header">
-              <h2 className="text-xl font-semibold">Schedule Guard Shift</h2>
+              <h2 className="text-xl font-semibold">
+                {formMode === "roster" ? "Generate 24h Roster" : "Schedule Guard Shift"}
+              </h2>
             </div>
             <div className="card-body">
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                className={`btn ${formMode === "roster" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setFormMode("roster")}
+              >
+                24h roster (auto)
+              </button>
+              <button
+                type="button"
+                className={`btn ${formMode === "single" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setFormMode("single")}
+              >
+                Single shift
+              </button>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {formMode === "roster" ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
+                        Guard *
+                      </label>
+                      <select
+                        required
+                        value={rosterData.guardId}
+                        onChange={(e) =>
+                          setRosterData({ ...rosterData, guardId: e.target.value })
+                        }
+                        className="input"
+                      >
+                        <option value="">Choose a guard</option>
+                        {guards.map((guard) => (
+                          <option key={guard.id} value={guard.id}>
+                            {guard.name} ({guard.email})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
+                        Gate *
+                      </label>
+                      <select
+                        required
+                        value={rosterData.gateId}
+                        onChange={(e) =>
+                          setRosterData({ ...rosterData, gateId: e.target.value })
+                        }
+                        className="input"
+                      >
+                        <option value="">Choose a gate</option>
+                        {gates.map((gate) => (
+                          <option key={gate.id} value={gate.id}>
+                            {gate.name} - {gate.location}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
+                        Shift length *
+                      </label>
+                      <select
+                        value={rosterData.shiftDurationHours}
+                        onChange={(e) =>
+                          handleRosterDurationChange(
+                            Number(e.target.value) as 8 | 12,
+                          )
+                        }
+                        className="input"
+                      >
+                        <option value={8}>8 hours (3 shifts / day)</option>
+                        <option value={12}>12 hours (2 shifts / day)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-fg-primary mb-1">
+                        Day starts at *
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={rosterData.dayStartTime}
+                        onChange={(e) =>
+                          setRosterData({ ...rosterData, dayStartTime: e.target.value })
+                        }
+                        className="input"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <p className="text-sm text-fg-secondary pb-2">
+                        Creates {rosterSlotCount} recurring daily shifts covering 24 hours.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-fg-primary">
+                      Duty contact per shift (optional)
+                    </p>
+                    {rosterData.contactPhones.map((phone, i) => (
+                      <div key={i}>
+                        <label className="block text-xs text-fg-secondary mb-1">
+                          Shift {i + 1} phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => {
+                            const next = [...rosterData.contactPhones];
+                            next[i] = e.target.value;
+                            setRosterData({ ...rosterData, contactPhones: next });
+                          }}
+                          placeholder="e.g. 9876543210"
+                          className="input"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={rosterData.replaceExisting}
+                      onChange={(e) =>
+                        setRosterData({
+                          ...rosterData,
+                          replaceExisting: e.target.checked,
+                        })
+                      }
+                      className="mt-1"
+                    />
+                    <span className="text-sm text-fg-secondary">
+                      Replace existing recurring shifts for this guard at this gate
+                    </span>
+                  </label>
+                </>
+              ) : (
+              <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-fg-primary mb-1">
@@ -330,13 +557,13 @@ function GuardShiftsPageInner() {
                     required
                     value={formData.shiftType}
                     onChange={(e) =>
-                      handleShiftTypeChange(e.target.value as "MORNING" | "AFTERNOON" | "NIGHT")
+                      handleShiftTypeChange(e.target.value as "MORNING" | "EVENING" | "NIGHT")
                     }
                     className="input"
                   >
-                    <option value="MORNING">Morning (8 AM - 4 PM)</option>
-                    <option value="AFTERNOON">Afternoon (4 PM - 12 AM)</option>
-                    <option value="NIGHT">Night (12 AM - 8 AM)</option>
+                    <option value="MORNING">Morning</option>
+                    <option value="EVENING">Evening</option>
+                    <option value="NIGHT">Night</option>
                   </select>
                 </div>
 
@@ -380,6 +607,21 @@ function GuardShiftsPageInner() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-fg-primary mb-1">
+                  Duty contact phone (optional)
+                </label>
+                <input
+                  type="tel"
+                  value={formData.contactPhone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contactPhone: e.target.value })
+                  }
+                  placeholder="SIM for this shift window"
+                  className="input"
+                />
+              </div>
+
               <div className="rounded-lg border border-surface-border bg-brand-primary-light/80 px-4 py-3 space-y-2">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
@@ -400,6 +642,8 @@ function GuardShiftsPageInner() {
                   </span>
                 </label>
               </div>
+              </>
+              )}
 
               <div className="flex gap-3">
                 <button
@@ -407,7 +651,11 @@ function GuardShiftsPageInner() {
                   disabled={submitting || guards.length === 0 || gates.length === 0}
                   className="btn btn-primary"
                 >
-                  {submitting ? "Scheduling..." : "Schedule Shift"}
+                  {submitting
+                    ? "Saving..."
+                    : formMode === "roster"
+                      ? `Generate ${rosterSlotCount} shifts`
+                      : "Schedule Shift"}
                 </button>
                 <button
                   type="button"
@@ -437,6 +685,7 @@ function GuardShiftsPageInner() {
                     <th scope="col" className="table-th">Shift Type</th>
                     <th scope="col" className="table-th">Time</th>
                     <th scope="col" className="table-th">Guard</th>
+                    <th scope="col" className="table-th">Duty phone</th>
                     <th scope="col" className="table-th">Gate</th>
                     <th scope="col" className="table-th">Actions</th>
                   </tr>
@@ -444,7 +693,7 @@ function GuardShiftsPageInner() {
                 <tbody>
                   {shifts.length === 0 ? (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <EmptyState
                           icon={<Clock3 className="h-12 w-12" />}
                           title="No Shifts Scheduled"
@@ -500,6 +749,9 @@ function GuardShiftsPageInner() {
                             <div className="font-medium">{shift.guard.name}</div>
                             <div className="text-xs text-fg-secondary">{shift.guard.email}</div>
                           </div>
+                        </td>
+                        <td className="table-td text-xs">
+                          {shift.contactPhone ?? "—"}
                         </td>
                         <td className="table-td">
                           <div>

@@ -42,6 +42,19 @@ export function useCreateShift() {
   });
 }
 
+export function useGenerateRoster() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const res = await api.post("/guard-shifts/generate-roster", data);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guard-shifts"] });
+    },
+  });
+}
+
 export function useDeleteShift() {
   const queryClient = useQueryClient();
   return useMutation({

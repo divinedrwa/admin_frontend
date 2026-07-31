@@ -4,7 +4,7 @@ export type Guard = {
   email?: string;
 };
 
-export type GuardShiftType = "MORNING" | "AFTERNOON" | "NIGHT";
+export type GuardShiftType = "MORNING" | "EVENING" | "NIGHT";
 
 export type GuardShift = {
   id: string;
@@ -14,6 +14,7 @@ export type GuardShift = {
   recurringDaily?: boolean;
   recurringStartMinutes?: number | null;
   recurringEndMinutes?: number | null;
+  contactPhone?: string | null;
   gate: {
     name: string;
     location: string;
@@ -21,6 +22,7 @@ export type GuardShift = {
   guard: {
     name: string;
     email: string;
+    phone?: string | null;
   };
 };
 
@@ -32,6 +34,17 @@ export type ShiftForm = {
   startTime: string;
   endTime: string;
   repeatDaily: boolean;
+  contactPhone: string;
+};
+
+export type RosterForm = {
+  guardId: string;
+  gateId: string;
+  shiftDurationHours: 8 | 12;
+  dayStartTime: string;
+  contactPhones: string[];
+  notes: string;
+  replaceExisting: boolean;
 };
 
 export type GuardPatrol = {
