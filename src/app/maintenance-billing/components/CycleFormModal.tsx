@@ -146,8 +146,11 @@ export function CycleFormModal({
               </p>
             )}
           </label>
+          <p className="md:col-span-2 text-xs text-fg-secondary">
+            Draft cycles auto-publish when payment start arrives. Residents see dues after that IST calendar day.
+          </p>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-fg-secondary">Payment start (UTC)</span>
+            <span className="text-fg-secondary">Payment start (IST)</span>
             <input
               className="input border rounded-lg px-3 py-2"
               required
@@ -157,7 +160,7 @@ export function CycleFormModal({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-fg-secondary">Payment end (UTC, deadline inclusive)</span>
+            <span className="text-fg-secondary">Payment end (IST, deadline inclusive)</span>
             <input
               className="input border rounded-lg px-3 py-2"
               required
@@ -332,7 +335,7 @@ export function CycleFormModal({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-fg-secondary">Payment start (UTC)</span>
+            <span className="text-fg-secondary">Payment start (IST)</span>
             <input
               className="input border rounded-lg px-3 py-2"
               type="datetime-local"
@@ -341,7 +344,7 @@ export function CycleFormModal({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-fg-secondary">Payment end (UTC)</span>
+            <span className="text-fg-secondary">Payment end (IST)</span>
             <input
               className="input border rounded-lg px-3 py-2"
               type="datetime-local"

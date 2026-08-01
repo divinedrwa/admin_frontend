@@ -20,7 +20,7 @@ import type {
   CycleFormData,
   FyFormData,
 } from "./components/types";
-import { utcInputValue, utcIsoFromDatetimeLocal } from "./components/types";
+import { istInputValue, istIsoFromDatetimeLocal, defaultPaymentWindowForCycleMonth } from "./components/types";
 import { BillingCycleTab } from "./components/BillingCycleTab";
 import { ResidentsTab } from "./components/ResidentsTab";
 import { AuditLogTab } from "./components/AuditLogTab";
@@ -262,8 +262,8 @@ export default function MaintenanceBillingPage() {
     if (creatingCycle) return;
     try {
       setCreatingCycle(true);
-      const paymentStartDate = utcIsoFromDatetimeLocal(form.paymentStart);
-      const paymentEndDate = utcIsoFromDatetimeLocal(form.paymentEnd);
+      const paymentStartDate = istIsoFromDatetimeLocal(form.paymentStart);
+      const paymentEndDate = istIsoFromDatetimeLocal(form.paymentEnd);
       if (!paymentStartDate || !paymentEndDate) {
         showToast("Payment start and end dates are required", "error");
         return;
@@ -428,8 +428,8 @@ export default function MaintenanceBillingPage() {
     e.preventDefault();
     if (!editId) return;
     try {
-      const paymentStartDate = utcIsoFromDatetimeLocal(form.paymentStart);
-      const paymentEndDate = utcIsoFromDatetimeLocal(form.paymentEnd);
+      const paymentStartDate = istIsoFromDatetimeLocal(form.paymentStart);
+      const paymentEndDate = istIsoFromDatetimeLocal(form.paymentEnd);
       await api.put(`/v1/admin/cycles/${editId}`, {
         title: form.title,
         amount: Number(form.amount),
@@ -454,8 +454,8 @@ export default function MaintenanceBillingPage() {
       cycleMonth: c.cycleKey,
       title: c.title,
       amount: String(c.amount),
-      paymentStart: utcInputValue(new Date(c.paymentStartDate)),
-      paymentEnd: utcInputValue(new Date(c.paymentEndDate)),
+      paymentStart: istInputValue(new Date(c.paymentStartDate)),
+      paymentEnd: istInputValue(new Date(c.paymentEndDate)),
       lateFee: String(c.lateFee),
       graceDays: String(c.gracePeriodDays),
     });
@@ -469,7 +469,7 @@ export default function MaintenanceBillingPage() {
     setActionBusy("reopen");
     try {
       await api.post(`/v1/admin/cycles/${reopenId}/reopen`, {
-        paymentEndDate: utcIsoFromDatetimeLocal(reopenEnd),
+        paymentEndDate: istIsoFromDatetimeLocal(reopenEnd),
       });
       showToast("Cycle updated (reopen)", "success");
       setReopenId("");
@@ -549,16 +549,18 @@ export default function MaintenanceBillingPage() {
 
   function handleOpenCreate() {
     const now = new Date();
+    const cycleMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const paymentWindow = defaultPaymentWindowForCycleMonth(cycleMonth);
     setForm({
       financialYearId: financialYears[0]?.id ?? "",
-      cycleMonth: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+      cycleMonth,
       title: "",
       amount:
         maintenanceBillingMode === "FIXED"
           ? String(maintenanceFixedAmount)
           : "",
-      paymentStart: utcInputValue(now),
-      paymentEnd: utcInputValue(now),
+      paymentStart: paymentWindow.paymentStart,
+      paymentEnd: paymentWindow.paymentEnd,
       lateFee: "0",
       graceDays: "5",
     });
