@@ -13,6 +13,7 @@ import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Poll, PollOption } from "@/types/poll";
 import { usePolls } from "@/hooks/usePolls";
+import { istDateInputAddMonths, istIsoFromDateInput, istTodayDateInput } from "@/lib/istDates";
 
 export default function PollsPage() {
   return (
@@ -85,16 +86,12 @@ function PollsPageInner() {
   };
 
   const handleOpenForm = () => {
-    const today = new Date();
-    const nextMonth = new Date(today);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-
     setEditingPoll(null);
     setFormData({
       title: "",
       description: "",
-      startDate: today.toISOString().split("T")[0],
-      endDate: nextMonth.toISOString().split("T")[0],
+      startDate: istTodayDateInput(),
+      endDate: istDateInputAddMonths(1),
       options: ["", ""]
     });
     setShowForm(true);
@@ -179,8 +176,8 @@ function PollsPageInner() {
       const payload = {
         title: formData.title,
         description: formData.description || undefined,
-        startDate: `${formData.startDate}T00:00:00.000Z`,
-        endDate: `${formData.endDate}T23:59:59.999Z`,
+        startDate: istIsoFromDateInput(formData.startDate, false),
+        endDate: istIsoFromDateInput(formData.endDate, true),
         options: validOptions
       };
 

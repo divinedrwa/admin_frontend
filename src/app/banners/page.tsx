@@ -15,15 +15,16 @@ import {
   BANNER_DEEP_LINK_OPTIONS,
   bannerDeepLinkSelectValue,
 } from "@/lib/bannerDeepLinks";
+import { istIsoFromDateInput, istTodayDateInput } from "@/lib/istDates";
 
-/** HTML date input → ISO start of local calendar day. */
+/** HTML date input → ISO start of IST calendar day. */
 function dateInputToStartIso(dateStr: string): string {
-  return new Date(`${dateStr}T00:00:00`).toISOString();
+  return istIsoFromDateInput(dateStr, false);
 }
 
-/** HTML date input → ISO end of local calendar day (inclusive last day). */
+/** HTML date input → ISO end of IST calendar day (inclusive last day). */
 function dateInputToEndIso(dateStr: string): string {
-  return new Date(`${dateStr}T23:59:59.999`).toISOString();
+  return istIsoFromDateInput(dateStr, true);
 }
 
 type Banner = {
@@ -60,7 +61,7 @@ export default function BannersPage() {
     imageUrl: "",
     type: "ANNOUNCEMENT",
     priority: "0",
-    startDate: new Date().toISOString().split("T")[0],
+    startDate: istTodayDateInput(),
     endDate: "",
     isActive: true,
     actionUrl: ""
@@ -93,7 +94,7 @@ export default function BannersPage() {
       imageUrl: "",
       type: "ANNOUNCEMENT",
       priority: "0",
-      startDate: new Date().toISOString().split("T")[0],
+      startDate: istTodayDateInput(),
       endDate: "",
       isActive: true,
       actionUrl: ""
