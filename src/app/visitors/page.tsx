@@ -236,7 +236,7 @@ function VisitorsPageInner() {
   const headerCountSuffix =
     filter === "active"
       ? pgMeta.total > 0
-        ? ` ${pgMeta.total} visitor(s) are currently inside the society.`
+        ? ` ${pgMeta.total} visitor(s) are currently at the gate or inside the society.`
         : ""
       : typeof visitorsData?.todayCount === "number"
         ? ` ${visitorsData.todayCount} visitor(s) checked in today.`
@@ -495,10 +495,25 @@ function VisitorsPageInner() {
                         <td className="table-td text-fg-secondary max-w-xs truncate">{visitor.purpose}</td>
                         <td className="table-td text-fg-secondary">{formatDateTime(visitor.checkInAt)}</td>
                         <td className="table-td">
-                          {visitor.checkOutAt ? (
+                          {visitor.checkOutAt && visitor.exitNotMarked ? (
+                            <span
+                              className="badge bg-surface-elevated text-fg-secondary"
+                              title={`Guard did not mark exit. Closed automatically (${formatDateTime(visitor.checkOutAt)}).`}
+                            >
+                              Exit not marked
+                            </span>
+                          ) : visitor.checkOutAt ? (
                             <span className="text-fg-secondary">{formatDateTime(visitor.checkOutAt)}</span>
+                          ) : visitor.status === "PENDING_APPROVAL" ? (
+                            <span className="badge bg-pending-bg text-pending-fg">Awaiting resident</span>
+                          ) : visitor.status === "APPROVED" ? (
+                            <span className="badge bg-info-bg text-info-fg">Approved · at gate</span>
+                          ) : visitor.status === "DENIED" ? (
+                            <span className="badge bg-denied-bg text-denied-fg">Rejected</span>
+                          ) : visitor.status === "CANCELLED" ? (
+                            <span className="badge bg-surface-elevated text-fg-secondary">Expired</span>
                           ) : (
-                            <span className="badge badge-success">Active</span>
+                            <span className="badge badge-success">Inside</span>
                           )}
                         </td>
                         <td className="table-td">

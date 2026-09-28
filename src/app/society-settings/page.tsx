@@ -678,7 +678,12 @@ export default function SocietySettingsPage() {
             <label className="flex items-center gap-3 text-sm text-fg-primary">
               <input type="checkbox" checked={visitorForm.guardCanApproveVisitors}
                 onChange={(e) => setVisitorForm({ ...visitorForm, guardCanApproveVisitors: e.target.checked })} />
-              <span>Guards can approve visitors directly (without resident confirmation)</span>
+              <span>
+                Guards can let visitors in when residents don&apos;t respond
+                <span className="block text-xs text-fg-secondary">
+                  When off, guards can only override after confirming with the resident by phone, or in an emergency.
+                </span>
+              </span>
             </label>
             <div>
               <label className="block text-sm font-medium text-fg-primary mb-1">Multi-villa approval mode</label>
@@ -686,7 +691,7 @@ export default function SocietySettingsPage() {
                 onChange={(e) => setVisitorForm({ ...visitorForm, visitorMultiVillaApprovalMode: e.target.value })}
                 className="input max-w-xs">
                 <option value="ANY_ONE_APPROVAL">Any one villa approves</option>
-                <option value="ALL_MUST_APPROVE">All villas must approve</option>
+                <option value="ALL_VILLAS_REQUIRED">All villas must approve</option>
               </select>
             </div>
             <button onClick={saveVisitor} disabled={savingVisitor} className="btn btn-primary flex items-center gap-1">

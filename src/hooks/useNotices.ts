@@ -49,7 +49,7 @@ export function useUpdateNotice() {
       id: string;
       data: Record<string, unknown>;
     }) => {
-      const res = await api.put(`/notices/${id}`, data);
+      const res = await api.patch(`/notices/${id}`, data);
       return res.data;
     },
     onSuccess: () => {

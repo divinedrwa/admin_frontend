@@ -141,7 +141,8 @@ export default function StaffPage() {
                     <option value="MAID">Maid</option>
                     <option value="COOK">Cook</option>
                     <option value="DRIVER">Driver</option>
-                    <option value="GUARD">Guard</option>
+                    <option value="NANNY">Nanny</option>
+                    <option value="GARDENER">Gardener</option>
                     <option value="OTHER">Other</option>
                   </select>
                 </div>

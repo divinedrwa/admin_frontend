@@ -1,4 +1,4 @@
-export type StaffType = "MAID" | "COOK" | "DRIVER" | "GUARD" | "OTHER";
+export type StaffType = "MAID" | "COOK" | "DRIVER" | "NANNY" | "GARDENER" | "OTHER";
 
 export type StaffAssignment = {
   id: string;

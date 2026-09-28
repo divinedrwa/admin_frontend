@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 import { showToast } from "@/components/Toast";
 import { parseApiError } from "@/utils/errorHandler";
 
-type Mode = "ANY_ONE_APPROVAL" | "ALL_MUST_APPROVE";
+type Mode = "ANY_ONE_APPROVAL" | "ALL_VILLAS_REQUIRED";
 
 type SocStatus = "ACTIVE" | "INACTIVE";
 
@@ -25,7 +25,7 @@ const modeLabels: Record<Mode, { title: string; description: string }> = {
     description:
       "When a guard selects multiple flats, the first resident approval allows entry. Other flats may still see the request until it is fully resolved.",
   },
-  ALL_MUST_APPROVE: {
+  ALL_VILLAS_REQUIRED: {
     title: "Every flat must approve",
     description:
       "All selected flats must approve before the guest is allowed in. If any flat rejects, entry is denied.",
@@ -35,7 +35,6 @@ const modeLabels: Record<Mode, { title: string; description: string }> = {
 export default function VisitorGateRulesPage() {
   const [society, setSociety] = useState<SocietyPayload | null>(null);
   const [mode, setMode] = useState<Mode>("ANY_ONE_APPROVAL");
-  const [status, setStatus] = useState<SocStatus>("ACTIVE");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -48,7 +47,6 @@ export default function VisitorGateRulesPage() {
         if (s) {
           setSociety(s);
           setMode(s.visitorMultiVillaApprovalMode);
-          setStatus(s.status ?? "ACTIVE");
         }
       })
       .catch((error: unknown) => {
@@ -65,21 +63,14 @@ export default function VisitorGateRulesPage() {
     e.preventDefault();
     if (!society) return;
 
-    const payload: { visitorMultiVillaApprovalMode?: Mode; status?: SocStatus } = {};
-    if (mode !== society.visitorMultiVillaApprovalMode) {
-      payload.visitorMultiVillaApprovalMode = mode;
-    }
-    if ((society.status ?? "ACTIVE") !== status) {
-      payload.status = status;
-    }
-    if (Object.keys(payload).length === 0) {
+    if (mode === society.visitorMultiVillaApprovalMode) {
       showToast("No changes to save", "success");
       return;
     }
 
     setSaving(true);
     try {
-      await api.patch("/society-settings", payload);
+      await api.patch("/society-settings", { visitorMultiVillaApprovalMode: mode });
       showToast("Society settings saved", "success");
       load();
     } catch (error: unknown) {
@@ -113,18 +104,12 @@ export default function VisitorGateRulesPage() {
               <p className="text-fg-primary">{society.name}</p>
               <div className="mt-4">
                 <label className="block text-sm font-semibold text-fg-primary mb-1">Operating status</label>
-                <p className="text-sm text-fg-secondary mb-2">
-                  When inactive, guards and residents cannot sign in or use the app. Society admins can still sign
-                  in and change this back to active. Use with care.
+                <p className="text-fg-primary">
+                  {(society.status ?? "ACTIVE") === "ACTIVE" ? "Active" : "Inactive"}
                 </p>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as SocStatus)}
-                  className="input max-w-xs"
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                </select>
+                <p className="text-sm text-fg-secondary mt-1">
+                  Managed by the platform administrator. Contact support to activate or deactivate this society.
+                </p>
               </div>
             </div>
 
@@ -155,17 +140,14 @@ export default function VisitorGateRulesPage() {
                 ))}
               </div>
 
-              {(society.visitorMultiVillaApprovalMode !== mode || (society.status ?? "ACTIVE") !== status) && (
+              {society.visitorMultiVillaApprovalMode !== mode && (
                 <p className="text-sm text-pending-fg mt-3">You have unsaved changes.</p>
               )}
             </div>
 
             <button
               type="submit"
-              disabled={
-                saving ||
-                (mode === society.visitorMultiVillaApprovalMode && (society.status ?? "ACTIVE") === status)
-              }
+              disabled={saving || mode === society.visitorMultiVillaApprovalMode}
               className="btn btn-primary"
             >
               {saving ? "Saving…" : "Save settings"}

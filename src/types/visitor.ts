@@ -25,6 +25,9 @@ export type Visitor = {
   vehicleNumber: string | null;
   checkInAt: string;
   checkOutAt: string | null;
+  status?: string;
+  /** Auto-closed by the system: checkOutAt is the closing time, not a real exit. */
+  exitNotMarked?: boolean;
   villaVisits: VisitorVilla[];
   gate: {
     name: string;
