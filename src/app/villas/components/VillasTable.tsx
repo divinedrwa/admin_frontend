@@ -14,8 +14,31 @@ interface VillasTableProps {
   toggleSelectAllVillas: () => void;
   onEdit: (villa: Villa) => void;
   onDelete: (id: string) => void;
+  onToggleMaintenance: (villa: Villa) => void;
   pgMeta: { total: number; limit: number; offset: number };
   onPageChange: (offset: number) => void;
+}
+
+/** "2026-11" → "Nov 2026" */
+export function formatPeriodLabel(period: string): string {
+  const [y, m] = period.split("-").map(Number);
+  if (!y || !m) return period;
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-IN", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function currentMonthKey(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  return `${y}-${m}`;
 }
 
 export function VillasTable({
@@ -27,9 +50,11 @@ export function VillasTable({
   toggleSelectAllVillas,
   onEdit,
   onDelete,
+  onToggleMaintenance,
   pgMeta,
   onPageChange,
 }: VillasTableProps) {
+  const thisMonth = currentMonthKey();
   if (loading) {
     return (
       <div className="table-wrapper">
@@ -86,12 +111,31 @@ export function VillasTable({
                     {villa.ownerPhone && <div className="text-xs text-fg-secondary mt-0.5">{villa.ownerPhone}</div>}
                   </div>
                 </td>
-                <td className="table-td font-semibold text-approved-solid">₹{villa.monthlyMaintenance}</td>
+                <td className="table-td">
+                  {villa.maintenanceExemptFromPeriod ? (
+                    <div className="space-y-1">
+                      <div className="font-semibold text-fg-tertiary line-through">₹{villa.monthlyMaintenance}</div>
+                      <span
+                        className="badge badge-gray"
+                        title="Visitor and guard features still work. Dues raised before this month stay payable."
+                      >
+                        {villa.maintenanceExemptFromPeriod > thisMonth
+                          ? `Billing stops ${formatPeriodLabel(villa.maintenanceExemptFromPeriod)}`
+                          : "Not paying"}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-semibold text-approved-solid">₹{villa.monthlyMaintenance}</span>
+                  )}
+                </td>
                 <td className="table-td">{villa.units?.length ?? "—"}</td>
                 <td className="table-td"><span className="badge badge-primary">{villa._count.users} active</span></td>
                 <td className="table-td">
                   <div className="flex gap-2">
                     <button onClick={() => onEdit(villa)} className="btn btn-ghost text-xs px-2 py-1">Edit</button>
+                    <button onClick={() => onToggleMaintenance(villa)} className="btn btn-ghost text-xs px-2 py-1 whitespace-nowrap">
+                      {villa.maintenanceExemptFromPeriod ? "Resume billing" : "Stop billing"}
+                    </button>
                     <button onClick={() => onDelete(villa.id)} className="btn btn-ghost text-brand-danger text-xs px-2 py-1">Delete</button>
                   </div>
                 </td>

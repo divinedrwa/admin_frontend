@@ -17,8 +17,12 @@ import {
 } from "@/lib/occupantUnitCodes";
 import { Villa, VillaResident, VillaUnit, VillaForm, UnitRow } from "@/types/villa";
 import { VillaFormModal } from "./components/VillaFormModal";
-import { VillasTable } from "./components/VillasTable";
-import { useVillas } from "@/hooks/useVillas";
+import { formatPeriodLabel, VillasTable } from "./components/VillasTable";
+import {
+  useSetVillaMaintenanceEnrollment,
+  useVillas,
+  type VillaMaintenanceFilter,
+} from "@/hooks/useVillas";
 import { useUrlPagination } from "@/hooks/useUrlPagination";
 
 function pickPrimaryResident(villa: Villa): VillaResident | null {
@@ -61,7 +65,12 @@ export default function VillasPage() {
 function VillasPageInner() {
   const queryClient = useQueryClient();
   const { queryParams, handlePageChange } = useUrlPagination();
-  const { data, isLoading: loading } = useVillas(queryParams);
+  const [maintenanceFilter, setMaintenanceFilter] = useState<VillaMaintenanceFilter | "">("");
+  const { data, isLoading: loading } = useVillas({
+    ...queryParams,
+    maintenance: maintenanceFilter || undefined,
+  });
+  const setEnrollment = useSetVillaMaintenanceEnrollment();
   const villas = data?.villas ?? [];
   const pgMeta = {
     total: data?.total ?? 0,
@@ -384,6 +393,41 @@ function VillasPageInner() {
     }
   };
 
+  const changeMaintenanceEnrollment = async (villaIds: string[], enrolled: boolean) => {
+    if (villaIds.length === 0) return;
+    const count = villaIds.length === 1 ? "this villa" : `${villaIds.length} villas`;
+    const ok = await confirm(
+      enrolled
+        ? {
+            title: "Resume maintenance billing",
+            message: `Bill ${count} for maintenance again from next month's cycle. Months skipped while not paying stay unbilled.`,
+            confirmLabel: "Resume billing",
+            variant: "primary",
+          }
+        : {
+            title: "Stop maintenance billing",
+            message: `Stop billing ${count} from next month's cycle. This month's and older dues stay payable. Residents keep visitor, guard and all other features.`,
+            confirmLabel: "Stop billing",
+          },
+    );
+    if (!ok) return;
+    try {
+      const result = await setEnrollment.mutateAsync({ villaIds, enrolled });
+      const from = formatPeriodLabel(result.effectiveFromPeriod);
+      showToast(
+        result.updated === 0
+          ? "No change — already set"
+          : enrolled
+            ? `Billing resumes from ${from} for ${result.updated} villa(s)`
+            : `Billing stops from ${from} for ${result.updated} villa(s)`,
+        "success",
+      );
+      setSelectedVillaIds(new Set());
+    } catch (error: unknown) {
+      showToast(parseApiError(error, "Failed to update maintenance billing").message, "error");
+    }
+  };
+
   const handleBulkDeleteVillas = async () => {
     const ids = Array.from(selectedVillaIds);
     if (ids.length === 0) return;
@@ -426,7 +470,7 @@ function VillasPageInner() {
         <AdminPageHeader
           eyebrow="Property directory"
           title="Villas management"
-          description={`Manage society properties, owners, billing-ready unit structures, and bulk villa imports from one operational workspace.${villas.length ? ` ${villas.length} properties are currently registered.` : ""}`}
+          description={`Manage society properties, owners, billing-ready unit structures, and bulk villa imports from one operational workspace.${villas.length && !maintenanceFilter ? ` ${pgMeta.total} properties are currently registered.` : ""}`}
           icon={<Building2 className="h-6 w-6" />}
           actions={
             <button onClick={() => handleOpenForm()} className="btn btn-primary flex items-center gap-2">
@@ -510,19 +554,58 @@ function VillasPageInner() {
           />
         )}
 
+        <div className="flex flex-wrap items-center gap-3">
+          <label htmlFor="villa-maintenance-filter" className="text-sm font-medium text-fg-primary">
+            Maintenance
+          </label>
+          <select
+            id="villa-maintenance-filter"
+            value={maintenanceFilter}
+            onChange={(e) => {
+              setMaintenanceFilter(e.target.value as VillaMaintenanceFilter | "");
+              setSelectedVillaIds(new Set());
+              handlePageChange(0);
+            }}
+            className="input max-w-xs min-h-10"
+          >
+            <option value="">All villas</option>
+            <option value="paying">Paying maintenance</option>
+            <option value="not_paying">Not paying (visitors only)</option>
+          </select>
+          {maintenanceFilter && (
+            <span className="text-sm text-fg-secondary">{pgMeta.total} villa(s)</span>
+          )}
+        </div>
+
         {selectedVillaIds.size > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-denied-bg bg-denied-bg/90 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-surface-border bg-surface-elevated px-4 py-3">
             <span className="text-sm text-fg-primary">
               {selectedVillaIds.size} villa{selectedVillaIds.size === 1 ? "" : "s"} selected
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedVillaIds(new Set())}
-                disabled={bulkDeletingVillas}
+                disabled={bulkDeletingVillas || setEnrollment.isPending}
                 className="text-sm px-3 py-1.5 rounded border border-surface-border bg-surface hover:bg-surface-background disabled:opacity-50"
               >
                 Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => changeMaintenanceEnrollment(Array.from(selectedVillaIds), false)}
+                disabled={bulkDeletingVillas || setEnrollment.isPending}
+                className="text-sm px-3 py-1.5 rounded border border-surface-border bg-surface hover:bg-surface-background disabled:opacity-50"
+              >
+                Stop maintenance billing
+              </button>
+              <button
+                type="button"
+                onClick={() => changeMaintenanceEnrollment(Array.from(selectedVillaIds), true)}
+                disabled={bulkDeletingVillas || setEnrollment.isPending}
+                className="text-sm px-3 py-1.5 rounded border border-surface-border bg-surface hover:bg-surface-background disabled:opacity-50"
+              >
+                Resume maintenance billing
               </button>
               <button
                 type="button"
@@ -545,6 +628,9 @@ function VillasPageInner() {
           toggleSelectAllVillas={toggleSelectAllVillas}
           onEdit={handleOpenForm}
           onDelete={handleDelete}
+          onToggleMaintenance={(villa) =>
+            changeMaintenanceEnrollment([villa.id], Boolean(villa.maintenanceExemptFromPeriod))
+          }
           pgMeta={pgMeta}
           onPageChange={handlePageChange}
         />

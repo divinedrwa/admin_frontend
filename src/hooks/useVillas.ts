@@ -5,10 +5,13 @@ import { Villa, VillaForm } from "@/types/villa";
 /** Backend caps list `limit` at 200 — use for villa pickers in forms. */
 export const VILLA_SELECT_LIMIT = 200;
 
+export type VillaMaintenanceFilter = "paying" | "not_paying";
+
 export type VillasParams = {
   limit?: number;
   offset?: number;
   search?: string;
+  maintenance?: VillaMaintenanceFilter;
 };
 
 export type VillasResponse = {
@@ -22,13 +25,40 @@ export function useVillas(params?: VillasParams) {
   const limit = params?.limit ?? 50;
   const offset = params?.offset ?? 0;
   const search = params?.search?.trim() || undefined;
+  const maintenance = params?.maintenance;
   return useQuery({
-    queryKey: ["villas", { limit, offset, search }],
+    queryKey: ["villas", { limit, offset, search, maintenance }],
     queryFn: async () => {
       const res = await api.get<VillasResponse>("/villas", {
-        params: { limit, offset, ...(search ? { search } : {}) },
+        params: {
+          limit,
+          offset,
+          ...(search ? { search } : {}),
+          ...(maintenance ? { maintenance } : {}),
+        },
       });
       return res.data;
+    },
+  });
+}
+
+export type MaintenanceEnrollmentResult = {
+  message: string;
+  updated: number;
+  unchanged: number;
+  effectiveFromPeriod: string;
+};
+
+/** Mark villas as paying / not paying maintenance (effective from next month's cycle). */
+export function useSetVillaMaintenanceEnrollment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { villaIds: string[]; enrolled: boolean }) => {
+      const res = await api.post<MaintenanceEnrollmentResult>("/villas/maintenance-enrollment", input);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["villas"] });
     },
   });
 }

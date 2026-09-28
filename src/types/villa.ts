@@ -28,6 +28,8 @@ export type Villa = {
   ownerEmail: string;
   ownerPhone: string;
   monthlyMaintenance: number;
+  /** "YYYY-MM" from which the villa is no longer billed; null = pays maintenance. */
+  maintenanceExemptFromPeriod?: string | null;
   units?: VillaUnit[];
   billingAccount?: { id: string; scope: string };
   users: VillaResident[];
