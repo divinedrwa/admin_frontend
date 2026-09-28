@@ -423,20 +423,20 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       {/* Desktop: fixed-height sidebar — nav scrolls independently from main content */}
-      <div className="hidden h-screen shrink-0 overflow-hidden md:flex">
+      <div className="hidden h-screen shrink-0 overflow-hidden lg:flex">
         <SidebarPanel {...panelProps} />
       </div>
 
-      {/* Mobile: drawer overlay */}
+      {/* Tablet & Mobile: drawer overlay */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 h-screen overflow-hidden transition-transform duration-300 md:hidden ${
+        className={`fixed inset-y-0 left-0 z-40 h-screen w-72 overflow-hidden transition-transform duration-300 lg:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

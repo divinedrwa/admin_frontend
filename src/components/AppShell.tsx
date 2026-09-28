@@ -87,73 +87,73 @@ export function AppShell({
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {platformView ? (
-          <div className="shrink-0 border-b border-pending-solid/30 bg-pending-bg/80 px-4 py-3 print:hidden md:px-8">
-            <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-pending-fg">
-                <span className="font-semibold">Platform view:</span> you are signed in as the society
-                admin for <span className="font-medium">{platformView.societyName}</span> (full tenant
-                access).
+          <div className="shrink-0 border-b border-pending-solid/30 bg-pending-bg/80 px-3 py-2 print:hidden sm:px-4 sm:py-3 md:px-8">
+            <div className="mx-auto flex w-full max-w-[1600px] flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-2 sm:gap-3">
+              <p className="text-xs sm:text-sm text-pending-fg line-clamp-2">
+                <span className="font-semibold">Platform:</span> <span className="font-medium">{platformView.societyName}</span>
               </p>
               <button
                 type="button"
                 onClick={exitToSuperAdmin}
-                className="shrink-0 rounded-xl bg-pending-solid px-3.5 py-2 text-sm font-semibold text-fg-inverse transition-opacity hover:opacity-90"
+                className="shrink-0 rounded-lg sm:rounded-xl bg-pending-solid px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold text-fg-inverse transition-opacity hover:opacity-90 min-h-8 sm:min-h-auto"
               >
-                Back to platform console
+                Back
               </button>
             </div>
           </div>
         ) : null}
         {headerContent ? (
           <div className="shrink-0 border-b border-surface-border bg-surface/85 backdrop-blur-xl">
-            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-4 py-3.5 md:px-8">
-              <div className="flex items-center gap-3">
+            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-2 sm:gap-3 px-3 py-3 sm:py-3.5 md:px-8">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
-                  className="rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary md:hidden"
+                  className="shrink-0 rounded-lg sm:rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary lg:hidden min-h-10 min-w-10"
                   aria-label="Open menu"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
-                {headerContent}
+                <div className="min-w-0">
+                  {headerContent}
+                </div>
               </div>
             </div>
           </div>
         ) : (
           <header className="z-20 shrink-0 border-b border-surface-border bg-surface/85 backdrop-blur-xl">
-            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 px-4 py-4 md:px-8">
-              <div className="flex items-center gap-3 md:gap-4">
+            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-2 sm:gap-4 px-3 py-3 sm:px-4 sm:py-4 md:px-8">
+              <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
-                  className="rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary md:hidden"
+                  className="shrink-0 rounded-lg sm:rounded-xl border border-surface-border bg-surface p-2 text-fg-secondary transition-colors hover:bg-brand-primary-light hover:text-brand-primary lg:hidden min-h-10 min-w-10"
                   aria-label="Open menu"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">
                     Admin dashboard
                   </p>
-                  <h1 className="text-2xl font-bold tracking-tight text-fg-primary md:text-3xl">{title}</h1>
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-fg-primary truncate">{title}</h1>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="hidden items-center gap-2 rounded-full border border-surface-border bg-surface px-3 py-2 text-sm text-fg-secondary md:flex">
-                  <CalendarDays className="h-4 w-4 text-brand-primary" />
-                  <span>
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div className="hidden items-center gap-2 rounded-full border border-surface-border bg-surface px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-fg-secondary md:flex">
+                  <CalendarDays className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-brand-primary shrink-0" />
+                  <span className="hidden sm:inline">
                     {new Date().toLocaleDateString("en-US", {
-                      weekday: "long",
+                      weekday: "short",
                       year: "numeric",
-                      month: "long",
+                      month: "short",
                       day: "numeric",
                     })}
                   </span>
                 </div>
                 <div
-                  className={`hidden items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium sm:flex ${
+                  className={`hidden items-center gap-2 rounded-full border px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium sm:flex shrink-0 ${
                     healthLoading
                       ? "border-surface-border bg-surface text-fg-secondary"
                       : apiHealthy && !healthError
@@ -168,18 +168,18 @@ export function AppShell({
                         : "Cannot reach API — check connection or deployment"
                   }
                 >
-                  <Activity className="h-4 w-4" />
-                  <span>
+                  <Activity className="h-3.5 sm:h-4 w-3.5 sm:w-4 shrink-0" />
+                  <span className="hidden sm:inline">
                     {healthLoading
-                      ? "Checking API…"
+                      ? "…"
                       : apiHealthy && !healthError
                         ? "API online"
-                        : "API unreachable"}
+                        : "API offline"}
                   </span>
                 </div>
                 {IS_DEV ? (
                   <div
-                    className="hidden max-w-[280px] truncate rounded-full border border-info-solid/20 bg-info-bg px-3 py-2 text-xs font-medium text-info-fg lg:block"
+                    className="hidden max-w-[200px] sm:max-w-[280px] truncate rounded-full border border-info-solid/20 bg-info-bg px-2.5 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium text-info-fg lg:block"
                     title={getResolvedApiBaseUrl()}
                   >
                     API: {getResolvedApiBaseUrl()}

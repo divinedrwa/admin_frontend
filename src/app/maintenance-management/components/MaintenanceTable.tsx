@@ -91,11 +91,11 @@ export function MaintenanceTable({
         </div>
       )}
 
-      <div className="filter-bar flex gap-3 items-center">
+      <div className="filter-bar flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <select
           value={filterStatus}
           onChange={(e) => onFilterStatusChange(e.target.value as "all" | PaymentStatus | "EXCLUDED")}
-          className="input"
+          className="input h-11 sm:h-auto sm:min-h-10"
         >
           <option value="all">All status</option>
           <option value="PAID">Paid</option>
@@ -107,13 +107,14 @@ export function MaintenanceTable({
         <input
           type="text"
           placeholder="Search villa or owner..."
-          className="input flex-1"
+          className="input h-11 sm:h-auto flex-1 sm:min-h-10"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
 
-      <div className="table-wrapper relative">
+      {/* Desktop Table View (hidden on mobile) */}
+      <div className="table-wrapper relative hidden md:block">
         {gridLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/60">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
@@ -252,6 +253,144 @@ export function MaintenanceTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card View (visible only on mobile) */}
+      <div className="md:hidden relative">
+        {gridLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/60">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
+          </div>
+        )}
+        {filteredResidents.length === 0 ? (
+          <div className="px-4 py-6 text-center text-fg-secondary">
+            {selectedCycleId ? "No residents found" : "Please select financial year and month"}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredResidents.map((r) => {
+              const credit = r.advanceCredit ?? 0;
+              const remaining = r.amount - (r.paidTowardCycle ?? 0);
+              return (
+                <div key={r.villaId} className="bg-surface rounded-lg border border-surface-border p-4 space-y-3">
+                  {/* Header: Villa & Owner */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-lg font-bold text-fg-primary">{r.villaNumber}</div>
+                      <div className="text-sm text-fg-secondary truncate">{r.ownerName}</div>
+                    </div>
+                    <span className={`badge shrink-0 ${
+                      r.isExcluded ? "badge-gray" :
+                      r.status === "PAID"
+                        ? "badge-success"
+                        : r.status === "OVERDUE"
+                          ? "badge-danger"
+                          : r.status === "PARTIAL"
+                            ? "badge-warning"
+                            : "badge-gray"
+                    }`}>
+                      {r.isExcluded ? "EXCLUDED" : r.status}
+                    </span>
+                  </div>
+
+                  {/* Amount & Credit Row */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-fg-secondary text-xs mb-1">Amount</div>
+                      <div className="font-semibold text-fg-primary">
+                        {r.paidTowardCycle != null && r.paidTowardCycle > 0
+                          ? `${formatCurrency(r.paidTowardCycle)} / ${formatCurrency(r.amount)}`
+                          : formatCurrency(r.amount)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-fg-secondary text-xs mb-1">Credit</div>
+                      {credit > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => onOpenCreditModal(r)}
+                          disabled={loading}
+                          className="w-full inline-flex items-center justify-center gap-1 rounded-full bg-approved-bg border border-approved-bg px-2 py-1 text-xs font-semibold text-approved-fg hover:opacity-90 transition-opacity disabled:opacity-40 min-h-8"
+                          title="Click to manage this credit"
+                        >
+                          {formatCurrency(credit)}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onOpenCreditModal(r)}
+                          disabled={loading}
+                          className="w-full text-brand-primary hover:text-brand-primary font-semibold text-xs disabled:opacity-40 min-h-8 flex items-center justify-center"
+                          title="Add advance credit"
+                        >
+                          + Add
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-2 pt-2">
+                    {r.isExcluded ? (
+                      <button
+                        type="button"
+                        onClick={() => onIncludeVilla(r)}
+                        disabled={loading}
+                        className="w-full px-4 py-3 rounded-lg bg-brand-primary text-white font-semibold text-sm transition-opacity hover:opacity-90 disabled:opacity-40 min-h-11"
+                      >
+                        Include
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onOpenMarkPaid(r)}
+                          disabled={loading}
+                          className="w-full px-4 py-3 rounded-lg bg-brand-primary text-white font-semibold text-sm transition-opacity hover:opacity-90 disabled:opacity-40 min-h-11"
+                        >
+                          Mark Paid
+                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onOpenRowEdit(r)}
+                            disabled={loading}
+                            className="px-3 py-3 rounded-lg border border-surface-border text-fg-primary font-semibold text-sm transition-colors hover:bg-surface-background disabled:opacity-40 min-h-11"
+                          >
+                            Edit
+                          </button>
+                          {(r.status === "PAID" || r.status === "PARTIAL") && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenUnpaidModal(r)}
+                              disabled={loading}
+                              className="px-3 py-3 rounded-lg border border-denied-bg text-denied-fg font-semibold text-sm transition-colors hover:bg-denied-bg/10 disabled:opacity-40 min-h-11"
+                            >
+                              Unpaid
+                            </button>
+                          )}
+                          {!((r.status === "PAID" || r.status === "PARTIAL")) && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenExcludeModal(r)}
+                              disabled={loading}
+                              className="px-3 py-3 rounded-lg border border-surface-border text-fg-tertiary font-semibold text-sm transition-colors hover:bg-surface-background disabled:opacity-40 min-h-11"
+                            >
+                              Exclude
+                            </button>
+                          )}
+                        </div>
+                        {r.receiptNumber && (
+                          <div className="text-xs text-fg-tertiary text-center pt-1">Ref: {r.receiptNumber}</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );
