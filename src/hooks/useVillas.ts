@@ -63,12 +63,15 @@ export function useSetVillaMaintenanceEnrollment() {
   });
 }
 
-/** Debounced server search for villa typeahead pickers. */
+/**
+ * Debounced server search for villa typeahead pickers. Loads up to the backend cap so every
+ * villa (including newly added ones) is listed before the admin types anything.
+ */
 export function useVillaSearch(
   search: string,
   options?: { limit?: number; enabled?: boolean },
 ) {
-  const limit = options?.limit ?? 20;
+  const limit = options?.limit ?? VILLA_SELECT_LIMIT;
   const q = search.trim();
   return useQuery({
     queryKey: ["villas", "search", { q, limit }],

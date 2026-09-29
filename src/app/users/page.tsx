@@ -55,6 +55,8 @@ function UsersPageInner() {
 
   const invalidateUsers = () => {
     void queryClient.invalidateQueries({ queryKey: ["users"] });
+    // Villa lists and details embed their residents.
+    void queryClient.invalidateQueries({ queryKey: ["villas"] });
   };
 
   const [showForm, setShowForm] = useState(false);
