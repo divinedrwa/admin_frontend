@@ -17,6 +17,14 @@ import {
   AnalyticsHubEyebrow,
   AnalyticsTabSwitcher,
 } from "@/components/analytics/AnalyticsTabSwitcher";
+import {
+  Insight,
+  KpiCard,
+  KpiGrid,
+  Section,
+  StatusPill,
+  toneFor,
+} from "@/components/analytics/AnalyticsKit";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
@@ -178,11 +186,15 @@ type GrowthKpi = {
   pillar: string;
   status: "good" | "watch" | "critical";
   hint: string;
+  trend?: "up" | "down" | "flat";
+  deltaLabel?: string;
+  lowerIsBetter?: boolean;
 };
 
 type GrowthDashboard = {
   healthScore?: number;
   kpis?: GrowthKpi[];
+  smartInsights?: { id: string; severity: "positive" | "warning" | "critical" | "info"; text: string }[];
   funnel?: { stage: string; count: number; ratePct: number }[];
   growthLevers?: {
     action: string;
@@ -512,84 +524,100 @@ export default function AppAnalyticsPage() {
             )}
 
             {growth && (
-              <section className="rounded-xl border border-border bg-gradient-to-br from-slate-900 to-teal-900 p-5 text-white shadow-lg">
-                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <section className="space-y-4">
+                <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <h2 className="flex items-center gap-2 text-lg font-semibold">
-                      <Target className="h-5 w-5" />
-                      Business growth
+                    <h2 className="flex items-center gap-2 text-lg font-semibold text-fg-primary">
+                      <Target className="h-5 w-5 text-brand-primary" />
+                      How the app is doing
                     </h2>
-                    <p className="mt-1 text-sm text-white/70">
-                      {growth.dataSources?.primary?.label ?? "Server analytics"} +{" "}
-                      {growth.dataSources?.mirror?.label ?? "Firebase mirror"} — unified view for
-                      adoption, operations, and revenue signals.
+                    <p className="mt-1 text-sm text-fg-secondary">
+                      Last {days} days. Changes compare with the {days} days before — rates in points, counts in %.
                     </p>
                   </div>
-                  <div className="rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-lg font-bold">
-                    {growth.healthScore ?? 0}/100
-                  </div>
+                  <StatusPill tone={toneFor(growth.healthScore ?? 0, 70, 45)}>
+                    App health {growth.healthScore ?? 0}/100
+                  </StatusPill>
                 </div>
 
-                <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {(growth.kpis ?? []).slice(0, 4).map((kpi) => (
-                    <div
-                      key={kpi.id}
-                      className="rounded-lg border border-white/20 bg-white/10 p-3"
-                    >
-                      <div className="text-xl font-bold">{kpi.displayValue}</div>
-                      <div className="text-xs font-medium text-white/80">{kpi.label}</div>
-                      <div className="mt-1 text-[11px] text-white/60">{kpi.hint}</div>
-                    </div>
-                  ))}
-                </div>
+                <KpiGrid>
+                  {(growth.kpis ?? [])
+                    .filter((kpi) => kpi.id !== "health_score")
+                    .map((kpi) => (
+                      <KpiCard
+                        key={kpi.id}
+                        label={kpi.label}
+                        value={kpi.displayValue}
+                        hint={kpi.hint}
+                        tone={kpi.status === "good" ? "good" : kpi.status === "watch" ? "watch" : "critical"}
+                        delta={
+                          kpi.deltaLabel && kpi.trend
+                            ? {
+                                label: kpi.deltaLabel,
+                                direction: kpi.trend,
+                                good: kpi.lowerIsBetter ? kpi.trend === "down" : kpi.trend === "up",
+                              }
+                            : null
+                        }
+                      />
+                    ))}
+                </KpiGrid>
 
-                {(growth.funnel?.length ?? 0) > 0 && (
-                  <div className="mb-5">
-                    <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/80">
-                      Growth funnel
-                    </h3>
-                    <div className="space-y-2">
-                      {growth.funnel!.map((stage) => (
-                        <div key={stage.stage}>
-                          <div className="mb-1 flex justify-between text-sm">
-                            <span>{stage.stage}</span>
-                            <span className="text-white/80">
-                              {stage.count} · {stage.ratePct}%
-                            </span>
-                          </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-white/15">
-                            <div
-                              className="h-full rounded-full bg-teal-300"
-                              style={{ width: `${stage.ratePct}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                <div className="grid gap-4 xl:grid-cols-3">
+                  <div className="space-y-2 xl:col-span-2">
+                    {(growth.smartInsights ?? []).map((insight) => (
+                      <Insight
+                        key={insight.id}
+                        tone={
+                          insight.severity === "positive"
+                            ? "good"
+                            : insight.severity === "critical"
+                              ? "critical"
+                              : insight.severity === "warning"
+                                ? "watch"
+                                : "neutral"
+                        }
+                      >
+                        {insight.text}
+                      </Insight>
+                    ))}
                   </div>
-                )}
+                  {(growth.funnel?.length ?? 0) > 0 && (
+                    <Section title="From account to everyday use">
+                      <div className="space-y-3">
+                        {growth.funnel!.map((stage) => (
+                          <div key={stage.stage}>
+                            <div className="mb-1 flex justify-between text-sm">
+                              <span className="text-fg-primary">{stage.stage}</span>
+                              <span className="text-fg-secondary">
+                                {stage.count} · {stage.ratePct}%
+                              </span>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
+                              <div className="h-full rounded-full bg-brand-primary" style={{ width: `${stage.ratePct}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Section>
+                  )}
+                </div>
 
                 {(growth.growthLevers?.length ?? 0) > 0 && (
-                  <div>
-                    <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-white/80">
-                      <Zap className="h-4 w-4" />
-                      Improve next
-                    </h3>
-                    <ul className="grid gap-2 sm:grid-cols-2">
-                      {growth.growthLevers!.slice(0, 4).map((lever) => (
-                        <li
-                          key={lever.action}
-                          className="rounded-lg border border-white/15 bg-white/5 p-3 text-sm"
-                        >
-                          <div className="font-medium">{lever.label}</div>
-                          <div className="mt-1 text-white/70">{lever.recommendation}</div>
-                          <div className="mt-1 text-xs text-teal-200">
-                            {lever.adoptionPct}% adoption · {lever.count} events
+                  <Section title="Improve next" subtitle="Self-service features with room to grow, measured from real activity">
+                    <ul className="grid gap-3 md:grid-cols-3">
+                      {growth.growthLevers!.map((lever) => (
+                        <li key={lever.action} className="rounded-xl border border-surface-border p-4">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-fg-primary">{lever.label}</span>
+                            <StatusPill tone={toneFor(lever.adoptionPct, 50, 20)}>{lever.adoptionPct}%</StatusPill>
                           </div>
+                          <p className="mt-2 text-sm text-fg-secondary">{lever.recommendation}</p>
+                          <p className="mt-2 text-xs text-fg-tertiary">{lever.count} in the period</p>
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </Section>
                 )}
               </section>
             )}
@@ -659,9 +687,9 @@ export default function AppAnalyticsPage() {
               <MetricCard label="Logins" value={t.logins ?? 0} />
               <MetricCard label="Sessions" value={t.sessions ?? 0} />
               <MetricCard label="Screen views" value={t.screenViews ?? 0} />
-              <MetricCard label="Business actions" value={t.actions ?? 0} />
+              <MetricCard label="Tracked actions" value={t.actions ?? 0} />
               <MetricCard label="Guard flows" value={t.flowCompletions ?? 0} />
-              <MetricCard label="Errors" value={t.errors ?? 0} accent={t.errors ? "danger" : undefined} />
+              <MetricCard label="Sessions with errors" value={`${errorTotals.errorRatePct ?? 0}%`} accent={(errorTotals.errorRatePct ?? 0) >= 15 ? "danger" : undefined} />
               <MetricCard label="Avg session" value={fmtDuration(t.avgSessionDurationMs ?? 0)} />
               <MetricCard label="Registered accounts" value={t.registeredAccounts ?? 0} />
             </div>

@@ -1,190 +1,186 @@
 "use client";
 
-import { BarChart3, DoorOpen } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { BarChart3, DoorOpen, ShieldCheck, ShieldOff } from "lucide-react";
+import { useState } from "react";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import {
   AnalyticsHubEyebrow,
   AnalyticsTabSwitcher,
 } from "@/components/analytics/AnalyticsTabSwitcher";
+import {
+  AttentionList,
+  BarChart,
+  ErrorBlock,
+  formatMinutes,
+  KpiCard,
+  KpiGrid,
+  LoadingBlock,
+  PeriodSelect,
+  RefreshButton,
+  Section,
+  ShareList,
+  StatusPill,
+  toneFor,
+  useAnalyticsData,
+  type AttentionItem,
+} from "@/components/analytics/AnalyticsKit";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
-import { api } from "@/lib/api";
-import { parseApiError } from "@/utils/errorHandler";
 
-interface GateOverview {
+interface GateRow {
   id: string;
   name: string;
-  location: string;
+  location: string | null;
   isActive: boolean;
-  assignedGuard: {
-    name: string;
-    username: string;
-    phone: string | null;
-    isActive: boolean;
-  } | null;
+  assignedGuard: { name: string; phone: string | null; onShift?: boolean; shiftType?: string | null } | null;
+  todayEntries?: number;
   todayVisitors: number;
+  todayRequests?: number;
+  insideNow?: number;
   activeVisitors: number;
+  waitingNow?: number;
 }
 
-interface VisitorStatistics {
-  period: {
-    days: number;
-    startDate: string;
-    endDate: string;
+interface Overview {
+  gates: GateRow[];
+  totals?: {
+    gates: number;
+    activeGates: number;
+    guardsOnShift: number;
+    todayEntries: number;
+    todayRequests: number;
+    insideNow: number;
+    waitingNow: number;
   };
+}
+
+interface Statistics {
   totalVisitors: number;
-  typeBreakdown: { [key: string]: number };
-  gateStats: {
-    gateId: string;
-    gateName: string;
-    count: number;
-    percentage: number;
-  }[];
+  typeBreakdown: Record<string, number>;
   avgDurationMinutes: number;
-  completedVisits: number;
-  activeVisits: number;
+  outcomes?: {
+    requests: number;
+    entries: number;
+    preApprovedEntries: number;
+    rejected: number;
+    expired: number;
+    waiting: number;
+    leftWithoutEntering: number;
+    insideNow: number;
+  };
+  approvals?: {
+    asked: number;
+    answered: number;
+    approvalRatePct: number;
+    answeredInAppPct: number;
+    noReplyPct: number;
+    medianResponseMinutes: number;
+    guardOverrides: number;
+  };
+  stay?: { avgMinutes: number; medianMinutes: number; exitNotMarked: number; exitNotMarkedPct: number };
 }
 
 interface PeakHours {
-  peakHours: {
-    hour: number;
-    label: string;
-    count: number;
-  }[];
-  hourlyData: {
-    hour: number;
-    label: string;
-    count: number;
-  }[];
-  totalVisitors: number;
+  hourlyData: { hour: number; label: string; count: number }[];
+  peakHours: { hour: number; label: string; count: number }[];
 }
 
 interface DailyTrend {
-  trendData: {
-    date: string;
-    displayDate: string;
-    total: number;
-    types: { [type: string]: number };
-  }[];
+  trendData: { date: string; displayDate: string; total: number; requests?: number; rejected?: number }[];
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  GUEST: "Guests",
+  DELIVERY: "Deliveries",
+  CAB: "Cabs",
+  SERVICE_PROVIDER: "Service",
+  SERVICE: "Service",
+  VENDOR: "Vendors",
+};
+const TYPE_COLORS: Record<string, string> = {
+  GUEST: "bg-brand-primary",
+  DELIVERY: "bg-approved-solid",
+  CAB: "bg-pending-solid",
+  SERVICE_PROVIDER: "bg-info-solid",
+  SERVICE: "bg-info-solid",
+  VENDOR: "bg-brand-secondary",
+};
+
 export default function GateAnalyticsPage() {
-  const [activeTab, setActiveTab] = useState<"overview" | "statistics" | "peak-hours" | "trend">(
-    "overview"
-  );
-  const [gateOverview, setGateOverview] = useState<GateOverview[]>([]);
-  const [statistics, setStatistics] = useState<VisitorStatistics | null>(null);
-  const [peakHours, setPeakHours] = useState<PeakHours | null>(null);
-  const [dailyTrend, setDailyTrend] = useState<DailyTrend | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [statisticsPeriod, setStatisticsPeriod] = useState("30");
-  const [peakHoursPeriod, setPeakHoursPeriod] = useState("30");
-  const [trendPeriod, setTrendPeriod] = useState("7");
+  const [days, setDays] = useState(30);
+  const overview = useAnalyticsData<Overview>("/gate-analytics/overview");
+  const stats = useAnalyticsData<Statistics>(`/gate-analytics/visitor-statistics?days=${days}`);
+  const peaks = useAnalyticsData<PeakHours>(`/gate-analytics/peak-hours?days=${days}`);
+  const trend = useAnalyticsData<DailyTrend>(`/gate-analytics/daily-trend?days=${Math.min(days, 30)}`);
 
-  const fetchGateOverview = useCallback(async (signal?: AbortSignal) => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await api.get(`/gate-analytics/overview`, { signal });
-      setGateOverview(response.data.gates);
-    } catch (err: unknown) {
-      if ((err as { name?: string }).name === "CanceledError") return;
-      setError(parseApiError(err, "Failed to fetch gate overview").message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchStatistics = useCallback(async (signal?: AbortSignal) => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await api.get(
-        `/gate-analytics/visitor-statistics?days=${statisticsPeriod}`,
-        { signal }
-      );
-      setStatistics(response.data);
-    } catch (err: unknown) {
-      if ((err as { name?: string }).name === "CanceledError") return;
-      setError(parseApiError(err, "Failed to fetch statistics").message);
-    } finally {
-      setLoading(false);
-    }
-  }, [statisticsPeriod]);
-
-  const fetchPeakHours = useCallback(async (signal?: AbortSignal) => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await api.get(
-        `/gate-analytics/peak-hours?days=${peakHoursPeriod}`,
-        { signal }
-      );
-      setPeakHours(response.data);
-    } catch (err: unknown) {
-      if ((err as { name?: string }).name === "CanceledError") return;
-      setError(parseApiError(err, "Failed to fetch peak hours").message);
-    } finally {
-      setLoading(false);
-    }
-  }, [peakHoursPeriod]);
-
-  const fetchDailyTrend = useCallback(async (signal?: AbortSignal) => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await api.get(
-        `/gate-analytics/daily-trend?days=${trendPeriod}`,
-        { signal }
-      );
-      setDailyTrend(response.data);
-    } catch (err: unknown) {
-      if ((err as { name?: string }).name === "CanceledError") return;
-      setError(parseApiError(err, "Failed to fetch daily trend").message);
-    } finally {
-      setLoading(false);
-    }
-  }, [trendPeriod]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    void fetchGateOverview(controller.signal);
-    return () => controller.abort();
-  }, [fetchGateOverview]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    if (activeTab === "statistics") {
-      void fetchStatistics(controller.signal);
-    } else if (activeTab === "peak-hours") {
-      void fetchPeakHours(controller.signal);
-    } else if (activeTab === "trend") {
-      void fetchDailyTrend(controller.signal);
-    }
-    return () => controller.abort();
-  }, [activeTab, fetchDailyTrend, fetchPeakHours, fetchStatistics]);
-
-  const getGateStatusBadge = (isActive: boolean) => {
-    return isActive
-      ? "bg-approved-bg text-approved-fg"
-      : "bg-denied-bg text-denied-fg";
+  const reloadAll = () => {
+    overview.reload();
+    stats.reload();
+    peaks.reload();
+    trend.reload();
   };
 
-  const getGuardStatusBadge = (isActive: boolean) => {
-    return isActive
-      ? "bg-info-bg text-info-fg"
-      : "bg-surface-elevated text-fg-primary";
-  };
+  const t = overview.data?.totals;
+  const gates = overview.data?.gates ?? [];
+  const s = stats.data;
+  const o = s?.outcomes;
+  const a = s?.approvals;
+  const st = s?.stay;
 
-  const visitorTypeColors: { [key: string]: string } = {
-    GUEST: "bg-brand-primary",
-    DELIVERY: "bg-approved-solid",
-    CAB: "bg-pending-solid",
-    SERVICE: "bg-pending-solid",
-    VENDOR: "bg-brand-primary",
-  };
+  const attention: AttentionItem[] = [];
+  for (const g of gates.filter((g) => g.isActive && !g.assignedGuard?.onShift)) {
+    attention.push({
+      id: `noguard-${g.id}`,
+      tone: "critical",
+      title: `${g.name}: no guard on shift`,
+      detail: g.assignedGuard ? `${g.assignedGuard.name} is assigned but not on an active shift.` : "No guard assigned.",
+    });
+  }
+  if ((t?.waitingNow ?? 0) > 0) {
+    attention.push({
+      id: "waiting",
+      tone: "watch",
+      title: `${t!.waitingNow} ${t!.waitingNow === 1 ? "visitor is" : "visitors are"} waiting for a resident's reply`,
+      detail: "Guards see a call button after 3 minutes without a reply.",
+    });
+  }
+  if (a && a.asked >= 5 && a.noReplyPct >= 30) {
+    attention.push({
+      id: "noreply",
+      tone: "watch",
+      title: `${a.noReplyPct}% of gate requests got no reply in the app`,
+      detail: "Remind residents to keep GatePass+ notifications on.",
+    });
+  }
+  if (st && st.exitNotMarkedPct >= 20) {
+    attention.push({
+      id: "exit",
+      tone: "watch",
+      title: `${st.exitNotMarkedPct}% of visits had no exit marked`,
+      detail: "Guards should tap Mark exit when visitors leave — it keeps 'inside now' accurate.",
+    });
+  }
+  if (a && a.guardOverrides > 0) {
+    attention.push({
+      id: "override",
+      tone: "neutral",
+      title: `Guards let in ${a.guardOverrides} ${a.guardOverrides === 1 ? "visitor" : "visitors"} without an app reply`,
+      detail: "Each override is logged with its reason and the residents are told.",
+    });
+  }
+
+  const outcomeItems = o
+    ? [
+        { label: "Let in", value: o.entries, className: "bg-approved-solid" },
+        { label: "Rejected by residents", value: o.rejected, className: "bg-brand-danger" },
+        { label: "Expired (no answer in 12 h)", value: o.expired, className: "bg-pending-solid" },
+        { label: "Left without entering", value: o.leftWithoutEntering, className: "bg-fg-tertiary" },
+        { label: "Still waiting", value: o.waiting, className: "bg-info-solid" },
+      ].filter((i) => i.value > 0)
+    : [];
+
+  const firstError = overview.error || stats.error;
+  const initialLoading = overview.loading && !overview.data;
 
   return (
     <AppShell title="Gate & Visitor Analytics">
@@ -192,7 +188,7 @@ export default function GateAnalyticsPage() {
         <AdminPageHeader
           eyebrow="Security analytics"
           title="Gate & visitor analytics"
-          description="Track gate activity, visitor traffic, and guard coverage with live overview, trend, and peak-hour reporting."
+          description="Who came in, how fast residents answered, and what needs attention at your gates."
           icon={<BarChart3 className="h-6 w-6" />}
         />
 
@@ -201,378 +197,189 @@ export default function GateAnalyticsPage() {
           <AnalyticsTabSwitcher />
         </div>
 
-        {/* Tabs */}
-        <div className="tabs">
-          {[
-            { id: "overview", label: "Gate Overview" },
-            { id: "statistics", label: "Visitor Statistics" },
-            { id: "peak-hours", label: "Peak Hours" },
-            { id: "trend", label: "Daily Trend" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`tab ${activeTab === tab.id ? "tab-active" : "tab-inactive"}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {firstError && <ErrorBlock message={firstError} onRetry={reloadAll} />}
 
-        {/* Error Display */}
-        {error && (
-          <div className="bg-denied-bg border border-brand-danger/30 text-denied-fg px-4 py-3 rounded-xl">
-            {error}
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="card">
-            <div className="loading-state">
-              <div className="loading-spinner w-10 h-10"></div>
-              <p className="loading-state-text">Loading data...</p>
+        {initialLoading ? (
+          <LoadingBlock />
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-fg-primary">Right now</h2>
+              <RefreshButton onClick={reloadAll} loading={overview.loading} />
             </div>
-          </div>
-        )}
+            <KpiGrid>
+              <KpiCard label="Inside now" value={t?.insideNow ?? 0} tone="good" hint="Let in and not yet exited." />
+              <KpiCard
+                label="Waiting for residents"
+                value={t?.waitingNow ?? 0}
+                tone={(t?.waitingNow ?? 0) > 0 ? "watch" : "good"}
+                hint="Requests with no reply yet."
+              />
+              <KpiCard
+                label="Let in today"
+                value={t?.todayEntries ?? 0}
+                hint={`${t?.todayRequests ?? 0} requests logged today.`}
+              />
+              <KpiCard
+                label="Guards on shift"
+                value={`${t?.guardsOnShift ?? 0}/${t?.activeGates ?? 0}`}
+                tone={(t?.guardsOnShift ?? 0) >= (t?.activeGates ?? 0) ? "good" : "critical"}
+                hint="Active gates with a guard on duty."
+              />
+            </KpiGrid>
 
-        {/* Gate Overview Tab */}
-        {!loading && activeTab === "overview" && (
-          <div>
-            <div className="page-action-bar">
-              <h2 className="text-xl font-semibold">Real-Time Gate Status</h2>
-              <button onClick={() => fetchGateOverview()} className="btn btn-ghost">
-                Refresh
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <h2 className="text-lg font-semibold text-fg-primary">Last {days} days</h2>
+              <PeriodSelect value={days} onChange={setDays} />
             </div>
-
-            {gateOverview.length === 0 ? (
-              <div className="card">
-                <EmptyState
-                  icon={<DoorOpen className="h-12 w-12" />}
-                  title="No gates found"
-                  description="Configure gates in the Gates section first."
-                />
-              </div>
+            {stats.loading && !s ? (
+              <LoadingBlock />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {gateOverview.map((gate) => (
-                  <div
-                    key={gate.id}
-                    className="card p-6 border-t-4 border-brand-primary"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-fg-primary">
-                          {gate.name}
-                        </h3>
-                        <p className="text-sm text-fg-secondary">{gate.location}</p>
-                      </div>
-                      <span
-                        className={`px-3 py-1 text-xs rounded-full ${getGateStatusBadge(
-                          gate.isActive
-                        )}`}
-                      >
-                        {gate.isActive ? "✅ Active" : "⛔ Inactive"}
-                      </span>
-                    </div>
-
-                    {/* Guard Info */}
-                    <div className="mb-4 pb-4 border-b">
-                      <p className="text-xs font-semibold text-fg-secondary mb-2">
-                        ASSIGNED GUARD
-                      </p>
-                      {gate.assignedGuard ? (
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-fg-primary">
-                              {gate.assignedGuard.name}
-                            </p>
-                            <span
-                              className={`px-2 py-1 text-xs rounded ${getGuardStatusBadge(
-                                gate.assignedGuard.isActive
-                              )}`}
-                            >
-                              {gate.assignedGuard.isActive ? "On Duty" : "Off Duty"}
-                            </span>
-                          </div>
-                          <p className="text-xs text-fg-secondary font-mono">
-                            @{gate.assignedGuard.username}
-                          </p>
-                          {gate.assignedGuard.phone && (
-                            <p className="text-xs text-fg-secondary">
-                              📞 {gate.assignedGuard.phone}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-fg-tertiary italic">No guard assigned</p>
-                      )}
-                    </div>
-
-                    {/* Visitor Stats */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-brand-primary-light rounded">
-                        <p className="text-2xl font-bold text-brand-primary">
-                          {gate.todayVisitors}
-                        </p>
-                        <p className="text-xs text-fg-secondary">Today's Visitors</p>
-                      </div>
-                      <div className="text-center p-3 bg-approved-bg rounded">
-                        <p className="text-2xl font-bold text-approved-solid">
-                          {gate.activeVisitors}
-                        </p>
-                        <p className="text-xs text-fg-secondary">Active Now</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <KpiGrid>
+                <KpiCard
+                  label="People let in"
+                  value={o?.entries ?? s?.totalVisitors ?? 0}
+                  hint={o ? `${o.requests} requests · ${o.preApprovedEntries} pre-approved guests` : undefined}
+                />
+                <KpiCard
+                  label="Residents approved"
+                  value={a && a.answered > 0 ? `${a.approvalRatePct}%` : "—"}
+                  tone={a && a.answered > 0 ? toneFor(a.approvalRatePct, 80, 60) : "neutral"}
+                  hint={a ? `${a.answered} of ${a.asked} requests answered.` : undefined}
+                />
+                <KpiCard
+                  label="Answered in the app"
+                  value={a && a.asked > 0 ? `${a.answeredInAppPct}%` : "—"}
+                  tone={a && a.asked > 0 ? toneFor(a.answeredInAppPct, 75, 50) : "neutral"}
+                  hint="Rest needed a call, an override or expired."
+                />
+                <KpiCard
+                  label="Typical reply time"
+                  value={a && a.answered > 0 ? formatMinutes(a.medianResponseMinutes) : "—"}
+                  tone={a && a.answered > 0 ? toneFor(a.medianResponseMinutes, 3, 10, true) : "neutral"}
+                  hint="Median time for a resident to approve or reject."
+                />
+                <KpiCard
+                  label="Typical visit length"
+                  value={st && st.medianMinutes > 0 ? formatMinutes(st.medianMinutes) : "—"}
+                  hint={st ? `Average ${formatMinutes(st.avgMinutes)} · only visits with a real exit.` : undefined}
+                />
+                <KpiCard
+                  label="Exit not marked"
+                  value={st ? `${st.exitNotMarkedPct}%` : "—"}
+                  tone={st ? toneFor(st.exitNotMarkedPct, 5, 20, true) : "neutral"}
+                  hint={st ? `${st.exitNotMarked} visits closed automatically.` : undefined}
+                />
+                <KpiCard
+                  label="Rejected by residents"
+                  value={o?.rejected ?? 0}
+                  hint={o ? `${o.expired} expired without an answer.` : undefined}
+                />
+                <KpiCard
+                  label="Guard overrides"
+                  value={a?.guardOverrides ?? 0}
+                  hint="Let in without an app reply (reason recorded)."
+                />
+              </KpiGrid>
             )}
-          </div>
-        )}
 
-        {/* Visitor Statistics Tab */}
-        {!loading && activeTab === "statistics" && statistics && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Visitor Statistics</h2>
-              <select
-                value={statisticsPeriod}
-                onChange={(e) => setStatisticsPeriod(e.target.value)}
-                className="input w-auto"
-              >
-                <option value="7">Last 7 Days</option>
-                <option value="30">Last 30 Days</option>
-                <option value="90">Last 90 Days</option>
-              </select>
-            </div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="stat-card">
-                <p className="text-sm text-fg-secondary mb-1">Total Visitors</p>
-                <p className="text-3xl font-bold text-brand-primary">
-                  {statistics.totalVisitors}
-                </p>
-              </div>
-              <div className="stat-card">
-                <p className="text-sm text-fg-secondary mb-1">Active Now</p>
-                <p className="text-3xl font-bold text-approved-solid">
-                  {statistics.activeVisits}
-                </p>
-              </div>
-              <div className="stat-card">
-                <p className="text-sm text-fg-secondary mb-1">Completed</p>
-                <p className="text-3xl font-bold text-fg-primary">
-                  {statistics.completedVisits}
-                </p>
-              </div>
-              <div className="stat-card">
-                <p className="text-sm text-fg-secondary mb-1">Avg Duration</p>
-                <p className="text-3xl font-bold text-brand-primary">
-                  {statistics.avgDurationMinutes}m
-                </p>
-              </div>
-            </div>
-
-            {/* By Type */}
-            <div className="bg-surface rounded-lg shadow p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Visitors by Type</h3>
-              <div className="space-y-3">
-                {Object.entries(statistics.typeBreakdown).map(([type, count]) => {
-                  const percentage =
-                    statistics.totalVisitors > 0
-                      ? Math.round((count / statistics.totalVisitors) * 100)
-                      : 0;
-                  return (
-                    <div key={type}>
-                      <div className="flex justify-between mb-1">
-                        <span className="font-medium text-fg-primary">{type}</span>
-                        <span className="text-fg-secondary">
-                          {count} ({percentage}%)
-                        </span>
-                      </div>
-                      <div className="w-full bg-surface-elevated rounded-full h-3">
-                        <div
-                          className={`h-3 rounded-full ${
-                            visitorTypeColors[type] || "bg-fg-secondary"
-                          }`}
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* By Gate */}
-            <div className="stat-card">
-              <h3 className="text-lg font-semibold mb-4">Visitors by Gate</h3>
-              <div className="space-y-4">
-                {statistics.gateStats.map((gate) => (
-                  <div key={gate.gateId}>
-                    <div className="flex justify-between mb-1">
-                      <span className="font-medium text-fg-primary">
-                        {gate.gateName}
-                      </span>
-                      <span className="text-fg-secondary">
-                        {gate.count} ({gate.percentage}%)
-                      </span>
-                    </div>
-                    <div className="w-full bg-surface-elevated rounded-full h-4">
-                      <div
-                        className="bg-brand-primary h-4 rounded-full"
-                        style={{ width: `${gate.percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Peak Hours Tab */}
-        {!loading && activeTab === "peak-hours" && peakHours && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Peak Hour Analysis</h2>
-              <select
-                value={peakHoursPeriod}
-                onChange={(e) => setPeakHoursPeriod(e.target.value)}
-                className="input w-auto"
-              >
-                <option value="7">Last 7 Days</option>
-                <option value="30">Last 30 Days</option>
-                <option value="90">Last 90 Days</option>
-              </select>
-            </div>
-
-            {/* Top 3 Peak Hours */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {peakHours.peakHours.map((peak, index) => (
-                <div
-                  key={peak.hour}
-                  className="bg-surface rounded-lg shadow p-6 text-center border-t-4 border-pending-solid"
+            <div className="grid gap-6 xl:grid-cols-3">
+              <div className="xl:col-span-2">
+                <Section
+                  title="Daily entries"
+                  subtitle={`People let in vs requests logged${days > 30 ? " · last 30 days" : ""}`}
                 >
-                  <p className="text-sm text-fg-secondary mb-2">
-                    #{index + 1} Peak Hour
-                  </p>
-                  <p className="text-3xl font-bold text-fg-primary mb-1">
-                    {peak.label}
-                  </p>
-                  <p className="text-xl text-pending-solid font-semibold">
-                    {peak.count} visitors
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Hourly Chart */}
-            <div className="stat-card">
-              <h3 className="text-lg font-semibold mb-4">Hourly Distribution</h3>
-              <div className="space-y-2">
-                {peakHours.hourlyData.map((hour) => {
-                  const maxCount = Math.max(
-                    ...peakHours.hourlyData.map((h) => h.count)
-                  );
-                  const widthPercentage =
-                    maxCount > 0 ? (hour.count / maxCount) * 100 : 0;
-                  return (
-                    <div key={hour.hour} className="flex items-center">
-                      <div className="w-24 text-sm text-fg-primary font-medium">
-                        {hour.label}
-                      </div>
-                      <div className="flex-1 ml-4">
-                        <div className="w-full bg-surface-elevated rounded h-8 relative">
-                          <div
-                            className="bg-brand-primary h-8 rounded flex items-center px-3"
-                            style={{ width: `${widthPercentage}%` }}
-                          >
-                            {hour.count > 0 && (
-                              <span className="text-white text-sm font-semibold">
-                                {hour.count}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                  <BarChart
+                    data={(trend.data?.trendData ?? []).map((d) => ({
+                      label: d.displayDate,
+                      values: { entries: d.total, requests: d.requests ?? d.total },
+                    }))}
+                    series={[
+                      { key: "requests", label: "Requests", className: "bg-brand-primary-light" },
+                      { key: "entries", label: "Let in", className: "bg-brand-primary" },
+                    ]}
+                  />
+                </Section>
               </div>
+              <Section title="Needs attention">
+                <AttentionList items={attention} emptyText="Gates are running smoothly." />
+              </Section>
             </div>
-          </div>
-        )}
 
-        {/* Daily Trend Tab */}
-        {!loading && activeTab === "trend" && dailyTrend && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Daily Visitor Trend</h2>
-              <select
-                value={trendPeriod}
-                onChange={(e) => setTrendPeriod(e.target.value)}
-                className="input w-auto"
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Section
+                title="Busiest hours"
+                subtitle={
+                  peaks.data?.peakHours?.length
+                    ? `Peak: ${peaks.data.peakHours.map((p) => p.label).join(", ")}`
+                    : "When people are let in"
+                }
               >
-                <option value="7">Last 7 Days</option>
-                <option value="14">Last 14 Days</option>
-                <option value="30">Last 30 Days</option>
-              </select>
+                <BarChart
+                  height={150}
+                  data={(peaks.data?.hourlyData ?? [])
+                    .slice()
+                    .sort((x, y) => x.hour - y.hour)
+                    .map((h) => ({ label: h.label.replace(":00", ""), values: { count: h.count } }))}
+                  series={[{ key: "count", label: "Let in", className: "bg-info-solid" }]}
+                />
+              </Section>
+              <Section title="Request outcomes" subtitle="What happened to every request in the period">
+                <ShareList items={outcomeItems} emptyText="No gate requests in this period." />
+              </Section>
             </div>
 
-            <div className="stat-card">
-              <div className="space-y-4">
-                {dailyTrend.trendData.map((day) => {
-                  const maxTotal = Math.max(
-                    ...dailyTrend.trendData.map((d) => d.total)
-                  );
-                  const widthPercentage =
-                    maxTotal > 0 ? (day.total / maxTotal) * 100 : 0;
-
-                  return (
-                    <div key={day.date}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-fg-primary w-24">
-                          {day.displayDate}
-                        </span>
-                        <span className="text-fg-secondary text-sm">
-                          {day.total} visitors
-                        </span>
-                      </div>
-                      <div className="w-full bg-surface-elevated rounded h-8">
-                        <div
-                          className="bg-approved-solid h-8 rounded flex items-center px-3"
-                          style={{ width: `${widthPercentage}%` }}
-                        >
-                          {day.total > 0 && (
-                            <span className="text-white text-sm font-semibold">
-                              {day.total}
-                            </span>
-                          )}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Section title="Who came in" subtitle="People let in, by type">
+                <ShareList
+                  items={Object.entries(s?.typeBreakdown ?? {})
+                    .sort((x, y) => y[1] - x[1])
+                    .map(([type, value]) => ({
+                      label: TYPE_LABELS[type] ?? type,
+                      value,
+                      className: TYPE_COLORS[type],
+                    }))}
+                  emptyText="Nobody let in during this period."
+                />
+              </Section>
+              <Section title="Gates" subtitle="Guard on duty and today's traffic">
+                {gates.length === 0 ? (
+                  <EmptyState
+                    icon={<DoorOpen className="h-10 w-10" />}
+                    title="No gates yet"
+                    description="Add gates in Gate utilities first."
+                  />
+                ) : (
+                  <ul className="divide-y divide-surface-border">
+                    {gates.map((g) => (
+                      <li key={g.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-fg-primary">
+                            {g.name}
+                            {!g.isActive && <span className="ml-2 text-xs font-medium text-fg-tertiary">(inactive)</span>}
+                          </p>
+                          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-fg-secondary">
+                            {g.assignedGuard?.onShift ? (
+                              <ShieldCheck className="h-4 w-4 text-approved-solid" />
+                            ) : (
+                              <ShieldOff className="h-4 w-4 text-brand-danger" />
+                            )}
+                            {g.assignedGuard ? g.assignedGuard.name : "No guard assigned"}
+                            {g.assignedGuard?.phone ? ` · ${g.assignedGuard.phone}` : ""}
+                          </p>
                         </div>
-                      </div>
-                      {/* Type breakdown */}
-                      {Object.keys(day.types).length > 0 && (
-                        <div className="flex gap-3 mt-1 ml-24">
-                          {Object.entries(day.types).map(([type, count]) => (
-                            <span
-                              key={type}
-                              className="text-xs text-fg-secondary"
-                            >
-                              {type}: {count}
-                            </span>
-                          ))}
+                        <div className="flex flex-wrap gap-2">
+                          <StatusPill tone="good">{g.insideNow ?? g.activeVisitors} inside</StatusPill>
+                          {(g.waitingNow ?? 0) > 0 && <StatusPill tone="watch">{g.waitingNow} waiting</StatusPill>}
+                          <StatusPill tone="neutral">{g.todayEntries ?? g.todayVisitors} today</StatusPill>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Section>
             </div>
-          </div>
+          </>
         )}
       </div>
     </AppShell>
