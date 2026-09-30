@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   BarChart3,
   RefreshCw,
-  Smartphone,
   Target,
   TrendingUp,
   Users,
@@ -17,14 +16,7 @@ import {
   AnalyticsHubEyebrow,
   AnalyticsTabSwitcher,
 } from "@/components/analytics/AnalyticsTabSwitcher";
-import {
-  Insight,
-  KpiCard,
-  KpiGrid,
-  Section,
-  StatusPill,
-  toneFor,
-} from "@/components/analytics/AnalyticsKit";
+import { SocietyOverview } from "@/components/analytics/SocietyOverview";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
@@ -272,6 +264,7 @@ function BarChart({
 
 export default function AppAnalyticsPage() {
   const [days, setDays] = useState(30);
+  const [refreshCount, setRefreshCount] = useState(0);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [trend, setTrend] = useState<TrendRow[]>([]);
   const [screens, setScreens] = useState<{ screen: string; views: number }[]>([]);
@@ -367,13 +360,13 @@ export default function AppAnalyticsPage() {
   const retention = insights?.retention ?? {};
 
   return (
-    <AppShell title="App usage analytics">
+    <AppShell title="Analytics overview">
       <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
         <AdminPageHeader
-          eyebrow="Mobile & web analytics"
-          title="App usage"
-          description="Dual telemetry: Firebase Analytics + first-party server data. Tracks residents, guards, and admins for adoption, retention, and business growth."
-          icon={<Smartphone className="h-6 w-6" />}
+          eyebrow="Analytics"
+          title="Society overview"
+          description="How your society is doing: what needs attention, gate, complaints, maintenance, water and who uses the app."
+          icon={<Activity className="h-6 w-6" />}
         />
 
         <div className="space-y-2">
@@ -395,7 +388,10 @@ export default function AppAnalyticsPage() {
           </select>
           <button
             type="button"
-            onClick={() => load()}
+            onClick={() => {
+              setRefreshCount((n) => n + 1);
+              void load();
+            }}
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
           >
@@ -412,6 +408,20 @@ export default function AppAnalyticsPage() {
           />
         ) : (
           <>
+            <SocietyOverview key={refreshCount} days={days} />
+
+            <details className="group rounded-xl border border-border bg-card">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
+                <span>
+                  <span className="block font-semibold">Technical details</span>
+                  <span className="block text-sm text-muted-foreground">
+                    Names of people not using the app, raw usage numbers, errors, screens and Firebase
+                  </span>
+                </span>
+                <span className="text-sm text-muted-foreground group-open:hidden">Show</span>
+                <span className="hidden text-sm text-muted-foreground group-open:inline">Hide</span>
+              </summary>
+              <div className="space-y-6 border-t border-border p-4">
             {(roleAdoption?.roles?.length ?? 0) > 0 && (
               <section className="rounded-xl border border-border bg-card p-4">
                 <div className="mb-4">
@@ -520,105 +530,6 @@ export default function AppAnalyticsPage() {
                     </div>
                   ))}
                 </div>
-              </section>
-            )}
-
-            {growth && (
-              <section className="space-y-4">
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <h2 className="flex items-center gap-2 text-lg font-semibold text-fg-primary">
-                      <Target className="h-5 w-5 text-brand-primary" />
-                      How the app is doing
-                    </h2>
-                    <p className="mt-1 text-sm text-fg-secondary">
-                      Last {days} days. Changes compare with the {days} days before — rates in points, counts in %.
-                    </p>
-                  </div>
-                  <StatusPill tone={toneFor(growth.healthScore ?? 0, 70, 45)}>
-                    App health {growth.healthScore ?? 0}/100
-                  </StatusPill>
-                </div>
-
-                <KpiGrid>
-                  {(growth.kpis ?? [])
-                    .filter((kpi) => kpi.id !== "health_score")
-                    .map((kpi) => (
-                      <KpiCard
-                        key={kpi.id}
-                        label={kpi.label}
-                        value={kpi.displayValue}
-                        hint={kpi.hint}
-                        tone={kpi.status === "good" ? "good" : kpi.status === "watch" ? "watch" : "critical"}
-                        delta={
-                          kpi.deltaLabel && kpi.trend
-                            ? {
-                                label: kpi.deltaLabel,
-                                direction: kpi.trend,
-                                good: kpi.lowerIsBetter ? kpi.trend === "down" : kpi.trend === "up",
-                              }
-                            : null
-                        }
-                      />
-                    ))}
-                </KpiGrid>
-
-                <div className="grid gap-4 xl:grid-cols-3">
-                  <div className="space-y-2 xl:col-span-2">
-                    {(growth.smartInsights ?? []).map((insight) => (
-                      <Insight
-                        key={insight.id}
-                        tone={
-                          insight.severity === "positive"
-                            ? "good"
-                            : insight.severity === "critical"
-                              ? "critical"
-                              : insight.severity === "warning"
-                                ? "watch"
-                                : "neutral"
-                        }
-                      >
-                        {insight.text}
-                      </Insight>
-                    ))}
-                  </div>
-                  {(growth.funnel?.length ?? 0) > 0 && (
-                    <Section title="From account to everyday use">
-                      <div className="space-y-3">
-                        {growth.funnel!.map((stage) => (
-                          <div key={stage.stage}>
-                            <div className="mb-1 flex justify-between text-sm">
-                              <span className="text-fg-primary">{stage.stage}</span>
-                              <span className="text-fg-secondary">
-                                {stage.count} · {stage.ratePct}%
-                              </span>
-                            </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
-                              <div className="h-full rounded-full bg-brand-primary" style={{ width: `${stage.ratePct}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </Section>
-                  )}
-                </div>
-
-                {(growth.growthLevers?.length ?? 0) > 0 && (
-                  <Section title="Improve next" subtitle="Self-service features with room to grow, measured from real activity">
-                    <ul className="grid gap-3 md:grid-cols-3">
-                      {growth.growthLevers!.map((lever) => (
-                        <li key={lever.action} className="rounded-xl border border-surface-border p-4">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold text-fg-primary">{lever.label}</span>
-                            <StatusPill tone={toneFor(lever.adoptionPct, 50, 20)}>{lever.adoptionPct}%</StatusPill>
-                          </div>
-                          <p className="mt-2 text-sm text-fg-secondary">{lever.recommendation}</p>
-                          <p className="mt-2 text-xs text-fg-tertiary">{lever.count} in the period</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </Section>
-                )}
               </section>
             )}
 
@@ -1050,6 +961,8 @@ export default function AppAnalyticsPage() {
                 )}
               </div>
             )}
+              </div>
+            </details>
           </>
         )}
       </div>
