@@ -16,6 +16,7 @@ import { setTenantAuthCookie, setTenantSocietyIdFromLogin } from "@/lib/api";
 import { cssVar } from "@/theme/tokens";
 import { parseApiError } from "@/utils/errorHandler";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { PlatformGrowthPanel } from "@/components/super/PlatformGrowthPanel";
 
 function isRequestCancelled(error: unknown, signal?: AbortSignal): boolean {
   return Boolean(signal?.aborted || axios.isCancel(error));
@@ -143,7 +144,7 @@ export default function SuperAdminConsolePage() {
   const [savingAndroid, setSavingAndroid] = useState(false);
   const [savingIos, setSavingIos] = useState(false);
 
-  const [consoleTab, setConsoleTab] = useState<"societies" | "revenue">("societies");
+  const [consoleTab, setConsoleTab] = useState<"societies" | "revenue" | "growth">("societies");
   const [societySearch, setSocietySearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [revenue, setRevenue] = useState<PlatformRevenue | null>(null);
@@ -652,7 +653,16 @@ export default function SuperAdminConsolePage() {
           >
             Platform revenue
           </button>
+          <button
+            type="button"
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${consoleTab === "growth" ? "bg-white/20 text-white" : "bg-white/5 text-fg-secondary hover:bg-white/10"}`}
+            onClick={() => setConsoleTab("growth")}
+          >
+            Growth signals
+          </button>
         </div>
+
+        {consoleTab === "growth" ? <PlatformGrowthPanel /> : null}
 
         {consoleTab === "revenue" ? (
           <section className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">

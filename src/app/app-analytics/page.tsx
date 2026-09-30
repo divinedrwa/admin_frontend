@@ -365,7 +365,7 @@ export default function AppAnalyticsPage() {
         <AdminPageHeader
           eyebrow="Analytics"
           title="Society overview"
-          description="How your society is doing: what needs attention, gate, complaints, maintenance, water and who uses the app."
+          description="Everything to run and grow your society: what needs attention, money, gate & security, service, people & app, growth and who to contact."
           icon={<Activity className="h-6 w-6" />}
         />
 
@@ -408,7 +408,7 @@ export default function AppAnalyticsPage() {
           />
         ) : (
           <>
-            <SocietyOverview key={refreshCount} days={days} />
+            <SocietyOverview key={refreshCount} days={days} fresh={refreshCount > 0} />
 
             <details className="group rounded-xl border border-border bg-card">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
