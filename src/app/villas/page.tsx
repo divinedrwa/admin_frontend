@@ -400,13 +400,13 @@ function VillasPageInner() {
       enrolled
         ? {
             title: "Resume maintenance billing",
-            message: `Bill ${count} for maintenance again from next month's cycle. Months skipped while not paying stay unbilled.`,
+            message: `Bill ${count} for maintenance again from the next cycle you create. Months skipped while not paying stay unbilled.`,
             confirmLabel: "Resume billing",
             variant: "primary",
           }
         : {
             title: "Stop maintenance billing",
-            message: `Stop billing ${count} from next month's cycle. This month's and older dues stay payable. Residents keep visitor, guard and all other features.`,
+            message: `Stop billing ${count} from the next cycle you create. Dues already raised stay payable. Residents keep visitor, guard and all other features.`,
             confirmLabel: "Stop billing",
           },
     );
