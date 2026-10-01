@@ -49,11 +49,41 @@ export type MaintenanceEnrollmentResult = {
   effectiveFromPeriod: string;
 };
 
-/** Mark villas as paying / not paying maintenance (effective from next month's cycle). */
+export type MaintenanceEnrollmentPreview = {
+  /** "YYYY-MM": first cycle the change applies to (the next one not yet created). */
+  fromPeriod: string;
+  villas: Array<{
+    villaId: string;
+    villaNumber: string;
+    block: string | null;
+    /** Dues already raised — they stay payable after billing stops. */
+    oldDues: number;
+    /** Advance credit on record — kept, and used when billing resumes. */
+    advanceCredit: number;
+    /** Active residents who become visitor-only once old dues are cleared. */
+    residents: number;
+  }>;
+};
+
+/** What stopping billing would leave per villa (old dues, advance credit, residents affected). */
+export function useMaintenanceEnrollmentPreview(villaIds: string[] | null) {
+  return useQuery({
+    queryKey: ["villa-enrollment-preview", villaIds],
+    queryFn: async () => {
+      const res = await api.post<MaintenanceEnrollmentPreview>("/villas/maintenance-enrollment/preview", {
+        villaIds,
+      });
+      return res.data;
+    },
+    enabled: Boolean(villaIds?.length),
+  });
+}
+
+/** Mark villas as paying / not paying maintenance (effective from the next cycle not yet created). */
 export function useSetVillaMaintenanceEnrollment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { villaIds: string[]; enrolled: boolean }) => {
+    mutationFn: async (input: { villaIds: string[]; enrolled: boolean; reason?: string }) => {
       const res = await api.post<MaintenanceEnrollmentResult>("/villas/maintenance-enrollment", input);
       return res.data;
     },

@@ -30,6 +30,8 @@ export type Villa = {
   monthlyMaintenance: number;
   /** "YYYY-MM" from which the villa is no longer billed; null = pays maintenance. */
   maintenanceExemptFromPeriod?: string | null;
+  /** Why billing was stopped (vacant, under construction, …). */
+  maintenanceExemptReason?: string | null;
   units?: VillaUnit[];
   billingAccount?: { id: string; scope: string };
   users: VillaResident[];

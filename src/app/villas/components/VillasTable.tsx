@@ -117,12 +117,22 @@ export function VillasTable({
                       <div className="font-semibold text-fg-tertiary line-through">₹{villa.monthlyMaintenance}</div>
                       <span
                         className="badge badge-gray"
-                        title="Visitor and guard features still work. Dues raised before this month stay payable."
+                        title={[
+                          villa.maintenanceExemptReason ? `Reason: ${villa.maintenanceExemptReason}.` : null,
+                          "Visitor and guard features still work. Dues raised before billing stopped stay payable.",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
                       >
                         {villa.maintenanceExemptFromPeriod > thisMonth
                           ? `Billing stops ${formatPeriodLabel(villa.maintenanceExemptFromPeriod)}`
                           : "Not paying"}
                       </span>
+                      {villa.maintenanceExemptReason && (
+                        <div className="text-xs text-fg-tertiary max-w-[10rem] truncate">
+                          {villa.maintenanceExemptReason}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <span className="font-semibold text-approved-solid">₹{villa.monthlyMaintenance}</span>

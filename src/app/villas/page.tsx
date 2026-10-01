@@ -18,6 +18,7 @@ import {
 import { Villa, VillaResident, VillaUnit, VillaForm, UnitRow } from "@/types/villa";
 import { VillaFormModal } from "./components/VillaFormModal";
 import { formatPeriodLabel, VillasTable } from "./components/VillasTable";
+import { StopBillingDialog } from "./components/StopBillingDialog";
 import {
   useSetVillaMaintenanceEnrollment,
   useVillas,
@@ -71,6 +72,8 @@ function VillasPageInner() {
     maintenance: maintenanceFilter || undefined,
   });
   const setEnrollment = useSetVillaMaintenanceEnrollment();
+  /** Villas waiting in the "Stop billing" dialog (null = closed). */
+  const [stopBillingIds, setStopBillingIds] = useState<string[] | null>(null);
   const villas = data?.villas ?? [];
   const pgMeta = {
     total: data?.total ?? 0,
@@ -395,24 +398,25 @@ function VillasPageInner() {
 
   const changeMaintenanceEnrollment = async (villaIds: string[], enrolled: boolean) => {
     if (villaIds.length === 0) return;
+    if (!enrolled) {
+      // Stopping asks for a reason and shows dues / advance credit first.
+      setStopBillingIds(villaIds);
+      return;
+    }
     const count = villaIds.length === 1 ? "this villa" : `${villaIds.length} villas`;
-    const ok = await confirm(
-      enrolled
-        ? {
-            title: "Resume maintenance billing",
-            message: `Bill ${count} for maintenance again from the next cycle you create. Months skipped while not paying stay unbilled.`,
-            confirmLabel: "Resume billing",
-            variant: "primary",
-          }
-        : {
-            title: "Stop maintenance billing",
-            message: `Stop billing ${count} from the next cycle you create. Dues already raised stay payable. Residents keep visitor, guard and all other features.`,
-            confirmLabel: "Stop billing",
-          },
-    );
+    const ok = await confirm({
+      title: "Resume maintenance billing",
+      message: `Bill ${count} for maintenance again from the next cycle you create. Months skipped while not paying stay unbilled.`,
+      confirmLabel: "Resume billing",
+      variant: "primary",
+    });
     if (!ok) return;
+    await submitEnrollment(villaIds, true);
+  };
+
+  const submitEnrollment = async (villaIds: string[], enrolled: boolean, reason?: string) => {
     try {
-      const result = await setEnrollment.mutateAsync({ villaIds, enrolled });
+      const result = await setEnrollment.mutateAsync({ villaIds, enrolled, reason });
       const from = formatPeriodLabel(result.effectiveFromPeriod);
       showToast(
         result.updated === 0
@@ -423,6 +427,7 @@ function VillasPageInner() {
         "success",
       );
       setSelectedVillaIds(new Set());
+      setStopBillingIds(null);
     } catch (error: unknown) {
       showToast(parseApiError(error, "Failed to update maintenance billing").message, "error");
     }
@@ -500,7 +505,10 @@ function VillasPageInner() {
                 <code className="text-xs bg-surface px-1 rounded">ownerPassword</code> — when{" "}
                 <code className="text-xs bg-surface px-1 rounded">ownerEmail</code> is set, an owner resident account is
                 created for this society (username from email if omitted; password generated unless{" "}
-                <code className="text-xs bg-surface px-1 rounded">ownerPassword</code> is at least 6 characters).
+                <code className="text-xs bg-surface px-1 rounded">ownerPassword</code> is at least 6 characters).{" "}
+                <code className="text-xs bg-surface px-1 rounded">billingStoppedFrom</code> (a month like 2026-09) and{" "}
+                <code className="text-xs bg-surface px-1 rounded">billingStopReason</code> keep a villa off maintenance
+                billing, as written by the villas export.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 justify-end">
@@ -635,6 +643,14 @@ function VillasPageInner() {
           onPageChange={handlePageChange}
         />
       </div>
+      {stopBillingIds && (
+        <StopBillingDialog
+          villaIds={stopBillingIds}
+          submitting={setEnrollment.isPending}
+          onConfirm={(reason) => submitEnrollment(stopBillingIds, false, reason)}
+          onCancel={() => setStopBillingIds(null)}
+        />
+      )}
       {ConfirmUI}
     </AppShell>
   );

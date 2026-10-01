@@ -22,6 +22,22 @@ type HistoryRow = {
   receiptNumber: string | null;
   paymentMode: string | null;
   transactionId: string | null;
+  cycleTitle?: string | null;
+};
+
+type BillingChange = {
+  action: "STOPPED" | "RESUMED";
+  fromPeriod: string | null;
+  reason: string | null;
+  oldDues: number | null;
+  advanceCredit: number | null;
+  at: string;
+  by: string | null;
+};
+
+const formatPeriod = (period: string | null) => {
+  const [y, m] = (period ?? "").split("-").map(Number);
+  return y && m ? `${MONTH_NAMES[m]} ${y}` : "—";
 };
 
 export default function VillaFinancialHistoryPage() {
@@ -33,7 +49,10 @@ export default function VillaFinancialHistoryPage() {
     block?: string;
     ownerName?: string;
     monthlyMaintenance?: number;
+    maintenanceExemptFromPeriod?: string | null;
+    maintenanceExemptReason?: string | null;
   } | undefined;
+  const billingChanges = (data?.billingChanges ?? []) as BillingChange[];
   const history = (data?.history ?? []) as HistoryRow[];
   const stats = data?.statistics as {
     totalPaid?: number;
@@ -84,6 +103,37 @@ export default function VillaFinancialHistoryPage() {
               </div>
             ) : null}
 
+            {villa?.maintenanceExemptFromPeriod ? (
+              <div className="rounded-lg border border-surface-border bg-surface-elevated px-4 py-3 text-sm text-fg-primary">
+                Billing stopped from {formatPeriod(villa.maintenanceExemptFromPeriod)}
+                {villa.maintenanceExemptReason ? ` — ${villa.maintenanceExemptReason}` : ""}. Months after that show as
+                waived; dues raised before it stay payable.
+              </div>
+            ) : null}
+
+            {billingChanges.length > 0 ? (
+              <div className="card p-4 space-y-3">
+                <h2 className="text-sm font-semibold text-fg-primary">Billing stop / resume history</h2>
+                <ul className="space-y-2">
+                  {billingChanges.map((c) => (
+                    <li key={`${c.action}-${c.at}`} className="text-sm">
+                      <span className={`badge ${c.action === "STOPPED" ? "badge-gray" : "badge-primary"}`}>
+                        {c.action === "STOPPED" ? "Stopped" : "Resumed"}
+                      </span>{" "}
+                      <span className="text-fg-primary">from {formatPeriod(c.fromPeriod)}</span>
+                      {c.reason ? <span className="text-fg-primary"> — {c.reason}</span> : null}
+                      <span className="text-fg-secondary">
+                        {" "}· {new Date(c.at).toLocaleDateString("en-IN")}
+                        {c.by ? ` by ${c.by}` : ""}
+                        {c.oldDues ? ` · unpaid dues then ₹${c.oldDues.toLocaleString("en-IN")}` : ""}
+                        {c.advanceCredit ? ` · advance credit ₹${c.advanceCredit.toLocaleString("en-IN")}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
             <div className="table-wrapper overflow-x-auto">
               <table className="table">
                 <thead className="table-head">
@@ -107,7 +157,12 @@ export default function VillaFinancialHistoryPage() {
                   ) : (
                     history.map((row) => (
                       <tr key={`${row.year}-${row.month}`} className="table-row">
-                        <td className="table-td">{MONTH_NAMES[row.month]} {row.year}</td>
+                        <td className="table-td">
+                          {MONTH_NAMES[row.month]} {row.year}
+                          {row.cycleTitle?.endsWith("· Billing stopped") ? (
+                            <div className="text-xs text-fg-tertiary">Billing stopped</div>
+                          ) : null}
+                        </td>
                         <td className="table-td">₹{row.amount.toLocaleString("en-IN")}</td>
                         <td className="table-td"><span className="badge badge-gray">{row.status}</span></td>
                         <td className="table-td">{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : "—"}</td>
