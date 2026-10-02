@@ -174,7 +174,7 @@ export default function GateAnalyticsPage() {
         { label: "Let in", value: o.entries, className: "bg-approved-solid" },
         { label: "Rejected by residents", value: o.rejected, className: "bg-brand-danger" },
         { label: "Expired (no answer in 12 h)", value: o.expired, className: "bg-pending-solid" },
-        { label: "Left without entering", value: o.leftWithoutEntering, className: "bg-fg-tertiary" },
+        { label: "Exit marked, entry not recorded", value: o.leftWithoutEntering, className: "bg-fg-tertiary" },
         { label: "Still waiting", value: o.waiting, className: "bg-info-solid" },
       ].filter((i) => i.value > 0)
     : [];
