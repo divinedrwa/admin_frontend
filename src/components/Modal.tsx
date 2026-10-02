@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   open: boolean;
@@ -77,9 +78,12 @@ export function Modal({
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  // Portal to <body>: page wrappers use a fade-in animation that leaves a CSS transform,
+  // and a transformed ancestor makes `position: fixed` relative to it instead of the
+  // viewport — the dialog then opened off-screen on narrow windows.
+  return createPortal(
     <div
       ref={overlayRef}
       className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/50 backdrop-blur-sm p-4`}
@@ -97,6 +101,7 @@ export function Modal({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
