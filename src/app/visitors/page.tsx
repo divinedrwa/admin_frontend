@@ -69,8 +69,14 @@ function VisitorsPageInner() {
   const { data: visitorsData, isLoading: loading } = useVisitors(filter, visitorQueryParams);
   const visitors = ((visitorsData?.visitors ?? []) as Visitor[]).map((v) => ({
     ...v,
+    // A visit sent to several floors of one flat has one entry per floor: list each flat once.
     villaVisits: sortByVillaNumber(
-      v.villaVisits ?? [],
+      (v.villaVisits ?? []).filter(
+        (vv, i, all) =>
+          all.findIndex(
+            (o) => o.villa?.villaNumber === vv.villa?.villaNumber && o.villa?.block === vv.villa?.block,
+          ) === i,
+      ),
       (vv) => vv.villa?.villaNumber ?? null,
     ),
   }));
